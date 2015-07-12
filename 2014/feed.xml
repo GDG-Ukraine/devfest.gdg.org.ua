@@ -3,12 +3,12 @@
   <channel>
     <title>GDG DevFest Ukraine 2014</title>
     <description>October 24-25, Lviv, Ukraine. GDG DevFest - the biggest Google related event in Ukraine. 350+ attendees, 48 hours of pure Google content, 28+ speakers from Ukraine and beyond, 3 parallel tracks.</description>
-    <link>http://devfest.gdg.org.ua/devfest.gdg.org.ua/2014/</link>
-    <atom:link href="http://devfest.gdg.org.ua/devfest.gdg.org.ua/2014/feed.xml" rel="self" type="application/rss+xml" />
+    <link>http://devfest.gdg.org.ua/2014/</link>
+    <atom:link href="http://devfest.gdg.org.ua/2014/feed.xml" rel="self" type="application/rss+xml" />
     
       <item>
         <title>Conference networking tips</title>
-        <description>&lt;p&gt;&lt;img class=&quot;img-responsive feature-image&quot; src=&quot;/devfest.gdg.org.ua/2014/img/posts/conference_networking.jpg&quot; style=&quot;display:none&quot; /&gt;&lt;/p&gt;
+        <description>&lt;p&gt;&lt;img class=&quot;img-responsive feature-image&quot; src=&quot;/2014/img/posts/conference_networking.jpg&quot; style=&quot;display:none&quot; /&gt;&lt;/p&gt;
 
 &lt;h1 id=&quot;conference-networking-tips&quot;&gt;Conference networking tips&lt;/h1&gt;
 
@@ -56,8 +56,8 @@ If you use these tips, you will establish connections with a greater number of p
 &lt;p&gt;&lt;em&gt;Originally published in &lt;a href=&quot;http://rchayka.com/conference-networking/&quot;&gt;Rostyslav Chayka blog&lt;/a&gt;&lt;/em&gt;&lt;/p&gt;
 </description>
         <pubDate>Fri, 24 Oct 2014 01:00:00 +0300</pubDate>
-        <link>http://devfest.gdg.org.ua/devfest.gdg.org.ua/2014/blog/conference-networking-tips</link>
-        <guid isPermaLink="true">http://devfest.gdg.org.ua/devfest.gdg.org.ua/2014/blog/conference-networking-tips</guid>
+        <link>http://devfest.gdg.org.ua/2014/blog/conference-networking-tips</link>
+        <guid isPermaLink="true">http://devfest.gdg.org.ua/2014/blog/conference-networking-tips</guid>
       </item>
     
       <item>
@@ -68,7 +68,7 @@ If you use these tips, you will establish connections with a greater number of p
 
 &lt;p&gt;&lt;a href=&quot;http://www.globallogic.com.ua/&quot;&gt;GlobalLogic Ukraine&lt;/a&gt; is one of the TOP-5 largest IT companies of the country. Its offices are located in Kyiv, Kharkiv, Lviv and Mykolaiv, and more than 2400 IT experts are involved in GlobalLogic Ukraine’s projects. The company constantly welcomes talented professionals to join its team!&lt;/p&gt;
 
-&lt;p&gt;&lt;img src=&quot;/devfest.gdg.org.ua/2014/img/posts/globallogic_main.png&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;/2014/img/posts/globallogic_main.png&quot; /&gt;&lt;/p&gt;
 
 &lt;p&gt;GlobalLogic Ukraine organizes a wide variety of &lt;a href=&quot;http://www.globallogic.com.ua/en/news/&quot;&gt;expert events&lt;/a&gt;, such as TechTalks, hackathons, expert discussions etc. and supports the largest Ukrainian IT events.&lt;/p&gt;
 
@@ -81,8 +81,8 @@ If you use these tips, you will establish connections with a greater number of p
 ● &lt;a href=&quot;http://www.globallogic.com.ua/en/news/&quot;&gt;YouTube&lt;/a&gt;&lt;/p&gt;
 </description>
         <pubDate>Tue, 21 Oct 2014 17:00:00 +0300</pubDate>
-        <link>http://devfest.gdg.org.ua/devfest.gdg.org.ua/2014/blog/platinum-sponsor-globallogic</link>
-        <guid isPermaLink="true">http://devfest.gdg.org.ua/devfest.gdg.org.ua/2014/blog/platinum-sponsor-globallogic</guid>
+        <link>http://devfest.gdg.org.ua/2014/blog/platinum-sponsor-globallogic</link>
+        <guid isPermaLink="true">http://devfest.gdg.org.ua/2014/blog/platinum-sponsor-globallogic</guid>
       </item>
     
       <item>
@@ -105,7 +105,7 @@ If you use these tips, you will establish connections with a greater number of p
 
 &lt;p&gt;We Make it Easy to Engage and Change Course as Needed&lt;/p&gt;
 
-&lt;p&gt;&lt;img src=&quot;/devfest.gdg.org.ua/2014/img/posts/dataart_img.png&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;/2014/img/posts/dataart_img.png&quot; /&gt;&lt;/p&gt;
 
 &lt;h4 id=&quot;we-bleed-agile&quot;&gt;We Bleed Agile!&lt;/h4&gt;
 
@@ -124,7 +124,7 @@ Roughly, 60% of projects employ the method at present and the number is growing.
 
 &lt;p&gt;From Idea to Implementation in 8 Steps with DataArt&lt;/p&gt;
 
-&lt;p&gt;&lt;img src=&quot;/devfest.gdg.org.ua/2014/img/posts/dataart_img2.png&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;/2014/img/posts/dataart_img2.png&quot; /&gt;&lt;/p&gt;
 
 &lt;p&gt;&lt;strong&gt;1. Enquiry&lt;/strong&gt;&lt;/p&gt;
 
@@ -161,8 +161,8 @@ Roughly, 60% of projects employ the method at present and the number is growing.
 &lt;p&gt;DataArt has been consistently named one of the top or fastest growing IT outsourcing providers worldwide by BusinessWeek, CMP’s Global Sourcing 100, International Association of Outsourcing Professionals and Inc. 5000. DataArt clients include Standard &amp;amp; Poor’s, Harmonic Fund Services, Ogilvy, artnet, Panasonic, Cancer Research, Charles River Laboratories, Betfair, Misys, leading asset management firms and three of the world’s top ten investment banks.&lt;/p&gt;
 </description>
         <pubDate>Thu, 16 Oct 2014 23:00:00 +0300</pubDate>
-        <link>http://devfest.gdg.org.ua/devfest.gdg.org.ua/2014/blog/platinum-sponsor-dataart</link>
-        <guid isPermaLink="true">http://devfest.gdg.org.ua/devfest.gdg.org.ua/2014/blog/platinum-sponsor-dataart</guid>
+        <link>http://devfest.gdg.org.ua/2014/blog/platinum-sponsor-dataart</link>
+        <guid isPermaLink="true">http://devfest.gdg.org.ua/2014/blog/platinum-sponsor-dataart</guid>
       </item>
     
       <item>
@@ -173,13 +173,13 @@ Since 1993, SoftServe has accomplished more than 3500 projects for over 100 lead
 Today we have representative offices and development centers in 19 major cities of 8 countries.&lt;/p&gt;
 </description>
         <pubDate>Wed, 15 Oct 2014 23:00:00 +0300</pubDate>
-        <link>http://devfest.gdg.org.ua/devfest.gdg.org.ua/2014/blog/diamond-sponsor-softserve</link>
-        <guid isPermaLink="true">http://devfest.gdg.org.ua/devfest.gdg.org.ua/2014/blog/diamond-sponsor-softserve</guid>
+        <link>http://devfest.gdg.org.ua/2014/blog/diamond-sponsor-softserve</link>
+        <guid isPermaLink="true">http://devfest.gdg.org.ua/2014/blog/diamond-sponsor-softserve</guid>
       </item>
     
       <item>
         <title>Meet our Hackathon Sponsor Lohika</title>
-        <description>&lt;p&gt;&lt;img class=&quot;img-responsive feature-image&quot; src=&quot;/devfest.gdg.org.ua/2014/img/posts/lohika_banner.jpg&quot; style=&quot;display:none&quot; /&gt;&lt;/p&gt;
+        <description>&lt;p&gt;&lt;img class=&quot;img-responsive feature-image&quot; src=&quot;/2014/img/posts/lohika_banner.jpg&quot; style=&quot;display:none&quot; /&gt;&lt;/p&gt;
 
 &lt;p&gt;Lohika provides high-quality services of software development for the world’s largest technology companies, as well as those, who are looking for custom innovative solutions in IT. Our Head office is located in San Bruno, California, in the heart of Silicon Valley.&lt;/p&gt;
 
@@ -190,8 +190,8 @@ Today we have representative offices and development centers in 19 major cities 
 &lt;p&gt;And don’t forget to visit &lt;a href=&quot;https://www.facebook.com/pages/Lohika/253302288033498&quot;&gt;Lohika at Facebook&lt;/a&gt; we always have something interesting to share :)&lt;/p&gt;
 </description>
         <pubDate>Wed, 08 Oct 2014 12:00:00 +0300</pubDate>
-        <link>http://devfest.gdg.org.ua/devfest.gdg.org.ua/2014/blog/meet-hackathon-sponsor-lohika</link>
-        <guid isPermaLink="true">http://devfest.gdg.org.ua/devfest.gdg.org.ua/2014/blog/meet-hackathon-sponsor-lohika</guid>
+        <link>http://devfest.gdg.org.ua/2014/blog/meet-hackathon-sponsor-lohika</link>
+        <guid isPermaLink="true">http://devfest.gdg.org.ua/2014/blog/meet-hackathon-sponsor-lohika</guid>
       </item>
     
       <item>
@@ -232,8 +232,8 @@ Break the stereotypes and instead create new innovative work schemes - that&#39;
 &lt;/p&gt;
 </description>
         <pubDate>Fri, 19 Sep 2014 12:00:00 +0300</pubDate>
-        <link>http://devfest.gdg.org.ua/devfest.gdg.org.ua/2014/blog/diamond-sponsor-eleks</link>
-        <guid isPermaLink="true">http://devfest.gdg.org.ua/devfest.gdg.org.ua/2014/blog/diamond-sponsor-eleks</guid>
+        <link>http://devfest.gdg.org.ua/2014/blog/diamond-sponsor-eleks</link>
+        <guid isPermaLink="true">http://devfest.gdg.org.ua/2014/blog/diamond-sponsor-eleks</guid>
       </item>
     
       <item>
@@ -312,8 +312,8 @@ Break the stereotypes and instead create new innovative work schemes - that&#39;
 &lt;p&gt;Email organizers at &lt;a href=&quot;&amp;#109;&amp;#097;&amp;#105;&amp;#108;&amp;#116;&amp;#111;:&amp;#100;&amp;#101;&amp;#118;&amp;#102;&amp;#101;&amp;#115;&amp;#116;&amp;#064;&amp;#103;&amp;#100;&amp;#103;&amp;#046;&amp;#111;&amp;#114;&amp;#103;&amp;#046;&amp;#117;&amp;#097;&quot;&gt;&amp;#100;&amp;#101;&amp;#118;&amp;#102;&amp;#101;&amp;#115;&amp;#116;&amp;#064;&amp;#103;&amp;#100;&amp;#103;&amp;#046;&amp;#111;&amp;#114;&amp;#103;&amp;#046;&amp;#117;&amp;#097;&lt;/a&gt;&lt;/p&gt;
 </description>
         <pubDate>Mon, 21 Jul 2014 12:00:00 +0300</pubDate>
-        <link>http://devfest.gdg.org.ua/devfest.gdg.org.ua/2014/blog/call-for-papers</link>
-        <guid isPermaLink="true">http://devfest.gdg.org.ua/devfest.gdg.org.ua/2014/blog/call-for-papers</guid>
+        <link>http://devfest.gdg.org.ua/2014/blog/call-for-papers</link>
+        <guid isPermaLink="true">http://devfest.gdg.org.ua/2014/blog/call-for-papers</guid>
       </item>
     
       <item>
@@ -346,8 +346,8 @@ the final missing parts to the biggest Google related event in Ukraine - &lt;a h
 &lt;p&gt;More details about speakers, DevFest Hackathon and Lviv will appear in subsequent posts, meantime like us on &lt;a href=&quot;https://facebook.com/GDGLviv&quot;&gt;Facebook&lt;/a&gt;, follow on &lt;a href=&quot;https://twitter.com/intent/user?screen_name=GDGLviv&quot;&gt;Twitter&lt;/a&gt;, add to circles in &lt;a href=&quot;https://plus.google.com/b/102444623953913144164&quot;&gt;Google+&lt;/a&gt; or subscribe to our &lt;a href=&quot;http://gdg.us5.list-manage1.com/subscribe/post?u=9fc8aa205b0521b5f05fc8e1e&amp;amp;id=ae0fb459fc&quot;&gt;mailing list&lt;/a&gt; and &lt;a href=&quot;http://devfest.gdg.org.ua/feed.xml&quot;&gt;RSS feed&lt;/a&gt; in order not to miss any cool stuff about festival.&lt;/p&gt;
 </description>
         <pubDate>Mon, 21 Jul 2014 11:00:00 +0300</pubDate>
-        <link>http://devfest.gdg.org.ua/devfest.gdg.org.ua/2014/blog/hello-world</link>
-        <guid isPermaLink="true">http://devfest.gdg.org.ua/devfest.gdg.org.ua/2014/blog/hello-world</guid>
+        <link>http://devfest.gdg.org.ua/2014/blog/hello-world</link>
+        <guid isPermaLink="true">http://devfest.gdg.org.ua/2014/blog/hello-world</guid>
       </item>
     
   </channel>
