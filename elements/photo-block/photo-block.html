@@ -1,0 +1,50 @@
+<dom-module id="photo-block">
+    <style>
+        :host {
+            display: block;
+        }
+
+        .photo-wrapper {
+            height: 200px;
+        }
+
+        @media (min-width: 768px) {
+            .photo-wrapper {
+                height: 500px;
+            }
+            .big {
+                flex: 2;
+            }
+        }
+    </style>
+    <template>
+        <div class="photo-wrapper layout horizontal">
+            <div class="flex relative big">
+                <iron-image src="{{photos.big}}" class="placeholder-color fit" sizing="cover" preload fade></iron-image>
+            </div>
+            <div class="flex layout vertical">
+                <div class="flex relative">
+                    <iron-image src="{{photos.small.0}}" class="placeholder-color fit" sizing="cover" preload fade></iron-image>
+                </div>
+                <div class="flex relative hidden-xs">
+                    <iron-image src="{{photos.small.1}}" class="placeholder-color fit" sizing="cover" preload fade></iron-image>
+                </div>
+            </div>
+        </div>
+    </template>
+</dom-module>
+
+<script>
+    Polymer({
+        is: 'photo-block',
+        properties: {
+            photos: Object
+        },
+        attached: function() {
+            this.photos = {
+                big: '../images/backgrounds/2014_1.jpg',
+                small: ['../images/backgrounds/2014_2.jpg', '../images/backgrounds/2014_3.jpg']
+            };
+        }
+    });
+</script>

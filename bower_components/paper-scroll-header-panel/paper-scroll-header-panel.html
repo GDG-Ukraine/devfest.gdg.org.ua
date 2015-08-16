@@ -255,7 +255,7 @@ To change the background for toolbar when it is condensed:
        * The state of the header. The initial value is `HEADER_STATE_EXPANDED`.
        * Depending on the configuration and the `scrollTop` value,
        * the header state could change to
-       * `HEADER_STATE_HIDDEN`, `HEADER_STATE_CONDESED` and `HEADER_STATE_INTERPOLATED`
+       * `HEADER_STATE_HIDDEN`, `HEADER_STATE_CONDENSED` and `HEADER_STATE_INTERPOLATED`
        */
       headerState: {
         type: Number,
@@ -273,6 +273,7 @@ To change the background for toolbar when it is condensed:
         value: 0
       },
 
+      /** @type {number|null} */
       _defaultCondsensedHeaderHeight: {
         type: Number,
         value: 0
@@ -296,15 +297,11 @@ To change the background for toolbar when it is condensed:
       this.scroller.addEventListener('scroll', this._scrollHandler);
     },
 
-    detached: function() {
-      this.scroller.removeEventListener('scroll', this._scrollHandler);
-    },
-
     /**
      * The header's initial state
      *
      * @property HEADER_STATE_EXPANDED
-     * @type Number
+     * @type number
      */
     HEADER_STATE_EXPANDED: 0,
 
@@ -312,7 +309,7 @@ To change the background for toolbar when it is condensed:
      * The header's state when it's hidden.
      *
      * @property HEADER_STATE_HIDDEN
-     * @type Number
+     * @type number
      */
     HEADER_STATE_HIDDEN: 1,
 
@@ -320,16 +317,16 @@ To change the background for toolbar when it is condensed:
      * The header's state when it's condensed.
      *
      * @property HEADER_STATE_CONDENSED
-     * @type Number
+     * @type number
      */
-    HEADER_STATE_CONDESED: 2,
+    HEADER_STATE_CONDENSED: 2,
 
     /**
      * The header's state when its progress is somewhere between
      * the `hidden` and `condensed` state.
      *
      * @property HEADER_STATE_INTERPOLATED
-     * @type Number
+     * @type number
      */
     HEADER_STATE_INTERPOLATED: 3,
 
@@ -371,6 +368,10 @@ To change the background for toolbar when it is condensed:
       return this.headerHeight - this.condensedHeaderHeight;
     },
 
+    _y: 0,
+
+    _prevScrollTop: 0,
+
     /**
      * Invoke this to tell `paper-scroll-header-panel` to re-measure the header's
      * height.
@@ -384,9 +385,86 @@ To change the background for toolbar when it is condensed:
       }
     },
 
+    /**
+     * Scroll to a specific y coordinate.
+     *
+     * @method scroll
+     * @param {number} top The coordinate to scroll to, along the y-axis.
+     * @param {boolean} smooth true if the scroll position should be smoothly adjusted.
+     */
+    scroll: function(top, smooth) {
+      // the scroll event will trigger _updateScrollState directly, 
+      // However, _updateScrollState relies on the previous `scrollTop` to update the states.
+      // Calling _updateScrollState will ensure that the states are synced correctly.
+
+      if (smooth) {
+        // TODO(blasten): use CSS scroll-behavior once it ships in Chrome.
+        var easingFn = function easeOutQuad(t, b, c, d) {
+          t /= d;
+          return -c * t*(t-2) + b;
+        };
+        var animationId = Math.random();
+        var duration = 200;
+        var startTime = Date.now();
+        var currentScrollTop = this.scroller.scrollTop;
+        var deltaScrollTop = top - currentScrollTop;
+
+        this._currentAnimationId = animationId;
+
+        (function updateFrame() {
+          var now = Date.now();
+          var elapsedTime = now - startTime;
+
+          if (elapsedTime > duration) {
+            this.scroller.scrollTop = top;
+            this._updateScrollState(top);
+
+          } else if (this._currentAnimationId === animationId) {
+            this.scroller.scrollTop = easingFn(elapsedTime, currentScrollTop, deltaScrollTop, duration);
+            requestAnimationFrame(updateFrame.bind(this));
+          }
+
+        }).call(this);
+
+      } else {
+        this.scroller.scrollTop = top;
+        this._updateScrollState(top);
+      }
+    },
+
+   /**
+     * Condense the header.
+     *
+     * @method condense
+     * @param {boolean} smooth true if the scroll position should be smoothly adjusted.
+     */
+    condense: function(smooth) {
+      if (this.condenses && !this.fixed && !this.noReveal) {
+        switch (this.headerState) {
+          case this.HEADER_STATE_HIDDEN:
+            this.scroll(this.scroller.scrollTop - (this._headerMaxDelta - this._headerMargin), smooth);
+          break;
+          case this.HEADER_STATE_EXPANDED:
+          case this.HEADER_STATE_INTERPOLATED:
+            this.scroll(this._headerMargin, smooth);
+          break;
+        }
+      }
+    },
+
+    /**
+     * Scroll to the top of the content.
+     *
+     * @method scrollToTop
+     * @param {boolean} smooth true if the scroll position should be smoothly adjusted.
+     */
+    scrollToTop: function(smooth) {
+      this.scroll(0, smooth);
+    },
+
     _headerHeightChanged: function(headerHeight) {
       if (this._defaultCondsensedHeaderHeight !== null) {
-        this._defaultCondsensedHeaderHeight = headerHeight * 1/3;
+        this._defaultCondsensedHeaderHeight = Math.round(headerHeight * 1/3);
         this.condensedHeaderHeight = this._defaultCondsensedHeaderHeight;
       }
     },
@@ -402,12 +480,8 @@ To change the background for toolbar when it is condensed:
     },
 
     _condensesChanged: function() {
-      if (this.condenses) {
-        this._scroll();
-      } else {
-        // reset transform/opacity set on the header
-        this._condenseHeader(null);
-      }
+      this._updateScrollState(this.scroller.scrollTop);
+      this._condenseHeader(null);
     },
 
     _setup: function() {
@@ -424,7 +498,7 @@ To change the background for toolbar when it is condensed:
           case this.HEADER_STATE_HIDDEN:
             this._transformHeader(this._headerMaxDelta);
             break;
-          case this.HEADER_STATE_CONDESED:
+          case this.HEADER_STATE_CONDENSED:
             this._transformHeader(this._headerMargin);
             break;
         }
@@ -477,46 +551,44 @@ To change the background for toolbar when it is condensed:
 
     /** @param {Event=} event */
     _scroll: function(event) {
-      if (!this.header) {
-        return;
+      if (this.header) {
+        this._updateScrollState(this.scroller.scrollTop);
+
+        this.fire('content-scroll', {
+          target: this.scroller
+        },
+        {
+          cancelable: false
+        });
       }
+    },
 
-      this._y = this._y || 0;
-      this._prevScrollTop = this._prevScrollTop || 0;
-
-      var sTop = this.scroller.scrollTop;
-
-      var deltaScrollTop = sTop - this._prevScrollTop;
-      var y = Math.max(0, (this.noReveal) ? sTop : this._y + deltaScrollTop);
+    _updateScrollState: function(scrollTop) {
+      var deltaScrollTop = scrollTop - this._prevScrollTop;
+      var y = Math.max(0, (this.noReveal) ? scrollTop : this._y + deltaScrollTop);
 
       if (y > this._headerMaxDelta) {
         y = this._headerMaxDelta;
         this._setHeaderState(this.HEADER_STATE_HIDDEN);
 
-      } else if (this.condenses && this._prevScrollTop >= sTop && sTop > this._headerMargin) {
+      } else if (this.condenses && this._prevScrollTop >= scrollTop && scrollTop >= this._headerMargin) {
         y = Math.max(y, this._headerMargin);
-        this._setHeaderState(this.HEADER_STATE_CONDESED);
+        this._setHeaderState(this.HEADER_STATE_CONDENSED);
 
       } else if (y === 0) {
         this._setHeaderState(this.HEADER_STATE_EXPANDED);
 
       } else {
         this._setHeaderState(this.HEADER_STATE_INTERPOLATED);
-
       }
 
-      if (!event || !this.fixed && y !== this._y) {
+      if (!this.fixed && y !== this._y) {
         this._transformHeader(y);
       }
 
-      this._prevScrollTop = Math.max(sTop, 0);
+      this._prevScrollTop = Math.max(scrollTop, 0);
       this._y = y;
-
-      if (event) {
-        this.fire('content-scroll', {target: this.scroller}, {cancelable: false});
-      }
     }
-
   });
 
 })();
