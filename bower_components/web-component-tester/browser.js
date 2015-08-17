@@ -328,7 +328,7 @@
   }
 
   // ChildRunners get a pretty generous load timeout by default.
-  ChildRunner.loadTimeout = 60000;
+  ChildRunner.loadTimeout = 30000;
 
   // We can't maintain properties on iframe elements in Firefox/Safari/???, so we
   // track childRunners by URL.
@@ -435,8 +435,6 @@
   ChildRunner.prototype.done = function done() {
     util_js.debug('ChildRunner#done', this.url, arguments);
 
-    // make sure to clear that timeout
-    this.ready();
     this.signalRunComplete();
 
     if (!this.iframe) return;
@@ -1352,9 +1350,7 @@
     _reporters.injectMocha(Mocha);
     // Magic loading of mocha's stylesheet
     var mochaPrefix = util_js.scriptPrefix('mocha.js');
-    // only load mocha stylesheet for the test runner output
-    // Not the end of the world, if it doesn't load.
-    if (mochaPrefix && window.top === window.self) {
+    if (mochaPrefix) { // Not the end of the world, if not.
       util_js.loadStyle(mochaPrefix + 'mocha.css');
     }
   }
