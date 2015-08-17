@@ -2,6 +2,7 @@
 <link rel="import" href="../mailchimp-subscribe/mailchimp-subscribe.html">
 
 <dom-module id="footer-block">
+    <template>
     <style>
         :host {
             display: block;
@@ -10,7 +11,7 @@
         }
 
         .container {
-            padding: 16px;
+            padding: 0 16px;
             font-size: 14px;
         }
 
@@ -38,9 +39,6 @@
                 justify-content: flex-end !important;
                 align-self: flex-end !important;
             }
-            .container {
-                padding: 0;
-            }
         }
 
         .footer-backtotop {
@@ -57,7 +55,6 @@
         }
 
         .link-block {
-            margin-top: 0;
             padding: 0;
         }
 
@@ -67,7 +64,7 @@
         }
 
         .link-block-title {
-            margin-bottom: 10px;
+            margin-bottom: 15px;
             font-size: 1.3em;
             font-weight: 300;
         }
@@ -78,14 +75,6 @@
 
         .link-block a:hover {
             text-decoration: underline;
-        }
-
-        .link-block-wrapper {
-            margin-bottom: 30px;
-        }
-
-        .icons-wrapper {
-            margin-top: -5px;
         }
 
         @media (min-width: 768px) {
@@ -103,21 +92,16 @@
             .footer-bottom {
                 padding: 16px 0;
             }
-            .link-block {
-                padding: 0;
-            }
-            .link-block-title {
-                margin-bottom: 15px;
-            }
+        }
+
+        .icons-wrapper {
+            margin-top: -5px;
         }
     </style>
-    <template>
         <div class="line full-width"></div>
         <div class="container footer layout vertical">
             <div class="footer-content layout horizontal justified">
-                <div class="flex">
-                    <g:plusone size="medium" width="300" annotation="inline" href="http://devfest.gdg.org.ua/"></g:plusone>
-                </div>
+                <g:plusone size="medium" width="300" annotation="inline" href="http://devfest.gdg.org.ua/"></g:plusone>
                 <paper-button class="footer-backtotop" on-tap="backToTop">
                     Back to top
                     <iron-icon icon="icons:expand-less"></iron-icon>
@@ -125,7 +109,7 @@
             </div>
             <div class="footer-content footer-links-container">
                 <nav class="layout vertical-horizontal flex">
-                    <div class="flex link-block-wrapper">
+                    <div class="flex">
                         <span class="link-block-title block">For visitors</span>
                         <ul class="link-block">
                             <li><a href="https://developers.google.com/" target="_blank">Google Developers</a></li>
@@ -134,7 +118,7 @@
                         </ul>
                     </div>
 
-                    <div class="flex link-block-wrapper">
+                    <div class="flex">
                         <span class="link-block-title block">For partners</span>
                         <ul class="link-block">
                             <li><a href="/assets/GDG_DevFest_Ukraine_2015_Partnership_Proposition.pdf" target="_blank">Partnership Proposition</a></li>
@@ -142,7 +126,7 @@
                         </ul>
                     </div>
 
-                    <div class="flex link-block-wrapper">
+                    <div class="flex">
                         <span class="link-block-title block">Contact us</span>
                         <ul class="link-block">
                             <li><a href="mailto:devfest@gdg.org.ua">devfest@gdg.org.ua</a></li>
@@ -163,8 +147,8 @@
                         </div>
                     </div>
 
-                    <div class="flex link-block-wrapper">
-                        <span class="link-block-title block">Subscibe</span>
+                    <div class="flex">
+                        <span class="link-block-title block">Subscribe</span>
                         <span>No spam, only the latest news and updates!</span>
                         <mailchimp-subscribe url="{{url}}" name="{{name}}"></mailchimp-subscribe>
                     </div>
