@@ -56,9 +56,3 @@ paper-progress {
   --paper-progress-transition-transition-delay: 0s;
 }
 ```
-
-The following mixins are available for styling:
-
-Custom property | Description | Default
-----------------|-------------|----------
-`--paper-progress-container` | Mixin applied to container | `{}`

@@ -10,16 +10,15 @@
             padding: 16px 0;
         }
 
-        .title {
-            color: var(--default-primary-color);
-            font-size: 42px;
-        }
+            .title {
+                color: var(--default-primary-color);
+                font-size: 42px;
+            }
 
-        .posted {
-            font-size: 14px;
-            color: var(--secondary-text-color);
-        }
-
+            .posted {
+                font-size: 14px;
+                color: var(--secondary-text-color);
+            }
         @media (min-width: 768px) {
             paper-card {
                 width: 80%;
@@ -38,7 +37,9 @@
                     </paper-button>
                     <div class="card-content">
                         <span class="title block">[[meta.title]]</span>
-                        <span class="posted">Posted: <span>[[meta.posted]]</span></span>
+                        <span class="posted">Posted:
+                            <span>[[meta.posted]]</span>
+                        </span>
                     </div>
                     <div class="card-content">
                         <marked-element markdown="[[post]]"></marked-element>

@@ -91,15 +91,11 @@
   }
 
   function focus(target) {
-    Polymer.Base.fire.call(target, 'focus', {}, {
-      bubbles: false
-    });
+    Polymer.Base.fire.call(target, 'focus');
   }
 
   function blur(target) {
-    Polymer.Base.fire.call(target, 'blur', {}, {
-      bubbles: false
-    });
+    Polymer.Base.fire.call(target, 'blur');
   }
 
   function downAndUp(target, callback) {
