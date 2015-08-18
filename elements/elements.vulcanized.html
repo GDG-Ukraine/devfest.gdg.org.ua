@@ -9724,7 +9724,7 @@ To change the panel container in different modes:
         border: 1px solid gray;
       };
 
-      --paper-header-panel-cover-container: {
+      --paper-header-panel-seamed-container: {
         border: 1px solid gray;
       };
 
@@ -9733,6 +9733,14 @@ To change the panel container in different modes:
       };
 
       --paper-header-panel-waterfall-tall-container: {
+        border: 1px solid gray;
+      };
+
+      --paper-header-panel-scroll-container: {
+        border: 1px solid gray;
+      };
+
+      --paper-header-panel-cover-container: {
         border: 1px solid gray;
       };
     }
@@ -20850,21 +20858,16 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 */
 
 :host {
-  @apply(--layout-vertical);
-
-  position: relative;
-  height: 100%;
-}
-
-/**
- * Default paper header panel shadow
- */
-:root {
   --paper-header-panel-shadow: {
     height: 6px;
     bottom: -6px;
     box-shadow: inset 0px 5px 6px -3px rgba(0, 0, 0, 0.4);
   };
+
+  @apply(--layout-vertical);
+
+  position: relative;
+  height: 100%;
 }
 
 #mainContainer {
@@ -25427,7 +25430,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 
   </style>
   <template>
-    <google-maps-api api-key="[[apiKey]]" client-id="[[clientId]]" version="[[version]]" libraries="[[libraries]]" signed-in="[[signedIn]]" language="[[language]]" on-api-load="_mapApiLoaded"></google-maps-api>
+    <google-maps-api id="api" api-key="[[apiKey]]" client-id="[[clientId]]" version="[[version]]" libraries="[[libraries]]" signed-in="[[signedIn]]" language="[[language]]" on-api-load="_mapApiLoaded"></google-maps-api>
 
     <div id="map"></div>
 
@@ -25686,6 +25689,15 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
       additionalMapOptions: {
         type: Object,
         value: function() { return {}; }
+      },
+
+      /**
+       * The markers on the map.
+       */
+      markers: {
+        type: Array,
+        value: function() { return []; },
+        readOnly: true
       }
 
     },
@@ -25702,10 +25714,6 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
       '_debounceUpdateCenter(latitude, longitude)'
     ],
 
-    created: function() {
-      this.markers = [];
-    },
-
     attached: function() {
       this._initGMap();
     },
@@ -25721,7 +25729,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
       if (this.map) {
         return; // already initialized
       }
-      if (!(window.google && window.google.maps)) {
+      if (this.$.api.libraryLoaded !== true) {
         return; // api not loaded
       }
       if (!this.isAttached) {
@@ -25796,7 +25804,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 
       this._observeMarkers();
 
-      this.markers = newMarkers;
+      this.markers = this._setMarkers(newMarkers);
 
       // Set the map on each marker and zoom viewport to ensure they're in view.
       if (this.markers.length && this.map) {
