@@ -109,14 +109,11 @@ Custom property | Description | Default
         }
       },
 
-      attached: function() {
-        var trimmedText = Polymer.dom(this).textContent.trim();
-        if (trimmedText === '') {
+      ready: function() {
+        if (Polymer.dom(this).textContent == '') {
           this.$.checkboxLabel.hidden = true;
-        }
-        // Don't stomp over a user-set aria-label.
-        if (trimmedText !== '' && !this.getAttribute('aria-label')) {
-          this.setAttribute('aria-label', trimmedText);
+        } else {
+          this.setAttribute('aria-label', Polymer.dom(this).textContent);
         }
         this._isReady = true;
       },

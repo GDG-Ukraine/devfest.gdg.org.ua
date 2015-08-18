@@ -65,7 +65,7 @@ The `google-map` element renders a Google Map.
 
   </style>
   <template>
-    <google-maps-api id="api"
+    <google-maps-api
       api-key="[[apiKey]]"
       client-id="[[clientId]]"
       version="[[version]]"
@@ -331,15 +331,6 @@ The `google-map` element renders a Google Map.
       additionalMapOptions: {
         type: Object,
         value: function() { return {}; }
-      },
-
-      /**
-       * The markers on the map.
-       */
-      markers: {
-        type: Array,
-        value: function() { return []; },
-        readOnly: true
       }
 
     },
@@ -356,6 +347,10 @@ The `google-map` element renders a Google Map.
       '_debounceUpdateCenter(latitude, longitude)'
     ],
 
+    created: function() {
+      this.markers = [];
+    },
+
     attached: function() {
       this._initGMap();
     },
@@ -371,7 +366,7 @@ The `google-map` element renders a Google Map.
       if (this.map) {
         return; // already initialized
       }
-      if (this.$.api.libraryLoaded !== true) {
+      if (!(window.google && window.google.maps)) {
         return; // api not loaded
       }
       if (!this.isAttached) {
@@ -446,7 +441,7 @@ The `google-map` element renders a Google Map.
 
       this._observeMarkers();
 
-      this.markers = this._setMarkers(newMarkers);
+      this.markers = newMarkers;
 
       // Set the map on each marker and zoom viewport to ensure they're in view.
       if (this.markers.length && this.map) {
