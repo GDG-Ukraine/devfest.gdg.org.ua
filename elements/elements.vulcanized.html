@@ -19363,37 +19363,62 @@ module.exports = Array.isArray || function (arr) {
 
 },{}]},{},[1])(1)
 });</script>
-<script>
+<script>  
+  function trackPageview(path) { // jshint ignore:line
+      /* jshint ignore:start */ 
+      ga('set', 'page', path);
+      ga('send', 'pageview');
+      /* jshint ignore:end */
+  }
+
   window.addEventListener('WebComponentsReady', function() {
 
     // We use Page.js for routing. This is a Micro
     // client-side router inspired by the Express router
     // More info: https://visionmedia.github.io/page.js/
     page('/', function () {
+      trackPageview('/');
       app.route = 'home';
     });
 
+    page('/#!/#pricetable', function() {
+        trackPageview('/#pricetable');
+        app.route = 'home';
+        var pricetable = document.querySelector('#pricetable');
+        app.smoothScroll(pricetable, 0);
+    });
+
     page('/blog', function () {
+      trackPageview('/blog');
       app.route = 'blog';
     });
 
     page('/blog/:title', function (data) {
+      trackPageview('/blog/' + data.params.title);
       app.route = 'blog';
       app.params = data.params;
     });
 
     page('/speakers', function () {
+      trackPageview('/speakers');
       app.route = 'speakers';
     });
 
     page('/speakers/:id', function (data) {
+      trackPageview('/speakers/' + data.params.id);
       app.route = 'speakers';
       app.params = data.params;
     });
 
 
     page('/contact', function () {
+      trackPageview('/contact');
       app.route = 'contact';
+    });
+
+    page('/code-of-conduct', function () {
+      trackPageview('/code-of-conduct');
+      app.route = 'code-of-conduct';
     });
 
     // add #! before urls
@@ -19402,6 +19427,7 @@ module.exports = Array.isArray || function (arr) {
     });
 
   });
+
 </script>
 </head><body><div hidden="" by-vulcanize=""><dom-module id="iron-icon" assetpath="../bower_components/iron-icon/">
 
@@ -27560,7 +27586,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
                     </div>
                 </div>
             </template>
-            <a href="/assets/GDG_DevFest_Ukraine_2015_Partnership_Proposition.pdf" class="block-link" target="_blank">
+            <a href="/assets/GDG_DevFest_Ukraine_2015_Partnership_Proposition.pdf" class="block-link" target="_blank" onclick="ga('send', 'become-a-partner', 'button', 'click');">
                 <paper-button class="colorful" raised="">Become a partner</paper-button>
             </a>
         </div>
@@ -27640,6 +27666,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
                     name: String
                 },
                 submitForm: function() {
+                    ga('send', 'mailchimp-subscribe', 'button', 'click'); // jshint ignore:line
                     document.getElementById('mc-embedded-subscribe-form').submit();
                 }
             });
@@ -27777,6 +27804,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
                             <li><a href="https://developers.google.com/" target="_blank">Google Developers</a></li>
                             <li><a href="http://gdg-devfest-ua.appspot.com/" target="_blank">GDG DevFest Ukraine 2013</a></li>
                             <li><a href="/2014">GDG DevFest Ukraine 2014</a></li>
+                            <li><a href="/code-of-conduct">Code of Conduct</a></li>
                         </ul>
                     </div>
                     <div class="flex link-block-wrapper">
@@ -28075,6 +28103,8 @@ Polymer({
     Polymer({
         is: 'call-to-action',
         playVideo: function() {
+            ga('send', 'play-2014-video', 'button', 'click'); // jshint ignore:line
+
             this.$.videoDialog.open();
             this.$.video.play();
         },
@@ -29638,8 +29668,109 @@ Polymer({
     Polymer({
         is: 'tickets-block',
         openTicketsDialog: function() {
+            ga('send', 'buy-a-ticket', 'button', 'click'); // jshint ignore:line
             this.$.ticketsDialog.open();
         }
     });
+</script>
+<dom-module id="cod-block" assetpath="cod-block/">
+    <template>
+        <style>
+            :host {
+                display: none;
+                position: absolute;
+            }
+
+            .paper-card-container {
+                padding: 16px 0;
+            }
+
+            .title {
+                color: var(--default-primary-color);
+                font-size: 42px;
+            }
+
+            .posted {
+                font-size: 14px;
+                color: var(--secondary-text-color);
+            }
+    
+            @media (min-width: 768px) {
+                paper-card {
+                    width: 80%;
+                }
+                .paper-card-container {
+                    padding: 50px 40px;
+                }
+            }
+        </style>
+        <iron-ajax id="ajax" url="[[postUrl]]" handle-as="text" on-response="postLoaded"></iron-ajax>
+        <div class="relative layout horizontal center-justified">
+            <paper-card>
+                <div class="paper-card-container">
+                    <!-- <div class="card-content">
+                        <span class="title block">Or don't be a jerk policy</span>
+                    </div> -->
+                    <div class="card-content">
+                        <marked-element markdown="[[post]]"></marked-element>
+                    </div>
+                </div>
+            </paper-card>
+        </div>
+    </template>
+</dom-module>
+<script>
+Polymer({
+    is: 'cod-block',
+    behaviors: [
+        Polymer.NeonSharedElementAnimatableBehavior
+    ],
+    properties: {
+        source: {
+            type: String,
+            observer: '_sourceChanged'
+        },
+        animationConfig: {
+            value: function() {
+                return {
+                    'entry': {
+                        name: 'transform-animation',
+                        node: this,
+                        transformFrom: 'translateY(100vh)',
+                        transformTo: 'none',
+                        timing: {
+                            duration: 1000
+                        }
+                    },
+                    'exit': {
+                        name: 'transform-animation',
+                        node: this,
+                        transformFrom: 'none',
+                        transformTo: 'translateY(100vh)',
+                        timing: {
+                            duration: 1000
+                        }
+                    }
+                };
+            }
+        },
+        closing: {
+            type: Boolean,
+            notify: true
+        }
+    },
+    _sourceChanged: function() {
+        this.postUrl = this.source;
+        this.style.display = 'block';
+        this.$.ajax.generateRequest();
+    },
+    postLoaded: function(event, response) {
+        this.post = response.response;
+        this.style.position = 'relative';
+    },
+    closePost: function() {
+        this.closing = true;
+    }
+});
 </script>
 </div></body></html>
