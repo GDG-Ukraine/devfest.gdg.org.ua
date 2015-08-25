@@ -15020,6 +15020,9 @@ Custom property | Description | Default
 ----------------|-------------|----------
 `--paper-card-header-color` | The color of the header text | `#000`
 `--paper-card-header` | Mixin applied to the card header section | `{}`
+`--paper-card-header-text` | Mixin applied to the title in the card header section | `{}`
+`--paper-card-header-image` | Mixin applied to the image in the card header section | `{}`
+`--paper-card-header-image-text` | Mixin applied to the text overlapping the image in the card header section | `{}`
 `--paper-card-content` | Mixin applied to the card content section| `{}`
 `--paper-card-actions` | Mixin applied to the card action section | `{}`
 `--paper-card` | Mixin applied to the card | `{}`
@@ -17890,6 +17893,63 @@ Configuration:
 
     properties: {
       /**
+       * Used to configure `<platinum-sw-precache>` behavior via a JSON file instead of via
+       * attributes. This can come in handy when the configuration (e.g. which files to precache)
+       * depends on the results of a build script.
+       *
+       * If configuration for the same properties are provided in both the JSON file and via the
+       * element's attributes, then in general the JSON file's values take precedence. The one
+       * exception is the `precache` property. Any values in the element's `precache` attribute will
+       * be concatenated with the values in the JSON file's `precache` property and the set of files
+       * that are precached will be the union of the two.
+       *
+       * There's one additional option, `precacheFingerprint`, that can be set in the JSON. If using
+       * a build script that might output a large number of files to precache, its recommended
+       * that your build script generate a unique "fingerprint" of the files. Any changes to the
+       * `precacheFingerprint` value will result in the underlying service worker kicking off the
+       * process of caching the files listed in `precache`.
+       * While there are a few different strategies for generating an appropriate
+       * `precacheFingerprint` value, a process that makes sense is to use a stable hash of the
+       * serialized `precache` array. That way, any changes to the list of files in `precache`
+       * will result in a new `precacheFingerprint` value.
+       * If your build script is Node.js based, one way to generate this hash is:
+       *
+       *     var md5 = require('crypto').createHash('md5');
+       *     md5.update(JSON.stringify(precache));
+       *     var precacheFingerprint = md5.digest('hex');
+       *
+       * Alternatively, you could use something like the
+       * [SHA-1 signature](http://stackoverflow.com/questions/1161869/how-to-get-sha-of-the-latest-commit-from-remote-git-repository)
+       * of your latest `git` commit for the `precacheFingerprint` value.
+       *
+       * An example file may look like:
+       *
+       *     {
+       *       "cacheId": "my-cache-id",
+       *       "defaultCacheStrategy": "fastest",
+       *       "disabled": false,
+       *       "precache": ["file1.html", "file2.css"],
+       *       "precacheFingerprint": "FINGERPRINT_OF_FILES_IN_PRECACHE"
+       *     }
+       */
+      cacheConfigFile: String,
+
+      /**
+       * An id used to construct the name for the
+       * [Cache](https://slightlyoff.github.io/ServiceWorker/spec/service_worker/#cache)
+       * in which all the resources will be stored.
+       *
+       * If nothing is provided, the default value set in
+       * [`toolbox.options.cacheName`](https://github.com/GoogleChrome/sw-toolbox/blob/8763dcc9fbc9352d58f184050e2131c42f7b6d68/lib/options.js#L28)
+       * will be used.
+       *
+       * The `cacheId` is combined with the service worker's scope to construct the cache name, so
+       * two `<platinum-sw-cache>` elements that are associated with different scopes will use
+       * different caches.
+       */
+      cacheId: String,
+
+      /**
        * The caching strategy used for all requests, both for local and cross-origin resources.
        *
        * For a list of strategies, see the [`sw-toolbox` documentation](https://github.com/GoogleChrome/sw-toolbox#built-in-handlers).
@@ -17908,6 +17968,15 @@ Configuration:
       },
 
       /**
+       * If set to true, this element will not set up service worker caching. This is useful to
+       * conditionally enable or disable caching depending on the build environment.
+       */
+      disabled: {
+        type: Boolean,
+        value: false
+      },
+
+      /**
        * Used to provide a list of URLs that are always precached as soon as the service worker is
        * installed. Corresponds to  [`sw-toolbox`'s `precache()` method](https://github.com/GoogleChrome/sw-toolbox#toolboxprecachearrayofurls).
        *
@@ -17915,7 +17984,7 @@ Configuration:
        * i.e. a list of resources that are needed by one of the subpages of your site, or a list of
        * resources that are only loaded via user interaction.
        *
-       * `precache` can be used in conjunction with `precacheFile`, and the two arrays will be
+       * `precache` can be used in conjunction with `cacheConfigFile`, and the two arrays will be
        * concatenated.
        *
        * @see {@link https://github.com/GoogleChrome/sw-toolbox#toolboxprecachearrayofurls}
@@ -17923,23 +17992,7 @@ Configuration:
       precache: {
         type: Array,
         value: function() { return []; }
-      },
-
-      /**
-       * Used to provide a list of URLs that are always precached as soon as the service worker is
-       * installed. Corresponds to  [`sw-toolbox`'s `precache()` method](https://github.com/GoogleChrome/sw-toolbox#toolboxprecachearrayofurls).
-       *
-       * While the `precache` option supports provided the array of URLs in as an inline attribute,
-       * this option supports providing them as an array in JSON file, which is fetched at runtime.
-       * This is useful if the array is generated via a separate build step, as it's easier to
-       * write that output to a file then it is to modify inline HTML content.
-       *
-       * `precacheFile` can be used in conjunction with `precache`, and the two arrays will be
-       * concatenated.
-       *
-       * @see {@link https://github.com/GoogleChrome/sw-toolbox#toolboxprecachearrayofurls}
-       */
-      precacheFile: String
+      }
     },
 
     _getParameters: function(baseURI) {
@@ -17950,15 +18003,36 @@ Configuration:
           precache: this.precache
         };
 
-        if (this.precacheFile) {
-          window.fetch(this.precacheFile).then(function(response) {
+        if (this.cacheConfigFile) {
+          params.cacheConfigFile = this.cacheConfigFile;
+          window.fetch(this.cacheConfigFile).then(function(response) {
             if (!response.ok) {
-              throw Error('unable to load ' + this.precacheFile);
+              throw Error('unable to load ' + this.cacheConfigFile);
             }
             return response.json();
-          }.bind(this)).then(function(files) {
-            params.precache = params.precache.concat(files);
-          }).catch(function(error) {
+          }.bind(this)).then(function(config) {
+            this.disabled = config.disabled;
+            if (this.disabled) {
+              // Use an empty set of parameters to effectively disable caching.
+              params = {};
+            } else {
+              // If there's a hash of the list of files to precache provided in the config file,
+              // then copy that over to the params that will be used to construct the service worker
+              // URL. This works around the issue where a potentially large number of precache
+              // files could result in a longer URL than a browser will allow.
+              // The actual list of files to precache (in config.precache) will be dealt by the
+              // service worker during the install phase, so we can ignore it here.
+              // See https://github.com/PolymerElements/platinum-sw/issues/53
+              if (config.precacheFingerprint) {
+                params.precacheFingerprint = config.precacheFingerprint;
+              } else {
+                params.precache = params.precache.concat(config.precache);
+              }
+              params.cacheId = config.cacheId || params.cacheId;
+              params.defaultCacheStrategy = config.defaultCacheStrategy ||
+                params.defaultCacheStrategy;
+            }
+          }.bind(this)).catch(function(error) {
             console.info('Skipping precaching: ' + error.message);
           }).then(function() {
             resolve(params);
@@ -17971,336 +18045,352 @@ Configuration:
   });
 </script>
 <script>
-  (function() {
-    // Grab the URI of this file to use as a base when resolving relative paths.
-    // Fallback to './' as a default, though current browsers that don't support
-    // document.currentScript also don't support service workers.
-    var baseURI = document.currentScript ? document.currentScript.baseURI : './';
+  /**
+   * The `<platinum-sw-register>` element handles
+   * [service worker](http://www.html5rocks.com/en/tutorials/service-worker/introduction/)
+   * registration, reflects the overall service worker state, and coordinates the configuration
+   * provided by other Service Worker Elements.
+   * `<platinum-sw-register>` is used as a parent element for child elements in the
+   * `<platinum-sw-*>` group.
+   *
+   *     <platinum-sw-register skip-waiting
+   *                           clients-claim
+   *                           auto-register
+   *                           state="{{state}}"
+   *                           on-service-worker-error="handleSWError"
+   *                           on-service-worker-updated="handleSWUpdated"
+   *                           on-service-worker-installed="handleSWInstalled">
+   *       ...one or more <platinum-sw-*> children which share the service worker registration...
+   *     </platinum-sw-register>
+   *
+   * Please see https://github.com/PolymerElements/platinum-sw#top-level-sw-importjs for a
+   * *crucial* prerequisite file you must create before `<platinum-sw-register>` can be used!
+   *
+   * @demo demo/index.html An offline-capable eReader demo.
+   */
+  Polymer({
+    is: 'platinum-sw-register',
+
+    // Used as an "emergency" switch if we make breaking changes in the way <platinum-sw-register>
+    // talks to service-worker.js. Otherwise, it shouldn't need to change, and isn't meant to be
+    // kept in sync with the element's release number.
+    _version: '1.0',
 
     /**
-     * The `<platinum-sw-register>` element handles
-     * [service worker](http://www.html5rocks.com/en/tutorials/service-worker/introduction/)
-     * registration, reflects the overall service worker state, and coordinates the configuration
-     * provided by other Service Worker Elements.
-     * `<platinum-sw-register>` is used as a parent element for child elements in the
-     * `<platinum-sw-*>` group.
+     * Fired when the initial service worker installation completes successfully.
+     * The service worker will normally only be installed once, the first time a page with a
+     * `<platinum-sw-register>` element is visited in a given browser. If the same page is visited
+     * again, the existing service worker will be reused, and there won't be another
+     * `service-worker-installed` fired.
      *
-     *     <platinum-sw-register skip-waiting
-     *                           clients-claim
-     *                           auto-register
-     *                           state="{{state}}"
-     *                           on-service-worker-error="handleSWError"
-     *                           on-service-worker-updated="handleSWUpdated"
-     *                           on-service-worker-installed="handleSWInstalled">
-     *       ...one or more <platinum-sw-*> children which share the service worker registration...
-     *     </platinum-sw-register>
-     *
-     * Please see https://github.com/PolymerElements/platinum-sw#top-level-sw-importjs for a
-     * *crucial* prerequisite file you must create before `<platinum-sw-register>` can be used!
-     *
-     * @demo demo/index.html An offline-capable eReader demo.
+     * @event service-worker-installed
+     * @param {String} A message indicating that the installation succeeded.
      */
-    Polymer({
-      is: 'platinum-sw-register',
 
-      // Used as an "emergency" switch if we make breaking changes in the way <platinum-sw-register>
-      // talks to service-worker.js. Otherwise, it shouldn't need to change, and isn't meant to be
-      // kept in sync with the element's release number.
-      _version: '1.0',
+    /**
+     * Fired when the service worker update flow completes successfully.
+     * If you make changes to your `<platinum-sw-register>` configuration (i.e. by adding in new
+     * `<platinum-sw-*>` child elements, or changing their attributes), users who had the old
+     * service worker installed will get the update installed when they see the modified elements.
+     *
+     * @event service-worker-updated
+     * @param {String} A message indicating that the update succeeded.
+     */
 
+    /**
+     * Fired when an error prevents the service worker installation from completing.
+     *
+     * @event service-worker-error
+     * @param {String} A message indicating what went wrong.
+     */
+
+    properties: {
       /**
-       * Fired when the initial service worker installation completes successfully.
-       * The service worker will normally only be installed once, the first time a page with a
-       * `<platinum-sw-register>` element is visited in a given browser. If the same page is visited
-       * again, the existing service worker will be reused, and there won't be another
-       * `service-worker-installed` fired.
+       * Whether this element should automatically register the corresponding service worker as
+       * soon as its added to a page.
        *
-       * @event service-worker-installed
-       * @param {String} A message indicating that the installation succeeded.
-       */
-
-      /**
-       * Fired when the service worker update flow completes successfully.
-       * If you make changes to your `<platinum-sw-register>` configuration (i.e. by adding in new
-       * `<platinum-sw-*>` child elements, or changing their attributes), users who had the old
-       * service worker installed will get the update installed when they see the modified elements.
+       * If set to `false`, then the service worker won't be automatically registered, and you
+       * must call this element's `register()` method if you want service worker functionality.
+       * This is useful if, for example, the service worker needs to be configured using
+       * information that isn't immediately available at the time the page loads.
        *
-       * @event service-worker-updated
-       * @param {String} A message indicating that the update succeeded.
+       * If set to `true`, the service worker will be automatically registered without having to
+       * call any methods.
        */
-
-      /**
-       * Fired when an error prevents the service worker installation from completing.
-       *
-       * @event service-worker-error
-       * @param {String} A message indicating what went wrong.
-       */
-
-      properties: {
-        /**
-         * Whether this element should automatically register the corresponding service worker as
-         * soon as its added to a page.
-         *
-         * If set to `false`, then the service worker won't be automatically registered, and you
-         * must call this element's `register()` method if you want service worker functionality.
-         * This is useful if, for example, the service worker needs to be configured using
-         * information that isn't immediately available at the time the page loads.
-         *
-         * If set to `true`, the service worker will be automatically registered without having to
-         * call any methods.
-         */
-        autoRegister: {
-          type: Boolean,
-          value: false
-        },
-
-        /**
-         * Whether the activated service worker should [take immediate control](https://slightlyoff.github.io/ServiceWorker/spec/service_worker/#clients-claim-method)
-         * of any pages under its scope.
-         *
-         * If this is `false`, the service worker won't have any effect until the next time the page
-         * is visited/reloaded.
-         * If this is `true`, it will take control and start handling events for the current page
-         * (and any pages under the same scope open in other tabs/windows) as soon it's active.
-         * @see {@link https://slightlyoff.github.io/ServiceWorker/spec/service_worker/#clients-claim-method}
-         */
-        clientsClaim: {
-          type: Boolean,
-          value: false
-        },
-
-        /**
-         * The service worker script that is [registered](https://slightlyoff.github.io/ServiceWorker/spec/service_worker/#navigator-service-worker-register).
-         * The script *should* be located at the top level of your site, to ensure that it is able
-         * to control all the pages on your site.
-         *
-         * It's *strongly* recommended that you create a top-level file named `sw-import.js`
-         * containing only:
-         *
-         * `importScripts('bower_components/platinum-sw/service-worker.js');`
-         *
-         * (adjust to match the path where your `platinum-sw` element directory can be found).
-         *
-         * This will ensure that your service worker script contains everything needed to play
-         * nicely with the Service Worker Elements group.
-         *
-         * @see {@link https://slightlyoff.github.io/ServiceWorker/spec/service_worker/#navigator-service-worker-register}
-         */
-        href: {
-          type: String,
-          value: 'sw-import.js'
-        },
-
-        /**
-         * Whether the page should be automatically reloaded (via `window.location.reload()`) when
-         * the service worker is successfully installed.
-         *
-         * While it's perfectly valid to continue using a page with a freshly installed service
-         * worker, it's a common pattern to want to reload it immediately following the install.
-         * This ensures that, for example, if you're using a `<platinum-sw-cache>` with an on the
-         * fly caching strategy, it will get a chance to intercept all the requests needed to render
-         * your page and store them in the cache.
-         *
-         * If you don't immediately reload your page, then any resources that were loaded before the
-         * service worker was installed (e.g. this `platinum-sw-register.html` file) won't be present
-         * in the cache until the next time the page is loaded.
-         *
-         * Note that this reload will only happen when a service worker is installed for the first
-         * time. If the service worker is subsequently updated, it won't trigger another reload.
-         */
-        reloadOnInstall: {
-          type: Boolean,
-          value: false
-        },
-
-        /**
-         * The scope of the service worker, relative to the registered service worker script.
-         * All pages that fall under this scope will be controlled by the registered service worker.
-         *
-         * Normally, this would not need to be changed, unless you want the service worker to only
-         * apply to a subset of your site.
-         *
-         * @see {@link https://slightlyoff.github.io/ServiceWorker/spec/service_worker/#navigator-service-worker-register}
-         */
-        scope: {
-          type: String,
-          value: './'
-        },
-
-        /**
-         * Whether an updated service worker should [bypass the `waiting` state](https://slightlyoff.github.io/ServiceWorker/spec/service_worker/#service-worker-global-scope-skipwaiting)
-         * and immediately become `active`.
-         *
-         * Normally, during an update, the new service worker stays in the
-         * `waiting` state until the current page and any other tabs/windows that are using the old
-         * service worker are unloaded.
-         *
-         * If this is `false`, an updated service worker won't be activated until all instances of
-         * the old server worker have been unloaded.
-         *
-         * If this is `true`, an updated service worker will become `active` immediately.
-         * @see {@link https://slightlyoff.github.io/ServiceWorker/spec/service_worker/#service-worker-global-scope-skipwaiting}
-         */
-        skipWaiting: {
-          type: Boolean,
-          value: false
-        },
-
-        /**
-         * The current state of the service worker registered by this element.
-         *
-         * One of:
-         * - 'installed'
-         * - 'updated'
-         * - 'error'
-         * - 'unsupported'
-         */
-        state: {
-          notify: true,
-          readOnly: true,
-          type: String
-        }
+      autoRegister: {
+        type: Boolean,
+        value: false
       },
 
       /**
-       * Registers the service worker based on the configuration options in this element and any
-       * child elements.
+       * The URI used as a base when constructing relative paths to service worker helper libraries
+       * that need to be loaded.
        *
-       * If you set the `autoRegister` property to `true`, then this method is called automatically
-       * at page load.
-       * It can be useful to set `autoRegister` to `false` and then explicitly call this method if
-       * there are options that are only configured after the page is loaded.
+       * This can normally be kept set to the default, which will use the directory containing this
+       * element as the base. However, if you [Vulcanize](https://github.com/polymer/vulcanize) your
+       * elements, then the default base might not be appropriate anymore. This will allow you to
+       * override it.
+       *
+       * See https://github.com/PolymerElements/platinum-sw#relative-paths--vulcanization for more
+       * information.
        */
-      register: function() {
-        if ('serviceWorker' in navigator) {
-          this._constructServiceWorkerUrl().then(function(serviceWorkerUrl) {
-            this._registerServiceWorker(serviceWorkerUrl);
-          }.bind(this));
-        } else {
-          this._setState('unsupported');
-          this.fire('service-worker-error', 'Service workers are not available in the current browser.');
-        }
+      baseUri: {
+        type: String,
+        // Grab the URI of this file to use as a base when resolving relative paths.
+        // Fallback to './' as a default, though current browsers that don't support
+        // document.currentScript also don't support service workers.
+        value: document.currentScript ? document.currentScript.baseURI : './'
       },
 
-      _constructServiceWorkerUrl: function() {
-        var paramsPromises = [];
-        var children = Polymer.dom(this).children;
-        for (var i = 0; i < children.length; i++) {
-          if (typeof children[i]._getParameters === 'function') {
-            paramsPromises.push(children[i]._getParameters(baseURI));
-          }
-        }
+      /**
+       * Whether the activated service worker should [take immediate control](https://slightlyoff.github.io/ServiceWorker/spec/service_worker/#clients-claim-method)
+       * of any pages under its scope.
+       *
+       * If this is `false`, the service worker won't have any effect until the next time the page
+       * is visited/reloaded.
+       * If this is `true`, it will take control and start handling events for the current page
+       * (and any pages under the same scope open in other tabs/windows) as soon it's active.
+       * @see {@link https://slightlyoff.github.io/ServiceWorker/spec/service_worker/#clients-claim-method}
+       */
+      clientsClaim: {
+        type: Boolean,
+        value: false
+      },
 
-        return Promise.all(paramsPromises).then(function(paramsResolutions) {
-          var params = {
-            baseURI: baseURI,
-            version: this._version
-          };
+      /**
+       * The service worker script that is [registered](https://slightlyoff.github.io/ServiceWorker/spec/service_worker/#navigator-service-worker-register).
+       * The script *should* be located at the top level of your site, to ensure that it is able
+       * to control all the pages on your site.
+       *
+       * It's *strongly* recommended that you create a top-level file named `sw-import.js`
+       * containing only:
+       *
+       * `importScripts('bower_components/platinum-sw/service-worker.js');`
+       *
+       * (adjust to match the path where your `platinum-sw` element directory can be found).
+       *
+       * This will ensure that your service worker script contains everything needed to play
+       * nicely with the Service Worker Elements group.
+       *
+       * @see {@link https://slightlyoff.github.io/ServiceWorker/spec/service_worker/#navigator-service-worker-register}
+       */
+      href: {
+        type: String,
+        value: 'sw-import.js'
+      },
 
-          paramsResolutions.forEach(function(childParams) {
-            Object.keys(childParams).forEach(function(key) {
-              if (Array.isArray(params[key])) {
-                params[key].push(childParams[key]);
-              } else {
-                params[key] = [childParams[key]];
-              }
-            });
-          });
+      /**
+       * Whether the page should be automatically reloaded (via `window.location.reload()`) when
+       * the service worker is successfully installed.
+       *
+       * While it's perfectly valid to continue using a page with a freshly installed service
+       * worker, it's a common pattern to want to reload it immediately following the install.
+       * This ensures that, for example, if you're using a `<platinum-sw-cache>` with an on the
+       * fly caching strategy, it will get a chance to intercept all the requests needed to render
+       * your page and store them in the cache.
+       *
+       * If you don't immediately reload your page, then any resources that were loaded before the
+       * service worker was installed (e.g. this `platinum-sw-register.html` file) won't be present
+       * in the cache until the next time the page is loaded.
+       *
+       * Note that this reload will only happen when a service worker is installed for the first
+       * time. If the service worker is subsequently updated, it won't trigger another reload.
+       */
+      reloadOnInstall: {
+        type: Boolean,
+        value: false
+      },
 
-          return params;
-        }.bind(this)).then(function(params) {
-          if (params.importscriptLate) {
-            if (params.importscript) {
-              params.importscript = params.importscript.concat(params.importscriptLate);
-            } else {
-              params.importscript = params.importscriptLate;
-            }
-          }
+      /**
+       * The scope of the service worker, relative to the registered service worker script.
+       * All pages that fall under this scope will be controlled by the registered service worker.
+       *
+       * Normally, this would not need to be changed, unless you want the service worker to only
+       * apply to a subset of your site.
+       *
+       * @see {@link https://slightlyoff.github.io/ServiceWorker/spec/service_worker/#navigator-service-worker-register}
+       */
+      scope: {
+        type: String,
+        value: './'
+      },
 
-          if (params.importscript) {
-            params.importscript = this._unique(params.importscript);
-          }
+      /**
+       * Whether an updated service worker should [bypass the `waiting` state](https://slightlyoff.github.io/ServiceWorker/spec/service_worker/#service-worker-global-scope-skipwaiting)
+       * and immediately become `active`.
+       *
+       * Normally, during an update, the new service worker stays in the
+       * `waiting` state until the current page and any other tabs/windows that are using the old
+       * service worker are unloaded.
+       *
+       * If this is `false`, an updated service worker won't be activated until all instances of
+       * the old server worker have been unloaded.
+       *
+       * If this is `true`, an updated service worker will become `active` immediately.
+       * @see {@link https://slightlyoff.github.io/ServiceWorker/spec/service_worker/#service-worker-global-scope-skipwaiting}
+       */
+      skipWaiting: {
+        type: Boolean,
+        value: false
+      },
 
-          params.clientsClaim = this.clientsClaim;
-          params.skipWaiting = this.skipWaiting;
+      /**
+       * The current state of the service worker registered by this element.
+       *
+       * One of:
+       * - 'installed'
+       * - 'updated'
+       * - 'error'
+       * - 'unsupported'
+       */
+      state: {
+        notify: true,
+        readOnly: true,
+        type: String
+      }
+    },
 
-          var serviceWorkerUrl = new URL(this.href, window.location);
-          // It's very important to ensure that the serialization is stable.
-          // Serializing the same settings should always produce the same URL.
-          // Serializing different settings should always produce a different URL.
-          // This ensures that the service worker upgrade flow is triggered when settings change.
-          serviceWorkerUrl.search = this._serializeUrlParams(params);
-
-          return serviceWorkerUrl;
+    /**
+     * Registers the service worker based on the configuration options in this element and any
+     * child elements.
+     *
+     * If you set the `autoRegister` property to `true`, then this method is called automatically
+     * at page load.
+     * It can be useful to set `autoRegister` to `false` and then explicitly call this method if
+     * there are options that are only configured after the page is loaded.
+     */
+    register: function() {
+      if ('serviceWorker' in navigator) {
+        this._constructServiceWorkerUrl().then(function(serviceWorkerUrl) {
+          this._registerServiceWorker(serviceWorkerUrl);
         }.bind(this));
-      },
+      } else {
+        this._setState('unsupported');
+        this.fire('service-worker-error', 'Service workers are not available in the current browser.');
+      }
+    },
 
-      _unique: function(arr) {
-        return arr.filter(function(item, index) {
-          return arr.indexOf(item) === index;
-        });
-      },
-
-      _serializeUrlParams: function(params) {
-        return Object.keys(params).sort().map(function(key) {
-          // encodeURIComponent(['a', 'b']) => 'a%2Cb',
-          // so this will still work when the values are Arrays.
-          // TODO: It won't work if the values in the Arrays have ',' characters in them.
-          return encodeURIComponent(key) + "=" + encodeURIComponent(params[key]);
-        }).join('&');
-      },
-
-      _registerServiceWorker: function(serviceWorkerUrl) {
-        navigator.serviceWorker.register(serviceWorkerUrl, {scope: this.scope}).then(function(registration) {
-          if (registration.active) {
-            this._setState('installed');
-          }
-
-          registration.onupdatefound = function() {
-            var installingWorker = registration.installing;
-            installingWorker.onstatechange = function() {
-              switch (installingWorker.state) {
-                case 'installed':
-                  if (navigator.serviceWorker.controller) {
-                    this._setState('updated');
-                    this.fire('service-worker-updated',
-                      'A new service worker was installed, replacing the old service worker.');
-                  } else {
-                    if (this.reloadOnInstall) {
-                      window.location.reload();
-                    } else {
-                      this._setState('installed');
-                      this.fire('service-worker-installed', 'A new service worker was installed.');
-                    }
-                  }
-                break;
-
-                case 'redundant':
-                  this._setState('error');
-                  this.fire('service-worker-error', 'The installing service worker became redundant.');
-                break;
-              }
-            }.bind(this);
-          }.bind(this);
-        }.bind(this)).catch(function(error) {
-          this._setState('error');
-          this.fire('service-worker-error', error.toString());
-          if (error.name === 'NetworkError') {
-            var location = serviceWorkerUrl.origin + serviceWorkerUrl.pathname;
-            console.error('A valid service worker script was not found at ' + location + '\n' +
-              'To learn how to fix this, please see\n' +
-              'https://github.com/PolymerElements/platinum-sw#top-level-sw-importjs');
-          }
-        }.bind(this));
-      },
-
-      attached: function() {
-        if (this.autoRegister) {
-          this.async(this.register);
+    _constructServiceWorkerUrl: function() {
+      var paramsPromises = [];
+      var children = Polymer.dom(this).children;
+      for (var i = 0; i < children.length; i++) {
+        if (typeof children[i]._getParameters === 'function') {
+          paramsPromises.push(children[i]._getParameters(this.baseUri));
         }
       }
-    });
-  })();
+
+      return Promise.all(paramsPromises).then(function(paramsResolutions) {
+        var params = {
+          baseURI: this.baseUri,
+          version: this._version
+        };
+
+        paramsResolutions.forEach(function(childParams) {
+          Object.keys(childParams).forEach(function(key) {
+            if (Array.isArray(params[key])) {
+              params[key] = params[key].concat(childParams[key]);
+            } else {
+              params[key] = [].concat(childParams[key]);
+            }
+          });
+        });
+
+        return params;
+      }.bind(this)).then(function(params) {
+        if (params.importscriptLate) {
+          if (params.importscript) {
+            params.importscript = params.importscript.concat(params.importscriptLate);
+          } else {
+            params.importscript = params.importscriptLate;
+          }
+        }
+
+        if (params.importscript) {
+          params.importscript = this._unique(params.importscript);
+        }
+
+        // We've already concatenated importscriptLate, so don't include it in the serialized URL.
+        delete params.importscriptLate;
+
+        params.clientsClaim = this.clientsClaim;
+        params.skipWaiting = this.skipWaiting;
+
+        var serviceWorkerUrl = new URL(this.href, window.location);
+        // It's very important to ensure that the serialization is stable.
+        // Serializing the same settings should always produce the same URL.
+        // Serializing different settings should always produce a different URL.
+        // This ensures that the service worker upgrade flow is triggered when settings change.
+        serviceWorkerUrl.search = this._serializeUrlParams(params);
+
+        return serviceWorkerUrl;
+      }.bind(this));
+    },
+
+    _unique: function(arr) {
+      return arr.filter(function(item, index) {
+        return arr.indexOf(item) === index;
+      });
+    },
+
+    _serializeUrlParams: function(params) {
+      return Object.keys(params).sort().map(function(key) {
+        // encodeURIComponent(['a', 'b']) => 'a%2Cb',
+        // so this will still work when the values are Arrays.
+        // TODO: It won't work if the values in the Arrays have ',' characters in them.
+        return encodeURIComponent(key) + "=" + encodeURIComponent(params[key]);
+      }).join('&');
+    },
+
+    _registerServiceWorker: function(serviceWorkerUrl) {
+      navigator.serviceWorker.register(serviceWorkerUrl, {scope: this.scope}).then(function(registration) {
+        if (registration.active) {
+          this._setState('installed');
+        }
+
+        registration.onupdatefound = function() {
+          var installingWorker = registration.installing;
+          installingWorker.onstatechange = function() {
+            switch (installingWorker.state) {
+              case 'installed':
+                if (navigator.serviceWorker.controller) {
+                  this._setState('updated');
+                  this.fire('service-worker-updated',
+                    'A new service worker was installed, replacing the old service worker.');
+                } else {
+                  if (this.reloadOnInstall) {
+                    window.location.reload();
+                  } else {
+                    this._setState('installed');
+                    this.fire('service-worker-installed', 'A new service worker was installed.');
+                  }
+                }
+              break;
+
+              case 'redundant':
+                this._setState('error');
+                this.fire('service-worker-error', 'The installing service worker became redundant.');
+              break;
+            }
+          }.bind(this);
+        }.bind(this);
+      }.bind(this)).catch(function(error) {
+        this._setState('error');
+        this.fire('service-worker-error', error.toString());
+        if (error.name === 'NetworkError') {
+          var location = serviceWorkerUrl.origin + serviceWorkerUrl.pathname;
+          console.error('A valid service worker script was not found at ' + location + '\n' +
+            'To learn how to fix this, please see\n' +
+            'https://github.com/PolymerElements/platinum-sw#top-level-sw-importjs');
+        }
+      }.bind(this));
+    },
+
+    attached: function() {
+      if (this.autoRegister) {
+        this.async(this.register);
+      }
+    }
+  });
 </script>
 <!-- Add your elements here -->
 <script>
@@ -22797,6 +22887,14 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
           },
 
           /**
+           * If provided, this will be the element that will be focused when
+           * the dropdown opens.
+           */
+          focusTarget: {
+            type: Object
+          },
+
+          /**
            * Set to true to disable animations when opening and closing the
            * dropdown.
            */
@@ -22836,6 +22934,17 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
           return Polymer.dom(this.$.content).getDistributedNodes()[0];
         },
 
+        /**
+         * The element that should be focused when the dropdown opens.
+         */
+        get _focusTarget() {
+          return this.focusTarget || this.containedElement;
+        },
+
+        /**
+         * The element that should be used to position the dropdown when
+         * it opens, if no position target is configured.
+         */
         get _defaultPositionTarget() {
           var parent = Polymer.dom(this).parentNode;
 
@@ -22846,6 +22955,9 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
           return parent;
         },
 
+        /**
+         * The bounding rect of the position target.
+         */
         get _positionRect() {
           if (!this._positionRectMemo && this.positionTarget) {
             this._positionRectMemo = this.positionTarget.getBoundingClientRect();
@@ -22854,6 +22966,9 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
           return this._positionRectMemo;
         },
 
+        /**
+         * The horizontal offset value used to position the dropdown.
+         */
         get _horizontalAlignTargetValue() {
           var target;
 
@@ -22868,6 +22983,9 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
           return Math.max(target, 0);
         },
 
+        /**
+         * The vertical offset value used to position the dropdown.
+         */
         get _verticalAlignTargetValue() {
           var target;
 
@@ -22882,27 +23000,41 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
           return Math.max(target, 0);
         },
 
+        /**
+         * Called when the value of `opened` changes.
+         *
+         * @param {boolean} opened True if the dropdown is opened.
+         */
         _openedChanged: function(opened) {
           if (opened && this.disabled) {
             this.cancel();
           } else {
-            this._cancelAnimations();
+            this.cancelAnimation();
             this._prepareDropdown();
             Polymer.IronOverlayBehaviorImpl._openedChanged.apply(this, arguments);
           }
+
+          if (this.opened) {
+            this._focusContent();
+          }
         },
 
+        /**
+         * Overridden from `IronOverlayBehavior`.
+         */
         _renderOpened: function() {
           Polymer.IronDropdownScrollManager.pushScrollLock(this);
           if (!this.noAnimations && this.animationConfig && this.animationConfig.open) {
             this.$.contentWrapper.classList.add('animating');
             this.playAnimation('open');
           } else {
-            this._focusContent();
             Polymer.IronOverlayBehaviorImpl._renderOpened.apply(this, arguments);
           }
         },
 
+        /**
+         * Overridden from `IronOverlayBehavior`.
+         */
         _renderClosed: function() {
           Polymer.IronDropdownScrollManager.removeScrollLock(this);
           if (!this.noAnimations && this.animationConfig && this.animationConfig.close) {
@@ -22913,6 +23045,12 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
           }
         },
 
+        /**
+         * Called when animation finishes on the dropdown (when opening or
+         * closing). Responsible for "completing" the process of opening or
+         * closing the dropdown by positioning it or setting its display to
+         * none.
+         */
         _onNeonAnimationFinish: function() {
           this.$.contentWrapper.classList.remove('animating');
           if (this.opened) {
@@ -22922,6 +23060,9 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
           }
         },
 
+        /**
+         * Called when an `iron-resize` event fires.
+         */
         _onIronResize: function() {
           var containedElement = this.containedElement;
           var scrollTop;
@@ -22944,14 +23085,17 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
           }
         },
 
+        /**
+         * Called when the `positionTarget` property changes.
+         */
         _positionTargetChanged: function() {
           this._updateOverlayPosition();
         },
 
-        _cancelAnimations: function() {
-          this.cancelAnimation();
-        },
-
+        /**
+         * Constructs the final animation config from different properties used
+         * to configure specific parts of the opening and closing animations.
+         */
         _updateAnimationConfig: function() {
           var animationConfig = {};
           var animations = [];
@@ -22979,12 +23123,21 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
           this.animationConfig = animationConfig;
         },
 
+        /**
+         * Prepares the dropdown for opening by updating measured layout
+         * values.
+         */
         _prepareDropdown: function() {
           this.sizingTarget = this.containedElement || this.sizingTarget;
           this._updateAnimationConfig();
           this._updateOverlayPosition();
         },
 
+        /**
+         * Updates the overlay position based on configured horizontal
+         * and vertical alignment, and re-memoizes these values for the sake
+         * of behavior in `IronFitBehavior`.
+         */
         _updateOverlayPosition: function() {
           this._positionRectMemo = null;
 
@@ -23010,10 +23163,17 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
           }
         },
 
+        /**
+         * Focuses the configured focus target.
+         */
         _focusContent: function() {
-          if (this.containedElement) {
-            this.containedElement.focus();
-          }
+          // NOTE(cdata): This is async so that it can attempt the focus after
+          // `display: none` is removed from the element.
+          this.async(function() {
+            if (this._focusTarget) {
+              this._focusTarget.focus();
+            }
+          });
         }
       });
     })();
@@ -23130,9 +23290,9 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
     <div id="trigger" on-tap="open">
       <content select=".dropdown-trigger"></content>
     </div>
-    <iron-dropdown id="dropdown" opened="{{opened}}" horizontal-align="[[horizontalAlign]]" vertical-align="[[verticalAlign]]" horizontal-offset="[[horizontalOffset]]" vertical-offset="[[verticalOffset]]" open-animation-config="[[openAnimationConfig]]" close-animation-config="[[closeAnimationConfig]]" no-animations="[[noAnimations]]">
+    <iron-dropdown id="dropdown" opened="{{opened}}" horizontal-align="[[horizontalAlign]]" vertical-align="[[verticalAlign]]" horizontal-offset="[[horizontalOffset]]" vertical-offset="[[verticalOffset]]" open-animation-config="[[openAnimationConfig]]" close-animation-config="[[closeAnimationConfig]]" no-animations="[[noAnimations]]" focus-target="[[_dropdownContent]]">
       <paper-material class="dropdown-content">
-        <content select=".dropdown-content"></content>
+        <content id="content" select=".dropdown-content"></content>
       </paper-material>
     </iron-dropdown>
   </template>
@@ -23169,7 +23329,8 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
         opened: {
           type: Boolean,
           value: false,
-          notify: true
+          notify: true,
+          observer: '_openedChanged'
         },
 
         /**
@@ -23227,7 +23388,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
          * Set to true to disable automatically closing the dropdown after
          * a selection has been made.
          */
-        ignoreActivate: {
+        ignoreSelect: {
           type: Boolean,
           value: false
         },
@@ -23290,6 +23451,14 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
               }
             }];
           }
+        },
+
+        /**
+         * This is the element intended to be bound as the focus target
+         * for the `iron-dropdown` contained by `paper-menu-button`.
+         */
+        _dropdownContent: {
+          type: Object
         }
       },
 
@@ -23299,7 +23468,14 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
       },
 
       listeners: {
-        'iron-activate': '_onIronActivate'
+        'iron-select': '_onIronSelect'
+      },
+
+      /**
+       * The content element that is contained by the menu button, if any.
+       */
+      get contentElement() {
+        return Polymer.dom(this.$.content).getDistributedNodes()[0];
       },
 
       /**
@@ -23322,14 +23498,14 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
       },
 
       /**
-       * When an `iron-activate` event is received, the dropdown should
+       * When an `iron-select` event is received, the dropdown should
        * automatically close on the assumption that a value has been chosen.
        *
        * @param {CustomEvent} event A CustomEvent instance with type
-       * set to `"iron-activate"`.
+       * set to `"iron-select"`.
        */
-      _onIronActivate: function(event) {
-        if (!this.ignoreActivate) {
+      _onIronSelect: function(event) {
+        if (!this.ignoreSelect) {
           this.close();
         }
       },
@@ -23343,6 +23519,12 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
        */
       _openedChanged: function(opened, oldOpened) {
         if (opened) {
+          // TODO(cdata): Update this when we can measure changes in distributed
+          // children in an idiomatic way.
+          // We poke this property in case the element has changed. This will
+          // cause the focus target for the `iron-dropdown` to be updated as
+          // necessary:
+          this._dropdownContent = this.contentElement;
           this.fire('paper-dropdown-open');
         } else if (oldOpened != null) {
           this.fire('paper-dropdown-close');
@@ -25027,7 +25209,8 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
     is: 'paper-tab',
 
     behaviors: [
-      Polymer.IronControlState
+      Polymer.IronControlState,
+      Polymer.IronButtonState
     ],
 
     properties: {
@@ -25049,7 +25232,11 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
     },
 
     listeners: {
-      down: '_onDown'
+      down: '_updateNoink'
+    },
+
+    attached: function() {
+      this._updateNoink();
     },
 
     get _parentNoink () {
@@ -25057,7 +25244,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
       return !!parent && !!parent.noink;
     },
 
-    _onDown: function(e) {
+    _updateNoink: function() {
       this.noink = !!this.noink || !!this._parentNoink;
     }
   });
@@ -25489,6 +25676,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
   .header img {
     width: 100%;
     pointer-events: none;
+    @apply(--paper-card-header-image);
   }
 
   .header .title-text {
@@ -25496,11 +25684,13 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
     font-size: 24px;
     font-weight: bold;
     color: var(--paper-card-header-color, #000);
+    @apply(--paper-card-header-text);
   }
 
   .header .title-text.over-image {
     position: absolute;
     bottom: 0px;
+    @apply(--paper-card-header-image-text);
   }
 
   :host ::content .card-content {
@@ -27846,6 +28036,14 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
                 height: 200px;
             }
 
+            @media (max-width: 767px) {
+                ::content .center-content-xs {
+                    @apply(--layout-vertical);
+                    @apply(--layout-center);
+                    text-align: center;
+                }
+            }
+
             @media (min-width: 768px) {
                 ::content .hero {
                     padding-top: 40px;
@@ -27861,7 +28059,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
                     <paper-icon-button class="visible-xs" icon="menu" on-tap="togglePanel"></paper-icon-button>
                     <div class="flex hidden-xs">
                         <a data-route="home" href="/" hidden="{{hideLogo}}">
-                            <img class="logo" src="../images/logo-light.svg" alt="GDG DevFest 2015">
+                            <img class="logo" src="../images/logo-white.svg" alt="GDG DevFest 2015">
                         </a>
                     </div>
                     <paper-tabs class="hidden-xs" attr-for-selected="data-route" selected="{{route}}" on-iron-select="onMenuSelect">
@@ -28268,120 +28466,127 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 <dom-module id="footer-block" assetpath="footer-block/">
     <template>
         <style>
-        :host {
-            display: block;
-            background: #FCFCFC;
-            overflow: hidden;
-        }
-
-        .container {
-            padding: 16px;
-            font-size: 14px;
-        }
-
-        .container paper-button {
-            font-size: 0.9em;
-        }
-
-        .footer {
-            min-height: 200px;
-            color: #757575;
-        }
-
-        .gdg-logo {
-            margin-top: 10px;
-            height: 30px;
-            display: block;
-        }
-
-        a {
-            color: inherit !important;
-        }
-
-        .footer-backtotop {
-            margin-bottom: 20px;
-        }
-
-        .footer-content {
-            padding-top: 16px;
-            padding-bottom: 16px;
-        }
-
-        .footer-links-container {
-            padding-top: 0;
-        }
-
-        .link-block {
-            margin-top: 0;
-            padding: 0;
-        }
-
-        .link-block li {
-            margin-bottom: 9px;
-            list-style-type: none;
-        }
-
-        .link-block-title {
-            margin-bottom: 10px;
-            font-size: 1.3em;
-            font-weight: 300;
-        }
-
-        .link-block a {
-            font-weight: 100;
-        }
-
-        .link-block a:hover {
-            text-decoration: underline;
-        }
-
-        .link-block-wrapper {
-            margin-bottom: 30px;
-        }
-
-        .icons-wrapper {
-            margin-top: -5px;
-        }
-
-        @media (min-width: 768px) {
-            nav {
-                flex-direction: row !important;
-                justify-content: flex-end !important;
-                align-self: flex-end !important;
+            :host {
+                display: block;
+                background: #FCFCFC;
+                overflow: hidden;
             }
+
             .container {
-                padding: 0;
+                padding: 16px;
+                font-size: 14px;
             }
+
+            .container paper-button {
+                font-size: 0.9em;
+            }
+
+            .footer {
+                min-height: 200px;
+                color: #757575;
+            }
+
+            .gdg-logo {
+                margin-top: 10px;
+                height: 30px;
+                display: block;
+            }
+
+            a {
+                color: inherit !important;
+            }
+
             .footer-backtotop {
-                margin-top: -10px;
-                margin-bottom: 0;
+                margin-bottom: 20px;
             }
+
             .footer-content {
-                padding: 32px 0;
-                flex: 1;
+                padding-top: 16px;
+                padding-bottom: 16px;
             }
+
             .footer-links-container {
                 padding-top: 0;
             }
-            .footer-bottom {
-                padding: 16px 0;
-            }
+
             .link-block {
+                margin-top: 0;
                 padding: 0;
             }
+
+            .link-block li {
+                margin-bottom: 9px;
+                list-style-type: none;
+            }
+
             .link-block-title {
-                margin-bottom: 15px;
+                margin-bottom: 10px;
+                font-size: 1.3em;
+                font-weight: 300;
             }
-            .gdg-logo {
-                margin-top: 0;
+
+            .link-block a {
+                font-weight: 100;
             }
-        }
+
+            .link-block a:hover {
+                text-decoration: underline;
+            }
+
+            .link-block-wrapper {
+                margin-bottom: 30px;
+            }
+
+            .icons-wrapper {
+                margin-top: -5px;
+            }
+
+            .gplus {
+                padding-top: 10px;
+            }
+
+            @media (min-width: 768px) {
+                nav {
+                    flex-direction: row !important;
+                    justify-content: flex-end !important;
+                    align-self: flex-end !important;
+                }
+                .container {
+                    padding: 0;
+                }
+                .footer-backtotop {
+                    margin-top: -10px;
+                    margin-bottom: 0;
+                }
+                .footer-content {
+                    padding: 32px 0;
+                    flex: 1;
+                }
+                .footer-links-container {
+                    padding-top: 0;
+                }
+                .footer-bottom {
+                    padding: 16px 0;
+                }
+                .link-block {
+                    padding: 0;
+                }
+                .link-block-title {
+                    margin-bottom: 15px;
+                }
+                .gdg-logo {
+                    margin-top: 0;
+                }
+                .gplus {
+                    padding: 0;
+                }
+            }
         </style>
         <div class="line full-width"></div>
         <div class="container footer layout vertical">
             <div class="footer-content layout horizontal justified">
-                <div class="flex">
-                    <g:plusone size="medium" width="300" annotation="inline" href="http://devfest.gdg.org.ua/"></g:plusone>
+                <div class="flex gplus">
+                    <g:plusone size="medium" width="200" annotation="inline" href="http://devfest.gdg.org.ua/"></g:plusone>
                 </div>
                 <paper-button class="footer-backtotop" on-tap="backToTop" noink="">
                     Back to top
@@ -28403,7 +28608,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
                         <span class="link-block-title block">For partners</span>
                         <ul class="link-block">
                             <li><a href="/assets/GDG_DevFest_Ukraine_2015_Partnership_Proposition.pdf" target="_blank">Partnership Proposition</a></li>
-                            <li><a href="https://drive.google.com/open?id=0B3UBk7uINu2jRkdpQm5RTU9BQ2s" target="_blank">Media Kit</a></li>
+                            <li><a href="http://bit.ly/dfua-media" target="_blank">Media Kit</a></li>
                         </ul>
                     </div>
                     <div class="flex link-block-wrapper">
@@ -28436,7 +28641,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
             <!-- <div class="line full-width"></div> -->
             <div class="footer-content footer-bottom layout vertical-horizontal justified">
                 <span class="flex self-center">
-                    © 2015 Based on <a href="https://github.com/gdg-x/hoverboard" target="_blank">Project Hoverboard</a>. Designed and created by <a href="https://plus.google.com/+OlehZasadnyy/about" target="_blank">Oleh Zasadnyy</a> ·
+                    © 2015 Based on <a href="https://github.com/gdg-x/hoverboard" target="_blank">Project Hoverboard</a>. Designed and created by <a href="http://o.zasadnyy.com/" target="_blank">Oleh Zasadnyy</a> ·
                     <a href="http://lviv.gdg.org.ua" target="_blank">GDG Lviv</a>
                 </span>
                 <div class="self-end">
@@ -28447,28 +28652,28 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
     </template>
 </dom-module>
 <script>
-(function () {
+    (function() {
         Polymer.NeonAnimatableBehavior = [Polymer.NeonAnimatableBehavior, Polymer.IronResizableBehavior];
     })();
-Polymer({
-    is: 'footer-block',
-    ready: function() {
-        this.url = 'http://gdg.us11.list-manage.com/subscribe/post?u=b7e853a79164ddfdbda3ed77b&amp;id=7993e39fbe';
-        this.name = 'b_b7e853a79164ddfdbda3ed77b_7993e39fbe';
-    },
-    backToTop: function() {
-        var hero = document.querySelector('#hero');
-        app.smoothScroll(hero, 1500);
-    }
-});
-(function() {
-    var po = document.createElement('script');
-    po.type = 'text/javascript';
-    po.async = true;
-    po.src = 'https://apis.google.com/js/platform.js';
-    var s = document.getElementsByTagName('script')[0];
-    s.parentNode.insertBefore(po, s);
-})();
+    Polymer({
+        is: 'footer-block',
+        ready: function() {
+            this.url = 'http://gdg.us11.list-manage.com/subscribe/post?u=b7e853a79164ddfdbda3ed77b&amp;id=7993e39fbe';
+            this.name = 'b_b7e853a79164ddfdbda3ed77b_7993e39fbe';
+        },
+        backToTop: function() {
+            var hero = document.querySelector('#hero');
+            app.smoothScroll(hero, 1500);
+        }
+    });
+    (function() {
+        var po = document.createElement('script');
+        po.type = 'text/javascript';
+        po.async = true;
+        po.src = 'https://apis.google.com/js/platform.js';
+        var s = document.getElementsByTagName('script')[0];
+        s.parentNode.insertBefore(po, s);
+    })();
 </script>
 <iron-iconset-svg name="app-icons" size="24">
     <svg>
@@ -28646,8 +28851,8 @@ Polymer({
                 color: #fff;
             }
 
-            ::content .text,
-            ::content .border-button-link {
+            .text,
+            .border-button-link {
                 text-transform: uppercase;
                 letter-spacing: .1em;
                 color: #fff;
@@ -28655,32 +28860,30 @@ Polymer({
                 font-weight: 100;
             }
 
-            .call-to-action::content .border-button-link {
-                margin-left: 20px;
-                color: #fff;
-                cursor: pointer;
-            }
-
-            .call-to-action::content .heading {
+            .call-to-action .heading {
                 margin-bottom: 0;
             }
 
-            ::content .border-button-link {
+            .border-button-link {
+                margin-top: 10px;
                 padding: 8px 12px;
                 border: 1px solid #fff;
                 font-size: 18px;
             }
 
             @media (min-width: 768px) {
-                ::content .text {
+                .text {
                     font-size: 20px;
+                    text-align: left;
+                }
+                .border-button-link {
+                    margin: 0;
                 }
             }
         </style>
-        <div class="container container-narrow flex relative layout horizontal center-center">
-            <content></content>
-            <h4 class="heading flex text self-center">GDG DevFest 2014</h4>
-            <span class="border-button-link" on-tap="playVideo">See how it was</span>
+        <div class="container container-narrow flex relative layout vertical-horizontal center-center">
+            <h4 class="heading flex text self-center text-center">GDG DevFest 2014</h4>
+            <span class="border-button-link pointer" on-tap="playVideo">See how it was</span>
         </div>
         <paper-dialog class="video-dialog fit" id="videoDialog" entry-animation="scale-up-animation" exit-animation="fade-out-animation">
             <paper-toolbar class="navbar-overlay fit">
@@ -29403,113 +29606,153 @@ Polymer({
 <dom-module id="blog-post" assetpath="blog-post/">
     <template>
         <style>
-        :host {
-            display: none;
-            position: absolute;
-        }
+            :host {
+                display: block;
+                z-index: 9;
+                height: 100%;
+            }
 
-        .paper-card-container {
-            padding: 16px 0;
-        }
+            paper-scroll-header-panel {
+                background: #fff;
+                height: 100%;
+                --paper-scroll-header-panel-full-header: {
+                    background-color: var(--default-primary-color);
+                }
+                ;
+                --paper-scroll-header-panel-condensed-header: {
+                    background-color: var(--default-primary-color);
+                }
+                ;
+            }
 
-            .title {
-                color: var(--default-primary-color);
-                font-size: 42px;
+            paper-toolbar {
+                background-color: transparent;
+                color: #fff;
+            }
+
+            paper-toolbar .title {
+                margin: 0;
             }
 
             .posted {
+                margin-bottom: 5px;
                 font-size: 14px;
                 color: var(--secondary-text-color);
             }
-        @media (min-width: 768px) {
-            paper-card {
-                width: 80%;
+
+            .content {
+                padding: 16px 10px;
             }
-            .paper-card-container {
-                padding: 50px 40px;
+
+            .post-wrapper {
+                padding-top: 0;
             }
-        }
+
+            .post-content ::content h3 {
+                font-size: 26px;
+            }
+
+            @media (min-width: 768px) {
+                paper-card {
+                    width: 70%;
+                }
+                .title {
+                    font-size: 36px;
+                    color: var(--default-primary-color);
+                }
+                .card-content {
+                    padding: 24px;
+                }
+            }
         </style>
         <iron-ajax id="ajax" url="[[postUrl]]" handle-as="text" on-response="postLoaded"></iron-ajax>
-        <div class="relative layout horizontal center-justified">
+        <div class="relative layout horizontal center-justified hidden-xs">
             <paper-card>
                 <div class="paper-card-container">
-                    <paper-button class="back-button self-start" on-tap="closePost">
-                        <iron-icon icon="icons:arrow-back"></iron-icon> Back
-                    </paper-button>
-                    <div class="card-content">
-                        <span class="title block">[[meta.title]]</span>
-                        <span class="posted">Posted:
-                            <span>[[meta.posted]]</span>
-                        </span>
+                    <div class="card-content layout horizontal">
+                        <iron-image src="[[person.photoUrl]]" class="person-img placeholder-color img-circle" preload="" fade="" sizing="cover"></iron-image>
+                        <div class="¸-detail flex layout vertical center-center">
+                            <span class="title self-start">[[meta.title]]</span>
+                            <span class="posted self-start">Posted:
+                                <span>[[meta.posted]]</span>
+                            </span>
+                        </div>
+                        <div>
+                            <paper-icon-button class="back-button" on-tap="closePost" icon="close"></paper-icon-button>
+                        </div>
                     </div>
-                    <div class="card-content">
-                        <marked-element markdown="[[post]]"></marked-element>
+                    <div class="card-content post-wrapper">
+                        <marked-element class="post-content" markdown="[[post]]"></marked-element>
                     </div>
                 </div>
             </paper-card>
         </div>
+
+        <paper-scroll-header-panel id="scrollHeaderPanel" class="visible-xs fit" condenses="" keep-condensed-header="">
+            <paper-toolbar class="tall">
+                <paper-icon-button class="back-button" on-tap="closePost" icon="arrow-back"></paper-icon-button>
+                <div id="title" class="bottom title">[[meta.title]]</div>
+            </paper-toolbar>
+
+            <div class="content">
+                <span class="posted">Posted:
+                    <span>[[meta.posted]]</span>
+                </span>
+                <div class="card-content people-description">
+                    <marked-element class="post-content" markdown="[[post]]"></marked-element>
+                </div>
+            </div>
+        </paper-scroll-header-panel>
     </template>
 </dom-module>
 <script>
-Polymer({
-    is: 'blog-post',
-    behaviors: [
-        Polymer.NeonSharedElementAnimatableBehavior
-    ],
-    properties: {
-        meta: {
-            type: Object,
-            observer: '_metaChanged'
-        },
-        animationConfig: {
-            value: function() {
-                return {
-                    'entry': {
-                        name: 'transform-animation',
-                        node: this,
-                        transformFrom: 'translateY(100vh)',
-                        transformTo: 'none',
-                        timing: {
-                            duration: 1000
-                        }
-                    },
-                    'exit': {
-                        name: 'transform-animation',
-                        node: this,
-                        transformFrom: 'none',
-                        transformTo: 'translateY(100vh)',
-                        timing: {
-                            duration: 1000
-                        }
-                    }
-                };
+    Polymer({
+        is: 'blog-post',
+        properties: {
+            meta: {
+                type: Object,
+                observer: '_metaChanged'
+            },
+            opened: {
+                type: Boolean,
+                notify: true
             }
         },
-        closing: {
-            type: Boolean,
-            notify: true
+        ready: function() {
+            var title = this.$.title;
+            addEventListener('paper-header-transform', function(e) {
+                var d = e.detail;
+                var m = d.height - d.condensedHeight;
+                var scale = Math.max(0.75, (m - d.y) / (m / 0.25) + 0.75);
+                Polymer.Base.transform('scale(' + scale + ') translateZ(0)', title);
+            });
+        },
+        _metaChanged: function() {
+            this.postUrl = '../../posts/' + this.meta.file;
+            this.style.display = 'block';
+            this.$.ajax.generateRequest();
+        },
+        postLoaded: function(event, response) {
+            this.post = response.response;
+            this.async(function() {
+                this.$.scrollHeaderPanel.measureHeaderHeight();
+                this.$.scrollHeaderPanel.scroller.scrollTop = 0;
+            });
+        },
+        closePost: function() {
+            this.opened = false;
         }
-    },
-    _metaChanged: function() {
-        this.postUrl = '../../posts/' + this.meta.file;
-        this.style.display = 'block';
-        this.$.ajax.generateRequest();
-    },
-    postLoaded: function(event, response) {
-        this.post = response.response;
-        this.style.position = 'relative';
-    },
-    closePost: function() {
-        this.closing = true;
-    }
-});
+    });
 </script>
 <dom-module id="blog-block" assetpath="blog-block/">
     <template>
         <style>
             :host {
                 display: block;
+            }
+
+            .post-wrapper {
+                display: none;
             }
 
             .card-content {
@@ -29541,6 +29784,13 @@ Polymer({
                 padding: 0 16px;
             }
 
+            @media (max-width: 767px) {
+                .post-wrapper,
+                .post {
+                    @apply(--layout-fit);
+                }
+            }
+
             @media (min-width: 768px) {
                 .card-wrapper {
                     margin: 0 15px 30px;
@@ -29567,8 +29817,8 @@ Polymer({
                 </div>
             </template>
         </div>
-        <div class="container">
-            <blog-post id="post" class="flex" meta="{{selectedPost}}" closing="{{closing}}"></blog-post>
+        <div id="postCon" class="post-wrapper container relative">
+            <blog-post id="post" class="post flex" meta="{{selectedPost}}" opened="{{opened}}"></blog-post>
         </div>
     </template>
 </dom-module>
@@ -29582,9 +29832,9 @@ Polymer({
         ],
         properties: {
             source: String,
-            closing: {
+            opened: {
                 type: Boolean,
-                observer: '_closingChanged'
+                observer: '_openedChanged'
             },
             animationConfig: {
                 value: function() {
@@ -29594,28 +29844,32 @@ Polymer({
                             animation: 'transform-animation',
                             transformFrom: 'translateY(100%)',
                             transformTo: 'none',
-                            nodedelay: 500,
+                            nodedelay: 250,
                             timing: {
-                                duration: 2000
+                                duration: 1500
                             }
                         },
-                        'openPost': [{
-                            animatable: this.$.post,
-                            type: 'entry'
-                        }, {
-                            name: 'cascaded-animation',
-                            animation: 'transform-animation',
-                            transformFrom: 'none',
-                            transformTo: 'translateY(100vh)',
-                            nodedelay: 500,
+                        'unloadPosts': {
+                            name: 'fade-out-animation',
+                            node: this.$.posts,
                             timing: {
-                                duration: 1000
+                                duration: 200
                             }
-                        }],
-                        'closePost': [{
-                            animatable: this.$.post,
-                            type: 'exit'
-                        }]
+                        },
+                        'openPost': {
+                            name: 'scale-up-animation',
+                            node: this.$.post,
+                            timing: {
+                                duration: 500
+                            }
+                        },
+                        'closePost': {
+                            name: 'fade-out-animation',
+                            node: this.$.post,
+                            timing: {
+                                duration: 500
+                            }
+                        }
                     };
                 }
             }
@@ -29625,10 +29879,10 @@ Polymer({
         },
         postsLoaded: function(event, response) {
             this.posts = response.response.reverse();
+
             this.async(function() {
                 var nodeList = Polymer.dom(this.root).querySelectorAll('.card-wrapper');
                 this.animationConfig.loadPosts.nodes = Array.prototype.slice.call(nodeList);
-                this.animationConfig.openPost[1].nodes = Array.prototype.slice.call(nodeList);
                 if (!this.checkUrlParams()) {
                     this.playLoadAnimation();
                 }
@@ -29652,10 +29906,14 @@ Polymer({
             this.openPost(event.model.post);
         },
         openPost: function(post) {
+            this.opened = true;
             this.selectedPost = post;
-            this.postSelected = true;
+            this.$.postCon.style.display = 'block';
             this.cancelAnimation();
             this.playAnimation('openPost');
+            if (screen.width > 768) {
+                this.playAnimation('unloadPosts');
+            }
         },
         closePost: function() {
             page.redirect('/blog');
@@ -29663,19 +29921,22 @@ Polymer({
             this.playAnimation('closePost');
         },
         _onNeonAnimationFinish: function() {
-            if (this.postSelected) {
+            if (this.opened && screen.width > 768) {
                 this.$.posts.style.display = 'none';
+                this.$.posts.style.position = 'absolute';
             }
-            if (this.closing) {
-                this.$.posts.style.display = 'flex';
-                this.$.post.style.position = 'absolute';
-                this.playAnimation('loadPosts');
-                this.postSelected = false;
-                this.closing = false;
+            if (!this.opened) {
+                this.$.postCon.style.display = 'none';
+                if (screen.width > 768) {
+                    this.$.posts.style.display = 'flex';
+                    this.$.posts.style.position = 'relative';
+                }
             }
         },
-        _closingChanged: function() {
-            this.closePost();
+        _openedChanged: function() {
+            if (!this.opened) {
+                this.closePost();
+            }
         }
     });
 </script>
@@ -29689,11 +29950,6 @@ Polymer({
             }
 
             paper-scroll-header-panel {
-                position: absolute;
-                top: 0;
-                right: 0;
-                bottom: 0;
-                left: 0;
                 background: #fff;
                 height: 100%;
                 --paper-scroll-header-panel-condensed-header: {
@@ -29705,6 +29961,10 @@ Polymer({
             paper-toolbar {
                 background-color: transparent;
                 color: #fff;
+            }
+
+            paper-toolbar .title {
+                margin: 0;
             }
 
             .subtitle {
@@ -29756,7 +30016,7 @@ Polymer({
                         </div>
                         <div class="flex"></div>
                         <div>
-                        <paper-icon-button class="back-button" on-tap="closePeople" icon="close"></paper-icon-button>
+                            <paper-icon-button class="back-button" on-tap="closePeople" icon="close"></paper-icon-button>
                         </div>
                     </div>
                     <div class="card-content people-description">
@@ -29778,11 +30038,10 @@ Polymer({
             </paper-card>
         </div>
 
-        <paper-scroll-header-panel id="scrollHeaderPanel" class="visible-xs" condenses="" keep-condensed-header="">
-
+        <paper-scroll-header-panel id="scrollHeaderPanel" class="visible-xs fit" condenses="" keep-condensed-header="">
             <paper-toolbar class="tall">
                 <paper-icon-button class="back-button" on-tap="closePeople" icon="arrow-back"></paper-icon-button>
-                <div class="bottom title">[[person.name]]</div>
+                <div id="title" class="bottom title">[[person.name]]</div>
             </paper-toolbar>
 
             <div class="content">
@@ -29806,11 +30065,13 @@ Polymer({
                     </div>
                 </div>
             </div>
-
         </paper-scroll-header-panel>
     </template>
 </dom-module>
 <script>
+    (function() {
+        Polymer.NeonAnimatableBehavior = [Polymer.NeonAnimatableBehavior, Polymer.IronResizableBehavior];
+    })();
     Polymer({
         is: 'person-dialog',
         properties: {
@@ -29823,12 +30084,21 @@ Polymer({
                 notify: true
             }
         },
+        ready: function() {
+            var title = this.$.title;
+            addEventListener('paper-header-transform', function(e) {
+                var d = e.detail;
+                var m = d.height - d.condensedHeight;
+                var scale = Math.max(0.75, (m - d.y) / (m / 0.25) + 0.75);
+                Polymer.Base.transform('scale(' + scale + ') translateZ(0)', title);
+            });
+        },
         _setBackground: function() {
             this.$.scrollHeaderPanel.$.headerBg.style.background = 'linear-gradient(to top, rgba(0, 0, 0, 0.4) -10%, rgba(0, 0, 0, 0.1) 50%), url(' + this.person.photoUrl + ') 0 / cover no-repeat';
-            setTimeout(function(){
-                document.querySelector('#scrollHeaderPanel').measureHeaderHeight();
-                document.querySelector('#scrollHeaderPanel').scroller.scrollTop = 0;
-            }, 0);
+            this.async(function() {
+                this.$.scrollHeaderPanel.measureHeaderHeight();
+                this.$.scrollHeaderPanel.scroller.scrollTop = 0;
+            });
         },
         closePeople: function() {
             this.opened = false;
@@ -29845,262 +30115,266 @@ Polymer({
 <dom-module id="people-block" assetpath="people-block/">
     <template>
         <style>
-        :host {
-            display: block;
-        }
-
-        #personCon {
-            display: none;
-        }
-
-        .bottom-image-text {
-            padding: 16px;
-            position: absolute;
-            bottom: 0;
-            color: #fff;
-        }
-
-        .people-name {
-            font-size: 24px;
-            font-weight: 300;
-        }
-
-        .title {
-            margin-top: -5px;
-            font-size: 14px;
-            font-weight: 300;
-        }
-
-        .card-content {
-            padding: 16px;
-        }
-
-        .card-actions {
-            border-top: 1px solid #e8e8e8;
-            padding: 5px 16px;
-            position: relative;
-        }
-
-        .card-wrapper {
-            margin-bottom: 30px;
-        }
-
-        .people-header {
-            height: 256px;
-        }
-
-        .people-image-overlay {
-            background: linear-gradient(to top, rgba(0, 0, 0, 0.5) 4%, rgba(0, 0, 0, 0) 50%);
-        }
-
-        .badges {
-            margin: 0;
-            padding: 15px;
-            list-style: none;
-        }
-
-        .badge {
-            display: inline-block;
-        }
-
-        .badge:not(:last-of-type):after {
-            color: rgba(255, 255, 255, 0.8);
-            vertical-align: middle;
-            font-size: 14px;
-            content: "\2022";
-        }
-
-        .badge a {
-            color: #fff;
-            font-size: 14px;
-            font-weight: 500;
-        }
-
-        .people-description {
-            padding-bottom: 0;
-        }
-
-        .brief {
-            margin-bottom: 16px;
-            display: block;
-            display: -webkit-box;
-            overflow: hidden;
-            font-size: 17px height: 85px;
-            text-overflow: ellipsis;
-            -webkit-line-clamp: 3;
-            -webkit-box-orient: vertical;
-        }
-
-        @media (max-width: 767px) {
-            .person-wrapper,
-            .person {
-                @apply(--layout-fit);
+            :host {
+                display: block;
             }
-        }
 
-        @media (min-width: 768px) {
+            .person-wrapper {
+                display: none;
+            }
+
+            .bottom-image-text {
+                padding: 16px;
+                position: absolute;
+                bottom: 0;
+                color: #fff;
+            }
+
+            .people-name {
+                font-size: 24px;
+                font-weight: 300;
+            }
+
+            .title {
+                margin-top: -5px;
+                font-size: 14px;
+                font-weight: 300;
+            }
+
+            .card-content {
+                padding: 16px;
+            }
+
+            .card-actions {
+                border-top: 1px solid #e8e8e8;
+                padding: 5px 16px;
+                position: relative;
+            }
+
             .card-wrapper {
-                margin: 0 15px 30px;
-                width: calc(100% / 4);
+                margin-bottom: 30px;
             }
-        }
+
+            .people-header {
+                height: 256px;
+            }
+
+            .people-image-overlay {
+                background: linear-gradient(to top, rgba(0, 0, 0, 0.5) 4%, rgba(0, 0, 0, 0) 50%);
+            }
+
+            .badges {
+                margin: 0;
+                padding: 15px;
+                list-style: none;
+            }
+
+            .badge {
+                display: inline-block;
+            }
+
+            .badge:not(:last-of-type):after {
+                color: rgba(255, 255, 255, 0.8);
+                vertical-align: middle;
+                font-size: 14px;
+                content: "\2022";
+            }
+
+            .badge a {
+                color: #fff;
+                font-size: 14px;
+                font-weight: 500;
+            }
+
+            .people-description {
+                padding-bottom: 0;
+            }
+
+            .brief {
+                margin-bottom: 16px;
+                display: block;
+                display: -webkit-box;
+                overflow: hidden;
+                font-size: 17px height: 85px;
+                text-overflow: ellipsis;
+                -webkit-line-clamp: 3;
+                -webkit-box-orient: vertical;
+            }
+
+            @media (max-width: 767px) {
+                .person-wrapper,
+                .person {
+                    @apply(--layout-fit);
+                }
+            }
+
+            @media (min-width: 768px) {
+                .card-wrapper {
+                    margin: 0 15px 30px;
+                    width: calc(100% / 4);
+                }
+            }
         </style>
         <iron-ajax auto="" url="[[source]]" handle-as="json" on-response="peopleLoaded" debounce-duration="300"></iron-ajax>
-        <div id="people" class="container flex layout vertical-horizontal center-justified wrap">
-            <template is="dom-repeat" items="[[people]]" as="person">
-                <div class="card-wrapper layout horizontal">
-                    <paper-material class="flex pointer" on-tap="readMore">
-                        <div class="people-header relative">
-                            <iron-image src="[[person.photoUrl]]" class="placeholder-color fit" preload="" fade="" sizing="cover"></iron-image>
-                            <div class="people-image-overlay fit"></div>
-                            <ul class="badges relative text-right">
-                                <template is="dom-repeat" items="[[person.badges]]" as="badge">
-                                    <li class="badge">
-                                        <a href="[[badge.link]]" target="_blank">[[badge.name]]</a>
-                                    </li>
-                                </template>
-                            </ul>
-                            <div class="bottom-image-text">
-                                <span class="people-name relative">[[person.name]]</span>
-                                <div class="title">
-                                    <span>[[person.company]]</span>,
-                                    <span>[[person.country]]</span>
+        <div id="people" class="container flex layout vertical">
+            <div class="flex layout vertical-horizontal center-justified wrap">
+                <template is="dom-repeat" items="[[people]]" as="person">
+                    <div class="card-wrapper layout horizontal">
+                        <paper-material class="flex pointer" on-tap="readMore">
+                            <div class="people-header relative">
+                                <iron-image src="[[person.photoUrl]]" class="placeholder-color fit" preload="" fade="" sizing="cover"></iron-image>
+                                <div class="people-image-overlay fit"></div>
+                                <ul class="badges relative text-right">
+                                    <template is="dom-repeat" items="[[person.badges]]" as="badge">
+                                        <li class="badge">
+                                            <a href="[[badge.link]]" target="_blank">[[badge.name]]</a>
+                                        </li>
+                                    </template>
+                                </ul>
+                                <div class="bottom-image-text">
+                                    <span class="people-name relative">[[person.name]]</span>
+                                    <div class="title">
+                                        <span>[[person.company]]</span>,
+                                        <span>[[person.country]]</span>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                        <!-- <div class="card-content flex people-description">
+                            <!-- <div class="card-content flex people-description">
 
                             <marked-element class="brief" markdown="[[person.bio]]"></marked-element>
                         </div>
                         <div class="card-actions">
                             <paper-button on-tap="readMore">Open details</paper-button>
                         </div> -->
-                    </paper-material>
-                </div>
-            </template>
+                        </paper-material>
+                    </div>
+                </template>
+            </div>
+            <a href="http://goo.gl/forms/kymZwijWFy" class="block-link self-center" target="_blank">
+                <paper-button class="colorful" raised="">Become a speaker</paper-button>
+            </a>
         </div>
         <div id="personCon" class="person-wrapper container relative">
-            <person-dialog id="person" class="person flex" person="{{selectedPerson}}" opened="{{opened}}" }=""></person-dialog>
+            <person-dialog id="person" class="person flex" person="{{selectedPerson}}" opened="{{opened}}"></person-dialog>
         </div>
     </template>
 </dom-module>
 <script>
-Polymer({
-    is: 'people-block',
-    behaviors: [
-        Polymer.NeonAnimatableBehavior,
-        Polymer.NeonAnimationRunnerBehavior
-    ],
-    properties: {
-        source: String,
-        opened: {
-            type: Boolean,
-            observer: '_openedChanged'
+    Polymer({
+        is: 'people-block',
+        behaviors: [
+            Polymer.NeonAnimatableBehavior,
+            Polymer.NeonAnimationRunnerBehavior
+        ],
+        properties: {
+            source: String,
+            opened: {
+                type: Boolean,
+                observer: '_openedChanged'
+            },
+            animationConfig: {
+                value: function() {
+                    return {
+                        'loadPeople': {
+                            name: 'cascaded-animation',
+                            animation: 'transform-animation',
+                            transformFrom: 'translateY(100%)',
+                            transformTo: 'none',
+                            nodedelay: 250,
+                            timing: {
+                                duration: 1500
+                            }
+                        },
+                        'unloadPeople': {
+                            name: 'fade-out-animation',
+                            node: this.$.people,
+                            timing: {
+                                duration: 200
+                            }
+                        },
+                        'openPerson': {
+                            name: 'scale-up-animation',
+                            node: this.$.person,
+                            timing: {
+                                duration: 500
+                            }
+                        },
+                        'closePerson': {
+                            name: 'fade-out-animation',
+                            node: this.$.person,
+                            timing: {
+                                duration: 500
+                            }
+                        }
+                    };
+                }
+            }
         },
-        animationConfig: {
-            value: function() {
-                return {
-                    'loadPeople': {
-                        name: 'cascaded-animation',
-                        animation: 'transform-animation',
-                        transformFrom: 'translateY(100%)',
-                        transformTo: 'none',
-                        nodedelay: 250,
-                        timing: {
-                            duration: 1500
-                        }
-                    },
-                    'unloadPeople': {
-                        name: 'fade-out-animation',
-                        node: this.$.people,
-                        timing: {
-                            duration: 200
-                        }
-                    },
-                    'openPerson': {
-                        name: 'scale-up-animation',
-                        node: this.$.person,
-                        timing: {
-                            duration: 1000
-                        }
-                    },
-                    'closePerson': {
-                        name: 'fade-out-animation',
-                        node: this.$.person,
-                        timing: {
-                            duration: 500
-                        }
-                    }
-                };
-            }
-        }
-    },
-    listeners: {
-        'neon-animation-finish': '_onNeonAnimationFinish'
-    },
-    peopleLoaded: function(event, response) {
-        this.people = response.response;
+        listeners: {
+            'neon-animation-finish': '_onNeonAnimationFinish'
+        },
+        peopleLoaded: function(event, response) {
+            this.people = response.response;
 
-        this.async(function() {
-            var nodeList = Polymer.dom(this.root).querySelectorAll('.card-wrapper');
-            this.animationConfig.loadPeople.nodes = Array.prototype.slice.call(nodeList);
-            if (!this.checkUrlParams()) {
-                this.playLoadAnimation();
+            this.async(function() {
+                var nodeList = Polymer.dom(this.root).querySelectorAll('.card-wrapper');
+                this.animationConfig.loadPeople.nodes = Array.prototype.slice.call(nodeList);
+                if (!this.checkUrlParams()) {
+                    this.playLoadAnimation();
+                }
+            });
+        },
+        checkUrlParams: function() {
+            if (app.params && app.params.id) {
+                var person = app.findByPropertyValue(this.people, 'id', app.params.id);
+                if (person !== undefined && person !== null) {
+                    this.openPerson(person);
+                    return true;
+                }
             }
-        });
-    },
-    checkUrlParams: function() {
-        if (app.params && app.params.id) {
-            var person = app.findByPropertyValue(this.people, 'id', app.params.id);
-            if (person !== undefined && person !== null) {
-                this.openPerson(person);
-                return true;
-            }
-        }
-    },
-    playLoadAnimation: function() {
-        this.$.people.style.position = 'relative';
-        this.cancelAnimation();
-        this.playAnimation('loadPeople');
-    },
-    readMore: function(event) {
-        page.redirect('/speakers/' + event.model.person.id);
-        this.openPerson(event.model.person);
-    },
-    openPerson: function(person) {
-        this.opened = true;
-        this.selectedPerson = person;
-        this.$.personCon.style.display = 'block';
-        this.cancelAnimation();
-        this.playAnimation('openPerson');
-        if (screen.width > 768) {
-            this.playAnimation('unloadPeople');
-        }
-    },
-    closePerson: function() {
-        page.redirect('/speakers');
-        this.cancelAnimation();
-        this.playAnimation('closePerson');
-    },
-    _onNeonAnimationFinish: function() {
-        if (this.opened && screen.width > 768) {
-            this.$.people.style.display = 'none';
-            this.$.people.style.position = 'absolute';
-        }
-        if (!this.opened) {
-            this.$.personCon.style.display = 'none';
+        },
+        playLoadAnimation: function() {
+            this.cancelAnimation();
+            this.playAnimation('loadPeople');
+        },
+        readMore: function(event) {
+            page.redirect('/speakers/' + event.model.person.id);
+            this.openPerson(event.model.person);
+        },
+        openPerson: function(person) {
+            this.opened = true;
+            this.selectedPerson = person;
+            this.$.personCon.style.display = 'block';
+            this.cancelAnimation();
+            this.playAnimation('openPerson');
             if (screen.width > 768) {
-                this.$.people.style.display = 'flex';
-                this.$.people.style.position = 'relative';
+                this.playAnimation('unloadPeople');
+            }
+        },
+        closePerson: function() {
+            page.redirect('/speakers');
+            this.cancelAnimation();
+            this.playAnimation('closePerson');
+        },
+        _onNeonAnimationFinish: function() {
+            if (this.opened && screen.width > 768) {
+                this.$.people.style.display = 'none';
+                this.$.people.style.position = 'absolute';
+            }
+            if (!this.opened) {
+                this.$.personCon.style.display = 'none';
+                if (screen.width > 768) {
+                    this.$.people.style.display = 'flex';
+                    this.$.people.style.position = 'relative';
+                }
+            }
+        },
+        _openedChanged: function() {
+            if (!this.opened) {
+                this.closePerson();
             }
         }
-    },
-    _openedChanged: function() {
-        if (!this.opened) {
-            this.closePerson();
-        }
-    }
-});
+    });
 </script>
 <dom-module id="latest-news" assetpath="latest-news/">
     <template>

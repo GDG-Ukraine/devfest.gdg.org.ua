@@ -73,6 +73,14 @@
                 height: 200px;
             }
 
+            @media (max-width: 767px) {
+                ::content .center-content-xs {
+                    @apply(--layout-vertical);
+                    @apply(--layout-center);
+                    text-align: center;
+                }
+            }
+
             @media (min-width: 768px) {
                 ::content .hero {
                     padding-top: 40px;
@@ -88,7 +96,7 @@
                     <paper-icon-button class="visible-xs" icon="menu" on-tap="togglePanel"></paper-icon-button>
                     <div class="flex hidden-xs">
                         <a data-route="home" href="/" hidden="{{hideLogo}}">
-                            <img class="logo" src="../../images/logo-light.svg" alt="GDG DevFest 2015">
+                            <img class="logo" src="../../images/logo-white.svg" alt="GDG DevFest 2015">
                         </a>
                     </div>
                     <paper-tabs class="hidden-xs" attr-for-selected="data-route" selected="{{route}}" on-iron-select="onMenuSelect">
