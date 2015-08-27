@@ -42,14 +42,6 @@
             "name": "LvivJs",
             "url": "http://www.lvivjs.org.ua/",
             "logoUrl": "../images/partners/lvivjs.png"
-        }, {
-            "name": "Hackraft",
-            "url": "http://hackraft.com/",
-            "logoUrl": "../images/partners/hackraft.svg"
-        }, {
-            "name": "Software Engineering 2015",
-            "url": "http://seconf.org.ua/",
-            "logoUrl": "../images/partners/se2015.png"
         }]
     }
 ]
