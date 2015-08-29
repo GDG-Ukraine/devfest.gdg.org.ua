@@ -13,9 +13,10 @@
                     background: #fff;
                 }
                 ;
-                 --paper-card-actions: {
-                     background: #fff;
-                 };
+                --paper-card-actions: {
+                    background: #fff;
+                }
+                ;
             }
 
             .person-wrapper {
@@ -107,10 +108,12 @@
             .filters .card-content {
                 border-bottom: 1px solid #eee;
             }
+
             .filters .header {
                 font-size: 20px;
                 font-weight: 400;
             }
+
             .filters .card-actions {
                 border: 0;
             }
@@ -302,26 +305,28 @@
             var tempBadges = [];
             for (var i = 0; i < this.people.length; i++) {
                 for (var j = 0; j < this.people[i].tags.length; j++) {
-                    var tagClass = app.generateClass(this.people[i].tags[j]);
+                    var tagName = this.people[i].tags[j],
+                        tagClass = app.generateClass(tagName);
                     if (!app.findByPropertyValue(tempTags, 'tagClass', tagClass)) {
                         tempTags.push({
-                            name: this.people[i].tags[j],
+                            name: tagName,
                             tagClass: tagClass
                         });
-                        this.filters.push(this.people[i].tags[j]);
+                        this.filters.push(tagName);
                     }
                 }
                 if (this.people[i].badges === undefined) {
                     this.people[i].badges = [];
                 }
-                for (var k = 0; k < this.people[i].badges.length; j++) {
-                    var badgeClass = app.generateClass(this.people[i].badges[k].name);
+                for (var k = 0; k < this.people[i].badges.length; k++) {
+                    var badgeName = this.people[i].badges[k].name,
+                        badgeClass = app.generateClass(badgeName);
                     if (!app.findByPropertyValue(tempBadges, 'badgeClass', badgeClass)) {
                         tempBadges.push({
-                            name: this.people[i].badges[k].name,
+                            name: badgeName,
                             badgeClass: badgeClass
                         });
-                        this.filters.push(this.people[i].badges[k].name);
+                        this.filters.push(badgeName);
                     }
                 }
             }
@@ -386,7 +391,6 @@
             } else {
                 this.filters.splice(filterIndex, 1);
             }
-            console.log(this.filters);
             for (var i = 0; i < this.people.length; i++) {
                 this.people[i].hide = this._matchesFilters(this.people[i]);
             }
