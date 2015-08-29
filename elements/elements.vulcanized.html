@@ -12597,6 +12597,37 @@ styles. All other styles should exist as single lines."
 }
 
 </style>
+<!--
+
+`paper-checkbox` is a button that can be either checked or unchecked.  User
+can tap the checkbox to check or uncheck it.  Usually you use checkboxes
+to allow user to select multiple options from a set.  If you have a single
+ON/OFF option, avoid using a single checkbox and use `paper-toggle-button`
+instead.
+
+Example:
+
+    <paper-checkbox>label</paper-checkbox>
+
+    <paper-checkbox checked> label</paper-checkbox>
+
+### Styling
+
+The following custom properties and mixins are available for styling:
+
+Custom property | Description | Default
+----------------|-------------|----------
+`--paper-checkbox-unchecked-background-color` | Checkbox background color when the input is not checked | `transparent`
+`--paper-checkbox-unchecked-color` | Checkbox border color when the input is not checked | `--primary-text-color`
+`--paper-checkbox-unchecked-ink-color` | Selected/focus ripple color when the input is not checked | `--primary-text-color`
+`--paper-checkbox-checked-color` | Checkbox color when the input is checked | `--default-primary-color`
+`--paper-checkbox-checked-ink-color` | Selected/focus ripple color when the input is checked | `--default-primary-color`
+`--paper-checkbox-checkmark-color` | Checkmark color | `white`
+`--paper-checkbox-label-color` | Label color | `--primary-text-color`
+
+@demo demo/index.html
+-->
+
 <style is="custom-style">
 
   :root {
@@ -15020,6 +15051,9 @@ Custom property | Description | Default
 ----------------|-------------|----------
 `--paper-card-header-color` | The color of the header text | `#000`
 `--paper-card-header` | Mixin applied to the card header section | `{}`
+`--paper-card-header-text` | Mixin applied to the title in the card header section | `{}`
+`--paper-card-header-image` | Mixin applied to the image in the card header section | `{}`
+`--paper-card-header-image-text` | Mixin applied to the text overlapping the image in the card header section | `{}`
 `--paper-card-content` | Mixin applied to the card content section| `{}`
 `--paper-card-actions` | Mixin applied to the card action section | `{}`
 `--paper-card` | Mixin applied to the card | `{}`
@@ -17890,6 +17924,63 @@ Configuration:
 
     properties: {
       /**
+       * Used to configure `<platinum-sw-precache>` behavior via a JSON file instead of via
+       * attributes. This can come in handy when the configuration (e.g. which files to precache)
+       * depends on the results of a build script.
+       *
+       * If configuration for the same properties are provided in both the JSON file and via the
+       * element's attributes, then in general the JSON file's values take precedence. The one
+       * exception is the `precache` property. Any values in the element's `precache` attribute will
+       * be concatenated with the values in the JSON file's `precache` property and the set of files
+       * that are precached will be the union of the two.
+       *
+       * There's one additional option, `precacheFingerprint`, that can be set in the JSON. If using
+       * a build script that might output a large number of files to precache, its recommended
+       * that your build script generate a unique "fingerprint" of the files. Any changes to the
+       * `precacheFingerprint` value will result in the underlying service worker kicking off the
+       * process of caching the files listed in `precache`.
+       * While there are a few different strategies for generating an appropriate
+       * `precacheFingerprint` value, a process that makes sense is to use a stable hash of the
+       * serialized `precache` array. That way, any changes to the list of files in `precache`
+       * will result in a new `precacheFingerprint` value.
+       * If your build script is Node.js based, one way to generate this hash is:
+       *
+       *     var md5 = require('crypto').createHash('md5');
+       *     md5.update(JSON.stringify(precache));
+       *     var precacheFingerprint = md5.digest('hex');
+       *
+       * Alternatively, you could use something like the
+       * [SHA-1 signature](http://stackoverflow.com/questions/1161869/how-to-get-sha-of-the-latest-commit-from-remote-git-repository)
+       * of your latest `git` commit for the `precacheFingerprint` value.
+       *
+       * An example file may look like:
+       *
+       *     {
+       *       "cacheId": "my-cache-id",
+       *       "defaultCacheStrategy": "fastest",
+       *       "disabled": false,
+       *       "precache": ["file1.html", "file2.css"],
+       *       "precacheFingerprint": "FINGERPRINT_OF_FILES_IN_PRECACHE"
+       *     }
+       */
+      cacheConfigFile: String,
+
+      /**
+       * An id used to construct the name for the
+       * [Cache](https://slightlyoff.github.io/ServiceWorker/spec/service_worker/#cache)
+       * in which all the resources will be stored.
+       *
+       * If nothing is provided, the default value set in
+       * [`toolbox.options.cacheName`](https://github.com/GoogleChrome/sw-toolbox/blob/8763dcc9fbc9352d58f184050e2131c42f7b6d68/lib/options.js#L28)
+       * will be used.
+       *
+       * The `cacheId` is combined with the service worker's scope to construct the cache name, so
+       * two `<platinum-sw-cache>` elements that are associated with different scopes will use
+       * different caches.
+       */
+      cacheId: String,
+
+      /**
        * The caching strategy used for all requests, both for local and cross-origin resources.
        *
        * For a list of strategies, see the [`sw-toolbox` documentation](https://github.com/GoogleChrome/sw-toolbox#built-in-handlers).
@@ -17908,6 +17999,15 @@ Configuration:
       },
 
       /**
+       * If set to true, this element will not set up service worker caching. This is useful to
+       * conditionally enable or disable caching depending on the build environment.
+       */
+      disabled: {
+        type: Boolean,
+        value: false
+      },
+
+      /**
        * Used to provide a list of URLs that are always precached as soon as the service worker is
        * installed. Corresponds to  [`sw-toolbox`'s `precache()` method](https://github.com/GoogleChrome/sw-toolbox#toolboxprecachearrayofurls).
        *
@@ -17915,7 +18015,7 @@ Configuration:
        * i.e. a list of resources that are needed by one of the subpages of your site, or a list of
        * resources that are only loaded via user interaction.
        *
-       * `precache` can be used in conjunction with `precacheFile`, and the two arrays will be
+       * `precache` can be used in conjunction with `cacheConfigFile`, and the two arrays will be
        * concatenated.
        *
        * @see {@link https://github.com/GoogleChrome/sw-toolbox#toolboxprecachearrayofurls}
@@ -17923,23 +18023,7 @@ Configuration:
       precache: {
         type: Array,
         value: function() { return []; }
-      },
-
-      /**
-       * Used to provide a list of URLs that are always precached as soon as the service worker is
-       * installed. Corresponds to  [`sw-toolbox`'s `precache()` method](https://github.com/GoogleChrome/sw-toolbox#toolboxprecachearrayofurls).
-       *
-       * While the `precache` option supports provided the array of URLs in as an inline attribute,
-       * this option supports providing them as an array in JSON file, which is fetched at runtime.
-       * This is useful if the array is generated via a separate build step, as it's easier to
-       * write that output to a file then it is to modify inline HTML content.
-       *
-       * `precacheFile` can be used in conjunction with `precache`, and the two arrays will be
-       * concatenated.
-       *
-       * @see {@link https://github.com/GoogleChrome/sw-toolbox#toolboxprecachearrayofurls}
-       */
-      precacheFile: String
+      }
     },
 
     _getParameters: function(baseURI) {
@@ -17950,15 +18034,36 @@ Configuration:
           precache: this.precache
         };
 
-        if (this.precacheFile) {
-          window.fetch(this.precacheFile).then(function(response) {
+        if (this.cacheConfigFile) {
+          params.cacheConfigFile = this.cacheConfigFile;
+          window.fetch(this.cacheConfigFile).then(function(response) {
             if (!response.ok) {
-              throw Error('unable to load ' + this.precacheFile);
+              throw Error('unable to load ' + this.cacheConfigFile);
             }
             return response.json();
-          }.bind(this)).then(function(files) {
-            params.precache = params.precache.concat(files);
-          }).catch(function(error) {
+          }.bind(this)).then(function(config) {
+            this.disabled = config.disabled;
+            if (this.disabled) {
+              // Use an empty set of parameters to effectively disable caching.
+              params = {};
+            } else {
+              // If there's a hash of the list of files to precache provided in the config file,
+              // then copy that over to the params that will be used to construct the service worker
+              // URL. This works around the issue where a potentially large number of precache
+              // files could result in a longer URL than a browser will allow.
+              // The actual list of files to precache (in config.precache) will be dealt by the
+              // service worker during the install phase, so we can ignore it here.
+              // See https://github.com/PolymerElements/platinum-sw/issues/53
+              if (config.precacheFingerprint) {
+                params.precacheFingerprint = config.precacheFingerprint;
+              } else {
+                params.precache = params.precache.concat(config.precache);
+              }
+              params.cacheId = config.cacheId || params.cacheId;
+              params.defaultCacheStrategy = config.defaultCacheStrategy ||
+                params.defaultCacheStrategy;
+            }
+          }.bind(this)).catch(function(error) {
             console.info('Skipping precaching: ' + error.message);
           }).then(function() {
             resolve(params);
@@ -17971,336 +18076,352 @@ Configuration:
   });
 </script>
 <script>
-  (function() {
-    // Grab the URI of this file to use as a base when resolving relative paths.
-    // Fallback to './' as a default, though current browsers that don't support
-    // document.currentScript also don't support service workers.
-    var baseURI = document.currentScript ? document.currentScript.baseURI : './';
+  /**
+   * The `<platinum-sw-register>` element handles
+   * [service worker](http://www.html5rocks.com/en/tutorials/service-worker/introduction/)
+   * registration, reflects the overall service worker state, and coordinates the configuration
+   * provided by other Service Worker Elements.
+   * `<platinum-sw-register>` is used as a parent element for child elements in the
+   * `<platinum-sw-*>` group.
+   *
+   *     <platinum-sw-register skip-waiting
+   *                           clients-claim
+   *                           auto-register
+   *                           state="{{state}}"
+   *                           on-service-worker-error="handleSWError"
+   *                           on-service-worker-updated="handleSWUpdated"
+   *                           on-service-worker-installed="handleSWInstalled">
+   *       ...one or more <platinum-sw-*> children which share the service worker registration...
+   *     </platinum-sw-register>
+   *
+   * Please see https://github.com/PolymerElements/platinum-sw#top-level-sw-importjs for a
+   * *crucial* prerequisite file you must create before `<platinum-sw-register>` can be used!
+   *
+   * @demo demo/index.html An offline-capable eReader demo.
+   */
+  Polymer({
+    is: 'platinum-sw-register',
+
+    // Used as an "emergency" switch if we make breaking changes in the way <platinum-sw-register>
+    // talks to service-worker.js. Otherwise, it shouldn't need to change, and isn't meant to be
+    // kept in sync with the element's release number.
+    _version: '1.0',
 
     /**
-     * The `<platinum-sw-register>` element handles
-     * [service worker](http://www.html5rocks.com/en/tutorials/service-worker/introduction/)
-     * registration, reflects the overall service worker state, and coordinates the configuration
-     * provided by other Service Worker Elements.
-     * `<platinum-sw-register>` is used as a parent element for child elements in the
-     * `<platinum-sw-*>` group.
+     * Fired when the initial service worker installation completes successfully.
+     * The service worker will normally only be installed once, the first time a page with a
+     * `<platinum-sw-register>` element is visited in a given browser. If the same page is visited
+     * again, the existing service worker will be reused, and there won't be another
+     * `service-worker-installed` fired.
      *
-     *     <platinum-sw-register skip-waiting
-     *                           clients-claim
-     *                           auto-register
-     *                           state="{{state}}"
-     *                           on-service-worker-error="handleSWError"
-     *                           on-service-worker-updated="handleSWUpdated"
-     *                           on-service-worker-installed="handleSWInstalled">
-     *       ...one or more <platinum-sw-*> children which share the service worker registration...
-     *     </platinum-sw-register>
-     *
-     * Please see https://github.com/PolymerElements/platinum-sw#top-level-sw-importjs for a
-     * *crucial* prerequisite file you must create before `<platinum-sw-register>` can be used!
-     *
-     * @demo demo/index.html An offline-capable eReader demo.
+     * @event service-worker-installed
+     * @param {String} A message indicating that the installation succeeded.
      */
-    Polymer({
-      is: 'platinum-sw-register',
 
-      // Used as an "emergency" switch if we make breaking changes in the way <platinum-sw-register>
-      // talks to service-worker.js. Otherwise, it shouldn't need to change, and isn't meant to be
-      // kept in sync with the element's release number.
-      _version: '1.0',
+    /**
+     * Fired when the service worker update flow completes successfully.
+     * If you make changes to your `<platinum-sw-register>` configuration (i.e. by adding in new
+     * `<platinum-sw-*>` child elements, or changing their attributes), users who had the old
+     * service worker installed will get the update installed when they see the modified elements.
+     *
+     * @event service-worker-updated
+     * @param {String} A message indicating that the update succeeded.
+     */
 
+    /**
+     * Fired when an error prevents the service worker installation from completing.
+     *
+     * @event service-worker-error
+     * @param {String} A message indicating what went wrong.
+     */
+
+    properties: {
       /**
-       * Fired when the initial service worker installation completes successfully.
-       * The service worker will normally only be installed once, the first time a page with a
-       * `<platinum-sw-register>` element is visited in a given browser. If the same page is visited
-       * again, the existing service worker will be reused, and there won't be another
-       * `service-worker-installed` fired.
+       * Whether this element should automatically register the corresponding service worker as
+       * soon as its added to a page.
        *
-       * @event service-worker-installed
-       * @param {String} A message indicating that the installation succeeded.
-       */
-
-      /**
-       * Fired when the service worker update flow completes successfully.
-       * If you make changes to your `<platinum-sw-register>` configuration (i.e. by adding in new
-       * `<platinum-sw-*>` child elements, or changing their attributes), users who had the old
-       * service worker installed will get the update installed when they see the modified elements.
+       * If set to `false`, then the service worker won't be automatically registered, and you
+       * must call this element's `register()` method if you want service worker functionality.
+       * This is useful if, for example, the service worker needs to be configured using
+       * information that isn't immediately available at the time the page loads.
        *
-       * @event service-worker-updated
-       * @param {String} A message indicating that the update succeeded.
+       * If set to `true`, the service worker will be automatically registered without having to
+       * call any methods.
        */
-
-      /**
-       * Fired when an error prevents the service worker installation from completing.
-       *
-       * @event service-worker-error
-       * @param {String} A message indicating what went wrong.
-       */
-
-      properties: {
-        /**
-         * Whether this element should automatically register the corresponding service worker as
-         * soon as its added to a page.
-         *
-         * If set to `false`, then the service worker won't be automatically registered, and you
-         * must call this element's `register()` method if you want service worker functionality.
-         * This is useful if, for example, the service worker needs to be configured using
-         * information that isn't immediately available at the time the page loads.
-         *
-         * If set to `true`, the service worker will be automatically registered without having to
-         * call any methods.
-         */
-        autoRegister: {
-          type: Boolean,
-          value: false
-        },
-
-        /**
-         * Whether the activated service worker should [take immediate control](https://slightlyoff.github.io/ServiceWorker/spec/service_worker/#clients-claim-method)
-         * of any pages under its scope.
-         *
-         * If this is `false`, the service worker won't have any effect until the next time the page
-         * is visited/reloaded.
-         * If this is `true`, it will take control and start handling events for the current page
-         * (and any pages under the same scope open in other tabs/windows) as soon it's active.
-         * @see {@link https://slightlyoff.github.io/ServiceWorker/spec/service_worker/#clients-claim-method}
-         */
-        clientsClaim: {
-          type: Boolean,
-          value: false
-        },
-
-        /**
-         * The service worker script that is [registered](https://slightlyoff.github.io/ServiceWorker/spec/service_worker/#navigator-service-worker-register).
-         * The script *should* be located at the top level of your site, to ensure that it is able
-         * to control all the pages on your site.
-         *
-         * It's *strongly* recommended that you create a top-level file named `sw-import.js`
-         * containing only:
-         *
-         * `importScripts('bower_components/platinum-sw/service-worker.js');`
-         *
-         * (adjust to match the path where your `platinum-sw` element directory can be found).
-         *
-         * This will ensure that your service worker script contains everything needed to play
-         * nicely with the Service Worker Elements group.
-         *
-         * @see {@link https://slightlyoff.github.io/ServiceWorker/spec/service_worker/#navigator-service-worker-register}
-         */
-        href: {
-          type: String,
-          value: 'sw-import.js'
-        },
-
-        /**
-         * Whether the page should be automatically reloaded (via `window.location.reload()`) when
-         * the service worker is successfully installed.
-         *
-         * While it's perfectly valid to continue using a page with a freshly installed service
-         * worker, it's a common pattern to want to reload it immediately following the install.
-         * This ensures that, for example, if you're using a `<platinum-sw-cache>` with an on the
-         * fly caching strategy, it will get a chance to intercept all the requests needed to render
-         * your page and store them in the cache.
-         *
-         * If you don't immediately reload your page, then any resources that were loaded before the
-         * service worker was installed (e.g. this `platinum-sw-register.html` file) won't be present
-         * in the cache until the next time the page is loaded.
-         *
-         * Note that this reload will only happen when a service worker is installed for the first
-         * time. If the service worker is subsequently updated, it won't trigger another reload.
-         */
-        reloadOnInstall: {
-          type: Boolean,
-          value: false
-        },
-
-        /**
-         * The scope of the service worker, relative to the registered service worker script.
-         * All pages that fall under this scope will be controlled by the registered service worker.
-         *
-         * Normally, this would not need to be changed, unless you want the service worker to only
-         * apply to a subset of your site.
-         *
-         * @see {@link https://slightlyoff.github.io/ServiceWorker/spec/service_worker/#navigator-service-worker-register}
-         */
-        scope: {
-          type: String,
-          value: './'
-        },
-
-        /**
-         * Whether an updated service worker should [bypass the `waiting` state](https://slightlyoff.github.io/ServiceWorker/spec/service_worker/#service-worker-global-scope-skipwaiting)
-         * and immediately become `active`.
-         *
-         * Normally, during an update, the new service worker stays in the
-         * `waiting` state until the current page and any other tabs/windows that are using the old
-         * service worker are unloaded.
-         *
-         * If this is `false`, an updated service worker won't be activated until all instances of
-         * the old server worker have been unloaded.
-         *
-         * If this is `true`, an updated service worker will become `active` immediately.
-         * @see {@link https://slightlyoff.github.io/ServiceWorker/spec/service_worker/#service-worker-global-scope-skipwaiting}
-         */
-        skipWaiting: {
-          type: Boolean,
-          value: false
-        },
-
-        /**
-         * The current state of the service worker registered by this element.
-         *
-         * One of:
-         * - 'installed'
-         * - 'updated'
-         * - 'error'
-         * - 'unsupported'
-         */
-        state: {
-          notify: true,
-          readOnly: true,
-          type: String
-        }
+      autoRegister: {
+        type: Boolean,
+        value: false
       },
 
       /**
-       * Registers the service worker based on the configuration options in this element and any
-       * child elements.
+       * The URI used as a base when constructing relative paths to service worker helper libraries
+       * that need to be loaded.
        *
-       * If you set the `autoRegister` property to `true`, then this method is called automatically
-       * at page load.
-       * It can be useful to set `autoRegister` to `false` and then explicitly call this method if
-       * there are options that are only configured after the page is loaded.
+       * This can normally be kept set to the default, which will use the directory containing this
+       * element as the base. However, if you [Vulcanize](https://github.com/polymer/vulcanize) your
+       * elements, then the default base might not be appropriate anymore. This will allow you to
+       * override it.
+       *
+       * See https://github.com/PolymerElements/platinum-sw#relative-paths--vulcanization for more
+       * information.
        */
-      register: function() {
-        if ('serviceWorker' in navigator) {
-          this._constructServiceWorkerUrl().then(function(serviceWorkerUrl) {
-            this._registerServiceWorker(serviceWorkerUrl);
-          }.bind(this));
-        } else {
-          this._setState('unsupported');
-          this.fire('service-worker-error', 'Service workers are not available in the current browser.');
-        }
+      baseUri: {
+        type: String,
+        // Grab the URI of this file to use as a base when resolving relative paths.
+        // Fallback to './' as a default, though current browsers that don't support
+        // document.currentScript also don't support service workers.
+        value: document.currentScript ? document.currentScript.baseURI : './'
       },
 
-      _constructServiceWorkerUrl: function() {
-        var paramsPromises = [];
-        var children = Polymer.dom(this).children;
-        for (var i = 0; i < children.length; i++) {
-          if (typeof children[i]._getParameters === 'function') {
-            paramsPromises.push(children[i]._getParameters(baseURI));
-          }
-        }
+      /**
+       * Whether the activated service worker should [take immediate control](https://slightlyoff.github.io/ServiceWorker/spec/service_worker/#clients-claim-method)
+       * of any pages under its scope.
+       *
+       * If this is `false`, the service worker won't have any effect until the next time the page
+       * is visited/reloaded.
+       * If this is `true`, it will take control and start handling events for the current page
+       * (and any pages under the same scope open in other tabs/windows) as soon it's active.
+       * @see {@link https://slightlyoff.github.io/ServiceWorker/spec/service_worker/#clients-claim-method}
+       */
+      clientsClaim: {
+        type: Boolean,
+        value: false
+      },
 
-        return Promise.all(paramsPromises).then(function(paramsResolutions) {
-          var params = {
-            baseURI: baseURI,
-            version: this._version
-          };
+      /**
+       * The service worker script that is [registered](https://slightlyoff.github.io/ServiceWorker/spec/service_worker/#navigator-service-worker-register).
+       * The script *should* be located at the top level of your site, to ensure that it is able
+       * to control all the pages on your site.
+       *
+       * It's *strongly* recommended that you create a top-level file named `sw-import.js`
+       * containing only:
+       *
+       * `importScripts('bower_components/platinum-sw/service-worker.js');`
+       *
+       * (adjust to match the path where your `platinum-sw` element directory can be found).
+       *
+       * This will ensure that your service worker script contains everything needed to play
+       * nicely with the Service Worker Elements group.
+       *
+       * @see {@link https://slightlyoff.github.io/ServiceWorker/spec/service_worker/#navigator-service-worker-register}
+       */
+      href: {
+        type: String,
+        value: 'sw-import.js'
+      },
 
-          paramsResolutions.forEach(function(childParams) {
-            Object.keys(childParams).forEach(function(key) {
-              if (Array.isArray(params[key])) {
-                params[key].push(childParams[key]);
-              } else {
-                params[key] = [childParams[key]];
-              }
-            });
-          });
+      /**
+       * Whether the page should be automatically reloaded (via `window.location.reload()`) when
+       * the service worker is successfully installed.
+       *
+       * While it's perfectly valid to continue using a page with a freshly installed service
+       * worker, it's a common pattern to want to reload it immediately following the install.
+       * This ensures that, for example, if you're using a `<platinum-sw-cache>` with an on the
+       * fly caching strategy, it will get a chance to intercept all the requests needed to render
+       * your page and store them in the cache.
+       *
+       * If you don't immediately reload your page, then any resources that were loaded before the
+       * service worker was installed (e.g. this `platinum-sw-register.html` file) won't be present
+       * in the cache until the next time the page is loaded.
+       *
+       * Note that this reload will only happen when a service worker is installed for the first
+       * time. If the service worker is subsequently updated, it won't trigger another reload.
+       */
+      reloadOnInstall: {
+        type: Boolean,
+        value: false
+      },
 
-          return params;
-        }.bind(this)).then(function(params) {
-          if (params.importscriptLate) {
-            if (params.importscript) {
-              params.importscript = params.importscript.concat(params.importscriptLate);
-            } else {
-              params.importscript = params.importscriptLate;
-            }
-          }
+      /**
+       * The scope of the service worker, relative to the registered service worker script.
+       * All pages that fall under this scope will be controlled by the registered service worker.
+       *
+       * Normally, this would not need to be changed, unless you want the service worker to only
+       * apply to a subset of your site.
+       *
+       * @see {@link https://slightlyoff.github.io/ServiceWorker/spec/service_worker/#navigator-service-worker-register}
+       */
+      scope: {
+        type: String,
+        value: './'
+      },
 
-          if (params.importscript) {
-            params.importscript = this._unique(params.importscript);
-          }
+      /**
+       * Whether an updated service worker should [bypass the `waiting` state](https://slightlyoff.github.io/ServiceWorker/spec/service_worker/#service-worker-global-scope-skipwaiting)
+       * and immediately become `active`.
+       *
+       * Normally, during an update, the new service worker stays in the
+       * `waiting` state until the current page and any other tabs/windows that are using the old
+       * service worker are unloaded.
+       *
+       * If this is `false`, an updated service worker won't be activated until all instances of
+       * the old server worker have been unloaded.
+       *
+       * If this is `true`, an updated service worker will become `active` immediately.
+       * @see {@link https://slightlyoff.github.io/ServiceWorker/spec/service_worker/#service-worker-global-scope-skipwaiting}
+       */
+      skipWaiting: {
+        type: Boolean,
+        value: false
+      },
 
-          params.clientsClaim = this.clientsClaim;
-          params.skipWaiting = this.skipWaiting;
+      /**
+       * The current state of the service worker registered by this element.
+       *
+       * One of:
+       * - 'installed'
+       * - 'updated'
+       * - 'error'
+       * - 'unsupported'
+       */
+      state: {
+        notify: true,
+        readOnly: true,
+        type: String
+      }
+    },
 
-          var serviceWorkerUrl = new URL(this.href, window.location);
-          // It's very important to ensure that the serialization is stable.
-          // Serializing the same settings should always produce the same URL.
-          // Serializing different settings should always produce a different URL.
-          // This ensures that the service worker upgrade flow is triggered when settings change.
-          serviceWorkerUrl.search = this._serializeUrlParams(params);
-
-          return serviceWorkerUrl;
+    /**
+     * Registers the service worker based on the configuration options in this element and any
+     * child elements.
+     *
+     * If you set the `autoRegister` property to `true`, then this method is called automatically
+     * at page load.
+     * It can be useful to set `autoRegister` to `false` and then explicitly call this method if
+     * there are options that are only configured after the page is loaded.
+     */
+    register: function() {
+      if ('serviceWorker' in navigator) {
+        this._constructServiceWorkerUrl().then(function(serviceWorkerUrl) {
+          this._registerServiceWorker(serviceWorkerUrl);
         }.bind(this));
-      },
+      } else {
+        this._setState('unsupported');
+        this.fire('service-worker-error', 'Service workers are not available in the current browser.');
+      }
+    },
 
-      _unique: function(arr) {
-        return arr.filter(function(item, index) {
-          return arr.indexOf(item) === index;
-        });
-      },
-
-      _serializeUrlParams: function(params) {
-        return Object.keys(params).sort().map(function(key) {
-          // encodeURIComponent(['a', 'b']) => 'a%2Cb',
-          // so this will still work when the values are Arrays.
-          // TODO: It won't work if the values in the Arrays have ',' characters in them.
-          return encodeURIComponent(key) + "=" + encodeURIComponent(params[key]);
-        }).join('&');
-      },
-
-      _registerServiceWorker: function(serviceWorkerUrl) {
-        navigator.serviceWorker.register(serviceWorkerUrl, {scope: this.scope}).then(function(registration) {
-          if (registration.active) {
-            this._setState('installed');
-          }
-
-          registration.onupdatefound = function() {
-            var installingWorker = registration.installing;
-            installingWorker.onstatechange = function() {
-              switch (installingWorker.state) {
-                case 'installed':
-                  if (navigator.serviceWorker.controller) {
-                    this._setState('updated');
-                    this.fire('service-worker-updated',
-                      'A new service worker was installed, replacing the old service worker.');
-                  } else {
-                    if (this.reloadOnInstall) {
-                      window.location.reload();
-                    } else {
-                      this._setState('installed');
-                      this.fire('service-worker-installed', 'A new service worker was installed.');
-                    }
-                  }
-                break;
-
-                case 'redundant':
-                  this._setState('error');
-                  this.fire('service-worker-error', 'The installing service worker became redundant.');
-                break;
-              }
-            }.bind(this);
-          }.bind(this);
-        }.bind(this)).catch(function(error) {
-          this._setState('error');
-          this.fire('service-worker-error', error.toString());
-          if (error.name === 'NetworkError') {
-            var location = serviceWorkerUrl.origin + serviceWorkerUrl.pathname;
-            console.error('A valid service worker script was not found at ' + location + '\n' +
-              'To learn how to fix this, please see\n' +
-              'https://github.com/PolymerElements/platinum-sw#top-level-sw-importjs');
-          }
-        }.bind(this));
-      },
-
-      attached: function() {
-        if (this.autoRegister) {
-          this.async(this.register);
+    _constructServiceWorkerUrl: function() {
+      var paramsPromises = [];
+      var children = Polymer.dom(this).children;
+      for (var i = 0; i < children.length; i++) {
+        if (typeof children[i]._getParameters === 'function') {
+          paramsPromises.push(children[i]._getParameters(this.baseUri));
         }
       }
-    });
-  })();
+
+      return Promise.all(paramsPromises).then(function(paramsResolutions) {
+        var params = {
+          baseURI: this.baseUri,
+          version: this._version
+        };
+
+        paramsResolutions.forEach(function(childParams) {
+          Object.keys(childParams).forEach(function(key) {
+            if (Array.isArray(params[key])) {
+              params[key] = params[key].concat(childParams[key]);
+            } else {
+              params[key] = [].concat(childParams[key]);
+            }
+          });
+        });
+
+        return params;
+      }.bind(this)).then(function(params) {
+        if (params.importscriptLate) {
+          if (params.importscript) {
+            params.importscript = params.importscript.concat(params.importscriptLate);
+          } else {
+            params.importscript = params.importscriptLate;
+          }
+        }
+
+        if (params.importscript) {
+          params.importscript = this._unique(params.importscript);
+        }
+
+        // We've already concatenated importscriptLate, so don't include it in the serialized URL.
+        delete params.importscriptLate;
+
+        params.clientsClaim = this.clientsClaim;
+        params.skipWaiting = this.skipWaiting;
+
+        var serviceWorkerUrl = new URL(this.href, window.location);
+        // It's very important to ensure that the serialization is stable.
+        // Serializing the same settings should always produce the same URL.
+        // Serializing different settings should always produce a different URL.
+        // This ensures that the service worker upgrade flow is triggered when settings change.
+        serviceWorkerUrl.search = this._serializeUrlParams(params);
+
+        return serviceWorkerUrl;
+      }.bind(this));
+    },
+
+    _unique: function(arr) {
+      return arr.filter(function(item, index) {
+        return arr.indexOf(item) === index;
+      });
+    },
+
+    _serializeUrlParams: function(params) {
+      return Object.keys(params).sort().map(function(key) {
+        // encodeURIComponent(['a', 'b']) => 'a%2Cb',
+        // so this will still work when the values are Arrays.
+        // TODO: It won't work if the values in the Arrays have ',' characters in them.
+        return encodeURIComponent(key) + "=" + encodeURIComponent(params[key]);
+      }).join('&');
+    },
+
+    _registerServiceWorker: function(serviceWorkerUrl) {
+      navigator.serviceWorker.register(serviceWorkerUrl, {scope: this.scope}).then(function(registration) {
+        if (registration.active) {
+          this._setState('installed');
+        }
+
+        registration.onupdatefound = function() {
+          var installingWorker = registration.installing;
+          installingWorker.onstatechange = function() {
+            switch (installingWorker.state) {
+              case 'installed':
+                if (navigator.serviceWorker.controller) {
+                  this._setState('updated');
+                  this.fire('service-worker-updated',
+                    'A new service worker was installed, replacing the old service worker.');
+                } else {
+                  if (this.reloadOnInstall) {
+                    window.location.reload();
+                  } else {
+                    this._setState('installed');
+                    this.fire('service-worker-installed', 'A new service worker was installed.');
+                  }
+                }
+              break;
+
+              case 'redundant':
+                this._setState('error');
+                this.fire('service-worker-error', 'The installing service worker became redundant.');
+              break;
+            }
+          }.bind(this);
+        }.bind(this);
+      }.bind(this)).catch(function(error) {
+        this._setState('error');
+        this.fire('service-worker-error', error.toString());
+        if (error.name === 'NetworkError') {
+          var location = serviceWorkerUrl.origin + serviceWorkerUrl.pathname;
+          console.error('A valid service worker script was not found at ' + location + '\n' +
+            'To learn how to fix this, please see\n' +
+            'https://github.com/PolymerElements/platinum-sw#top-level-sw-importjs');
+        }
+      }.bind(this));
+    },
+
+    attached: function() {
+      if (this.autoRegister) {
+        this.async(this.register);
+      }
+    }
+  });
 </script>
 <!-- Add your elements here -->
 <script>
@@ -18333,185 +18454,232 @@ Configuration:
         }
     });
 </script>
-<style is="custom-style">
-    /* Application theme */
+<style is="custom-style" include="tags-color">
+/* Application theme */
 
-    :root {
-        --dark-primary-color: #303F9F;
-        --default-primary-color: #00BCD4;
-        --light-primary-color: #C5CAE9;
-        --text-primary-color: #ffffff;
-        /*text/icons*/
-        --accent-color: #FF4081;
-        --primary-background-color: #c5cae9;
-        --primary-text-color: #212121;
-        --secondary-text-color: #727272;
-        --disabled-text-color: #bdbdbd;
-        --divider-color: #B6B6B6;
-        /* Components */
-        /* paper-drawer-panel */
-        --drawer-menu-color: #ffffff;
-        --drawer-border-color: 1px solid #ccc;
-        --paper-toolbar-background: #00BCD4;
-        --paper-toolbar-color: #07434D;
-        /* paper-menu */
-        --paper-menu-background-color: #fff;
-        --menu-link-color: #111111;
+:root {
+    --dark-primary-color: #303F9F;
+    --default-primary-color: #00BCD4;
+    --light-primary-color: #C5CAE9;
+    --text-primary-color: #ffffff;
+    /*text/icons*/
+    --accent-color: #FF4081;
+    --primary-background-color: #c5cae9;
+    --primary-text-color: #212121;
+    --secondary-text-color: #727272;
+    --disabled-text-color: #bdbdbd;
+    --divider-color: #B6B6B6;
+    /* Components */
+    /* paper-drawer-panel */
+    --drawer-menu-color: #ffffff;
+    --drawer-border-color: 1px solid #ccc;
+    --paper-toolbar-background: #00BCD4;
+    --paper-toolbar-color: #07434D;
+    /* paper-menu */
+    --paper-menu-background-color: #fff;
+    --menu-link-color: #111111;
+    --paper-radio-button-checked-color: var(--default-primary-color);
+    --paper-radio-button-checked-ink-color: var(--default-primary-color);
+    --paper-radio-button-unchecked-ink-color: var(--default-primary-color);
+}
+
+
+/* General styles */
+
+iron-pages {
+    padding: 0 !important;
+}
+
+paper-button,
+a paper-button {
+    color: inherit;
+}
+
+paper-button.colorful {
+    color: #00BCD4;
+}
+
+paper-button[raised].colorful {
+    background: #00BCD4;
+    color: #fff;
+}
+
+a,
+.anchor-like {
+    color: var(--default-primary-color);
+    cursor: pointer;
+}
+
+.post-link {
+    color: #ffffff;
+    font-weight: 100;
+    padding-bottom: 1px;
+    font-style: italic;
+}
+
+#drawerToolbar {
+    color: var(--secondary-text-color);
+    background-color: var(--drawer-menu-color);
+    border-bottom: var(--drawer-toolbar-border-color);
+    height: 64px;
+}
+
+paper-drawer-panel {
+    --paper-drawer-panel-left-drawer-container: {
+        z-index: 10;
     }
-    /* General styles */
+    ;
+}
 
-    iron-pages {
-        padding: 0 !important;
-    }
+paper-material {
+    border-radius: 2px;
+    height: 100%;
+    padding: 16px 0 16px 0;
+    width: calc(98.66% - 16px);
+    margin: 16px auto;
+    background: white;
+}
 
-    paper-button,
-    a paper-button {
-        color: inherit;
-    }
+paper-menu a {
+    text-decoration: none;
+    color: var(--menu-link-color);
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 24px;
+    min-height: 48px;
+    padding: 0 16px;
+}
 
-    paper-button.colorful {
-        color: #00BCD4;
-    }
+.paper-menu > .iron-selected {
+    background: #eaeaea;
+}
 
-    paper-button[raised].colorful {
-        background: #00BCD4;
-        color: #fff;
-    }
 
-    a,
-    .anchor-like {
-        color: var(--default-primary-color);
-        cursor: pointer;
-    }
+/* Breakpoints */
 
-    .post-link {
-        color: #ffffff;
-        font-weight: 100;
-        padding-bottom: 1px;
-        font-style: italic;
-    }
 
-    #drawerToolbar {
-        color: var(--secondary-text-color);
-        background-color: var(--drawer-menu-color);
-        border-bottom: var(--drawer-toolbar-border-color);
-        height: 64px;
-    }
+/* Small */
 
-    paper-drawer-panel {
-        --paper-drawer-panel-left-drawer-container: {
-            z-index: 10;
-        }
-        ;
-    }
-
+@media (max-width: 600px) {
     paper-material {
-        border-radius: 2px;
-        height: 100%;
-        padding: 16px 0 16px 0;
-        width: calc(98.66% - 16px);
-        margin: 16px auto;
-        background: white;
+        --menu-container-display: none;
+        width: calc(97.33% - 32px);
+        padding-left: 16px;
+        padding-right: 16px;
     }
+}
 
-    paper-menu a {
-        text-decoration: none;
-        color: var(--menu-link-color);
-        display: flex;
-        flex-direction: row;
-        align-items: center;
-        -webkit-font-smoothing: antialiased;
-        text-rendering: optimizeLegibility;
-        font-size: 14px;
-        font-weight: 500;
-        line-height: 24px;
-        min-height: 48px;
-        padding: 0 16px;
-    }
 
-    .paper-menu > .iron-selected {
-        background: #eaeaea;
-    }
-    /* Breakpoints */
-    /* Small */
+/* Tablet+ */
 
-    @media (max-width: 600px) {
-        paper-material {
-            --menu-container-display: none;
-            width: calc(97.33% - 32px);
-            padding-left: 16px;
-            padding-right: 16px;
-        }
+@media (min-width: 601px) {
+    paper-material {
+        width: calc(98% - 46px);
+        margin-bottom: 32px;
+        padding-left: 30px;
+        padding-right: 30px;
     }
-    /* Tablet+ */
+    iron-pages {
+        padding: 48px 62px;
+    }
+}
 
-    @media (min-width: 601px) {
-        paper-material {
-            width: calc(98% - 46px);
-            margin-bottom: 32px;
-            padding-left: 30px;
-            padding-right: 30px;
-        }
-        iron-pages {
-            padding: 48px 62px;
-        }
-    }
-    /* Material Design Adaptive Breakpoints */
-    /*
+
+/* Material Design Adaptive Breakpoints */
+
+
+/*
     Below you'll find CSS media queries based on the breakpoint guidance
     published by the Material Design team. You can choose to use, customise
     or remove these breakpoints based on your needs.
 
     http://www.google.com/design/spec/layout/adaptive-ui.html#adaptive-ui-breakpoints
    */
-    /* mobile-small */
 
-    @media all and (min-width: 0) and (max-width: 360px) and (orientation: portrait) {}
-    /* mobile-large */
 
-    @media all and (min-width: 361px) and (orientation: portrait) {}
-    /* mobile-small-landscape */
+/* mobile-small */
 
-    @media all and (min-width: 0) and (max-width: 480px) and (orientation: landscape) {}
-    /* mobile-large-landscape */
+@media all and (min-width: 0) and (max-width: 360px) and (orientation: portrait) {}
 
-    @media all and (min-width: 481px) and (orientation: landscape) {}
-    /* tablet-small-landscape */
 
-    @media all and (min-width: 600px) and (max-width: 960px) and (orientation: landscape) {}
-    /* tablet-large-landscape */
+/* mobile-large */
 
-    @media all and (min-width: 961px) and (orientation: landscape) {}
-    /* tablet-small */
+@media all and (min-width: 361px) and (orientation: portrait) {}
 
-    @media all and (min-width: 600px) and (orientation: portrait) {}
-    /* tablet-large */
 
-    @media all and (min-width: 601px) and (max-width: 840px) and (orientation: portrait) {}
-    /* desktop-x-small-landscape */
+/* mobile-small-landscape */
 
-    @media all and (min-width: 0) and (max-width: 480px) and (orientation: landscape) {}
-    /* desktop-x-small */
+@media all and (min-width: 0) and (max-width: 480px) and (orientation: landscape) {}
 
-    @media all and (min-width: 0) and (max-width: 480px) and (max-aspect-ratio: 4/3) {}
-    /* desktop-small-landscape */
 
-    @media all and (min-width: 481px) and (max-width: 840px) and (orientation: landscape) {}
-    /* desktop-small */
+/* mobile-large-landscape */
 
-    @media all and (min-width: 481px) and (max-width: 840px) and (max-aspect-ratio: 4/3) {}
-    /* desktop-medium-landscape */
+@media all and (min-width: 481px) and (orientation: landscape) {}
 
-    @media all and (min-width: 841px) and (max-width: 1280px) and (orientation: landscape) {}
-    /* desktop-medium */
 
-    @media all and (min-width: 841px) and (max-width: 1280px) and (max-aspect-ratio: 4/3) {}
-    /* desktop-large */
+/* tablet-small-landscape */
 
-    @media all and (min-width: 1281px) and (max-width: 1600px) {}
-    /* desktop-xlarge */
+@media all and (min-width: 600px) and (max-width: 960px) and (orientation: landscape) {}
 
-    @media all and (min-width: 1601px) and (max-width: 1920px) {}
+
+/* tablet-large-landscape */
+
+@media all and (min-width: 961px) and (orientation: landscape) {}
+
+
+/* tablet-small */
+
+@media all and (min-width: 600px) and (orientation: portrait) {}
+
+
+/* tablet-large */
+
+@media all and (min-width: 601px) and (max-width: 840px) and (orientation: portrait) {}
+
+
+/* desktop-x-small-landscape */
+
+@media all and (min-width: 0) and (max-width: 480px) and (orientation: landscape) {}
+
+
+/* desktop-x-small */
+
+@media all and (min-width: 0) and (max-width: 480px) and (max-aspect-ratio: 4/3) {}
+
+
+/* desktop-small-landscape */
+
+@media all and (min-width: 481px) and (max-width: 840px) and (orientation: landscape) {}
+
+
+/* desktop-small */
+
+@media all and (min-width: 481px) and (max-width: 840px) and (max-aspect-ratio: 4/3) {}
+
+
+/* desktop-medium-landscape */
+
+@media all and (min-width: 841px) and (max-width: 1280px) and (orientation: landscape) {}
+
+
+/* desktop-medium */
+
+@media all and (min-width: 841px) and (max-width: 1280px) and (max-aspect-ratio: 4/3) {}
+
+
+/* desktop-large */
+
+@media all and (min-width: 1281px) and (max-width: 1600px) {}
+
+
+/* desktop-xlarge */
+
+@media all and (min-width: 1601px) and (max-width: 1920px) {}
 </style><!-- Configure your routes here -->
 <script>!function(e){if("object"==typeof exports&&"undefined"!=typeof module)module.exports=e();else if("function"==typeof define&&define.amd)define([],e);else{var f;"undefined"!=typeof window?f=window:"undefined"!=typeof global?f=global:"undefined"!=typeof self&&(f=self),f.page=e()}}(function(){var define,module,exports;return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
 (function (process){
@@ -22811,6 +22979,14 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
           },
 
           /**
+           * If provided, this will be the element that will be focused when
+           * the dropdown opens.
+           */
+          focusTarget: {
+            type: Object
+          },
+
+          /**
            * Set to true to disable animations when opening and closing the
            * dropdown.
            */
@@ -22850,6 +23026,17 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
           return Polymer.dom(this.$.content).getDistributedNodes()[0];
         },
 
+        /**
+         * The element that should be focused when the dropdown opens.
+         */
+        get _focusTarget() {
+          return this.focusTarget || this.containedElement;
+        },
+
+        /**
+         * The element that should be used to position the dropdown when
+         * it opens, if no position target is configured.
+         */
         get _defaultPositionTarget() {
           var parent = Polymer.dom(this).parentNode;
 
@@ -22860,6 +23047,9 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
           return parent;
         },
 
+        /**
+         * The bounding rect of the position target.
+         */
         get _positionRect() {
           if (!this._positionRectMemo && this.positionTarget) {
             this._positionRectMemo = this.positionTarget.getBoundingClientRect();
@@ -22868,6 +23058,9 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
           return this._positionRectMemo;
         },
 
+        /**
+         * The horizontal offset value used to position the dropdown.
+         */
         get _horizontalAlignTargetValue() {
           var target;
 
@@ -22882,6 +23075,9 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
           return Math.max(target, 0);
         },
 
+        /**
+         * The vertical offset value used to position the dropdown.
+         */
         get _verticalAlignTargetValue() {
           var target;
 
@@ -22896,27 +23092,41 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
           return Math.max(target, 0);
         },
 
+        /**
+         * Called when the value of `opened` changes.
+         *
+         * @param {boolean} opened True if the dropdown is opened.
+         */
         _openedChanged: function(opened) {
           if (opened && this.disabled) {
             this.cancel();
           } else {
-            this._cancelAnimations();
+            this.cancelAnimation();
             this._prepareDropdown();
             Polymer.IronOverlayBehaviorImpl._openedChanged.apply(this, arguments);
           }
+
+          if (this.opened) {
+            this._focusContent();
+          }
         },
 
+        /**
+         * Overridden from `IronOverlayBehavior`.
+         */
         _renderOpened: function() {
           Polymer.IronDropdownScrollManager.pushScrollLock(this);
           if (!this.noAnimations && this.animationConfig && this.animationConfig.open) {
             this.$.contentWrapper.classList.add('animating');
             this.playAnimation('open');
           } else {
-            this._focusContent();
             Polymer.IronOverlayBehaviorImpl._renderOpened.apply(this, arguments);
           }
         },
 
+        /**
+         * Overridden from `IronOverlayBehavior`.
+         */
         _renderClosed: function() {
           Polymer.IronDropdownScrollManager.removeScrollLock(this);
           if (!this.noAnimations && this.animationConfig && this.animationConfig.close) {
@@ -22927,6 +23137,12 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
           }
         },
 
+        /**
+         * Called when animation finishes on the dropdown (when opening or
+         * closing). Responsible for "completing" the process of opening or
+         * closing the dropdown by positioning it or setting its display to
+         * none.
+         */
         _onNeonAnimationFinish: function() {
           this.$.contentWrapper.classList.remove('animating');
           if (this.opened) {
@@ -22936,6 +23152,9 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
           }
         },
 
+        /**
+         * Called when an `iron-resize` event fires.
+         */
         _onIronResize: function() {
           var containedElement = this.containedElement;
           var scrollTop;
@@ -22958,14 +23177,17 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
           }
         },
 
+        /**
+         * Called when the `positionTarget` property changes.
+         */
         _positionTargetChanged: function() {
           this._updateOverlayPosition();
         },
 
-        _cancelAnimations: function() {
-          this.cancelAnimation();
-        },
-
+        /**
+         * Constructs the final animation config from different properties used
+         * to configure specific parts of the opening and closing animations.
+         */
         _updateAnimationConfig: function() {
           var animationConfig = {};
           var animations = [];
@@ -22993,12 +23215,21 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
           this.animationConfig = animationConfig;
         },
 
+        /**
+         * Prepares the dropdown for opening by updating measured layout
+         * values.
+         */
         _prepareDropdown: function() {
           this.sizingTarget = this.containedElement || this.sizingTarget;
           this._updateAnimationConfig();
           this._updateOverlayPosition();
         },
 
+        /**
+         * Updates the overlay position based on configured horizontal
+         * and vertical alignment, and re-memoizes these values for the sake
+         * of behavior in `IronFitBehavior`.
+         */
         _updateOverlayPosition: function() {
           this._positionRectMemo = null;
 
@@ -23024,10 +23255,17 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
           }
         },
 
+        /**
+         * Focuses the configured focus target.
+         */
         _focusContent: function() {
-          if (this.containedElement) {
-            this.containedElement.focus();
-          }
+          // NOTE(cdata): This is async so that it can attempt the focus after
+          // `display: none` is removed from the element.
+          this.async(function() {
+            if (this._focusTarget) {
+              this._focusTarget.focus();
+            }
+          });
         }
       });
     })();
@@ -23144,9 +23382,9 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
     <div id="trigger" on-tap="open">
       <content select=".dropdown-trigger"></content>
     </div>
-    <iron-dropdown id="dropdown" opened="{{opened}}" horizontal-align="[[horizontalAlign]]" vertical-align="[[verticalAlign]]" horizontal-offset="[[horizontalOffset]]" vertical-offset="[[verticalOffset]]" open-animation-config="[[openAnimationConfig]]" close-animation-config="[[closeAnimationConfig]]" no-animations="[[noAnimations]]">
+    <iron-dropdown id="dropdown" opened="{{opened}}" horizontal-align="[[horizontalAlign]]" vertical-align="[[verticalAlign]]" horizontal-offset="[[horizontalOffset]]" vertical-offset="[[verticalOffset]]" open-animation-config="[[openAnimationConfig]]" close-animation-config="[[closeAnimationConfig]]" no-animations="[[noAnimations]]" focus-target="[[_dropdownContent]]">
       <paper-material class="dropdown-content">
-        <content select=".dropdown-content"></content>
+        <content id="content" select=".dropdown-content"></content>
       </paper-material>
     </iron-dropdown>
   </template>
@@ -23183,7 +23421,8 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
         opened: {
           type: Boolean,
           value: false,
-          notify: true
+          notify: true,
+          observer: '_openedChanged'
         },
 
         /**
@@ -23241,7 +23480,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
          * Set to true to disable automatically closing the dropdown after
          * a selection has been made.
          */
-        ignoreActivate: {
+        ignoreSelect: {
           type: Boolean,
           value: false
         },
@@ -23304,6 +23543,14 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
               }
             }];
           }
+        },
+
+        /**
+         * This is the element intended to be bound as the focus target
+         * for the `iron-dropdown` contained by `paper-menu-button`.
+         */
+        _dropdownContent: {
+          type: Object
         }
       },
 
@@ -23313,7 +23560,14 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
       },
 
       listeners: {
-        'iron-activate': '_onIronActivate'
+        'iron-select': '_onIronSelect'
+      },
+
+      /**
+       * The content element that is contained by the menu button, if any.
+       */
+      get contentElement() {
+        return Polymer.dom(this.$.content).getDistributedNodes()[0];
       },
 
       /**
@@ -23336,14 +23590,14 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
       },
 
       /**
-       * When an `iron-activate` event is received, the dropdown should
+       * When an `iron-select` event is received, the dropdown should
        * automatically close on the assumption that a value has been chosen.
        *
        * @param {CustomEvent} event A CustomEvent instance with type
-       * set to `"iron-activate"`.
+       * set to `"iron-select"`.
        */
-      _onIronActivate: function(event) {
-        if (!this.ignoreActivate) {
+      _onIronSelect: function(event) {
+        if (!this.ignoreSelect) {
           this.close();
         }
       },
@@ -23357,6 +23611,12 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
        */
       _openedChanged: function(opened, oldOpened) {
         if (opened) {
+          // TODO(cdata): Update this when we can measure changes in distributed
+          // children in an idiomatic way.
+          // We poke this property in case the element has changed. This will
+          // cause the focus target for the `iron-dropdown` to be updated as
+          // necessary:
+          this._dropdownContent = this.contentElement;
           this.fire('paper-dropdown-open');
         } else if (oldOpened != null) {
           this.fire('paper-dropdown-close');
@@ -23383,6 +23643,280 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
     Polymer.PaperMenuButton = PaperMenuButton;
   })();
 </script>
+<dom-module id="paper-checkbox" assetpath="../bower_components/paper-checkbox/">
+  <style>
+/**
+@license
+Copyright (c) 2015 The Polymer Project Authors. All rights reserved.
+This code may only be used under the BSD style license found at http://polymer.github.io/LICENSE.txt
+The complete set of authors may be found at http://polymer.github.io/AUTHORS.txt
+The complete set of contributors may be found at http://polymer.github.io/CONTRIBUTORS.txt
+Code distributed by Google as part of the polymer project is also
+subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
+*/
+
+:host {
+  display: inline-block;
+  white-space: nowrap;
+}
+
+:host(:focus) {
+  outline: none;
+}
+
+.hidden {
+  display: none;
+}
+
+#checkboxContainer {
+  display: inline-block;
+  position: relative;
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
+  vertical-align: middle;
+  background-color: var(--paper-checkbox-unchecked-background-color, transparent);
+}
+
+:host #ink {
+  position: absolute;
+  top: -15px;
+  left: -15px;
+  width: 48px;
+  height: 48px;
+  color: var(--paper-checkbox-unchecked-ink-color, --primary-text-color);
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+:host #ink[checked] {
+  color: var(--paper-checkbox-checked-ink-color, --default-primary-color);
+}
+
+:host #checkbox {
+  position: relative;
+  box-sizing: border-box;
+  height: 100%;
+  border: solid 2px;
+  border-color: var(--paper-checkbox-unchecked-color, --primary-text-color);
+  border-radius: 2px;
+  pointer-events: none;
+  -webkit-transition: background-color 140ms, border-color 140ms;
+  transition: background-color 140ms, border-color 140ms;
+}
+
+/* checkbox checked animations */
+#checkbox.checked #checkmark {
+  -webkit-animation: checkmark-expand 140ms ease-out forwards;
+  animation: checkmark-expand 140ms ease-out forwards;
+}
+
+@-webkit-keyframes checkmark-expand {
+  0% {
+    top: 9px;
+    left: 6px;
+    width: 0px;
+    height: 0px;
+  }
+  100% {
+    top: -1px;
+    left: 4px;
+    width: 5px;
+    height: 10px;
+  }
+}
+
+@keyframes checkmark-expand {
+  0% {
+    top: 9px;
+    left: 6px;
+    width: 0px;
+    height: 0px;
+  }
+  100% {
+    top: -1px;
+    left: 4px;
+    width: 5px;
+    height: 10px;
+  }
+}
+
+:host #checkbox.checked {
+  background-color: var(--paper-checkbox-checked-color, --default-primary-color);
+  border-color: var(--paper-checkbox-checked-color, --default-primary-color);
+}
+
+:host #checkmark {
+  -webkit-transform: rotate(45deg);
+  transform: rotate(45deg);
+  position: absolute;
+  top: -1px;
+  left: 4px;
+  width: 5px;
+  height: 10px;
+  border-style: solid;
+  border-top: none;
+  border-left: none;
+  border-right-width: 2px;
+  border-bottom-width: 2px;
+  border-color: var(--paper-checkbox-checkmark-color, white);
+}
+
+/* label */
+#checkboxLabel {
+  position: relative;
+  display: inline-block;
+  vertical-align: middle;
+  padding-left: 8px;
+  white-space: normal;
+  pointer-events: none;
+  color: var(--paper-checkbox-label-color, --primary-text-color);
+}
+
+#checkboxLabel[hidden] {
+  display: none;
+}
+
+/* disabled state */
+:host([disabled]) {
+  pointer-events: none;
+}
+
+:host([disabled]) #checkbox {
+  opacity: 0.5;
+  border-color: var(--paper-checkbox-unchecked-color, --primary-text-color);
+}
+
+:host([disabled][checked]) #checkbox {
+  background-color: var(--paper-checkbox-unchecked-color, --primary-text-color);
+  opacity: 0.5;
+}
+
+:host([disabled]) #checkboxLabel  {
+  opacity: 0.65;
+}
+
+</style>
+
+  <template>
+
+    <div id="checkboxContainer">
+      <paper-ripple id="ink" class="circle" center="" checked$="[[checked]]"></paper-ripple>
+      <div id="checkbox" class$="[[_computeCheckboxClass(checked)]]">
+        <div id="checkmark" class$="[[_computeCheckmarkClass(checked)]]"></div>
+      </div>
+    </div>
+
+    <div id="checkboxLabel" aria-hidden="true"><content></content></div>
+
+  </template>
+
+  <script>
+    Polymer({
+      is: 'paper-checkbox',
+
+      behaviors: [
+        Polymer.PaperInkyFocusBehavior
+      ],
+
+      hostAttributes: {
+        role: 'checkbox',
+        'aria-checked': false,
+        tabindex: 0
+      },
+
+      properties: {
+        /**
+         * Fired when the checked state changes due to user interaction.
+         *
+         * @event change
+         */
+
+        /**
+         * Fired when the checked state changes.
+         *
+         * @event iron-change
+         */
+
+        /**
+         * Gets or sets the state, `true` is checked and `false` is unchecked.
+         */
+        checked: {
+          type: Boolean,
+          value: false,
+          reflectToAttribute: true,
+          notify: true,
+          observer: '_checkedChanged'
+        },
+
+        /**
+         * If true, the button toggles the active state with each tap or press
+         * of the spacebar.
+         */
+        toggles: {
+          type: Boolean,
+          value: true,
+          reflectToAttribute: true
+        }
+      },
+
+      attached: function() {
+        this._isReady = true;
+
+        // Don't stomp over a user-set aria-label.
+        if (!this.getAttribute('aria-label')) {
+          this.updateAriaLabel();
+        }
+      },
+
+
+      /**
+       * Update the checkbox aria-label. This is a temporary workaround not
+       * being able to observe changes in <content>
+       * (see: https://github.com/Polymer/polymer/issues/1773)
+       *
+       * Call this if you manually change the contents of the checkbox
+       * and want the aria-label to match the new contents.
+       */
+      updateAriaLabel: function() {
+        this.setAttribute('aria-label', Polymer.dom(this).textContent.trim());
+      },
+
+      // button-behavior hook
+      _buttonStateChanged: function() {
+        if (this.disabled) {
+          return;
+        }
+        if (this._isReady) {
+          this.checked = this.active;
+        }
+      },
+
+      _checkedChanged: function(checked) {
+        this.setAttribute('aria-checked', this.checked ? 'true' : 'false');
+        this.active = this.checked;
+        this.fire('iron-change');
+      },
+
+      _computeCheckboxClass: function(checked) {
+        if (checked) {
+          return 'checked';
+        }
+        return '';
+      },
+
+      _computeCheckmarkClass: function(checked) {
+        if (!checked) {
+          return 'hidden';
+        }
+        return '';
+      }
+    })
+  </script>
+
+</dom-module>
 <dom-module id="paper-toolbar" assetpath="../bower_components/paper-toolbar/">
 
   <style>
@@ -25041,7 +25575,8 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
     is: 'paper-tab',
 
     behaviors: [
-      Polymer.IronControlState
+      Polymer.IronControlState,
+      Polymer.IronButtonState
     ],
 
     properties: {
@@ -25063,7 +25598,11 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
     },
 
     listeners: {
-      down: '_onDown'
+      down: '_updateNoink'
+    },
+
+    attached: function() {
+      this._updateNoink();
     },
 
     get _parentNoink () {
@@ -25071,7 +25610,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
       return !!parent && !!parent.noink;
     },
 
-    _onDown: function(e) {
+    _updateNoink: function() {
       this.noink = !!this.noink || !!this._parentNoink;
     }
   });
@@ -25503,6 +26042,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
   .header img {
     width: 100%;
     pointer-events: none;
+    @apply(--paper-card-header-image);
   }
 
   .header .title-text {
@@ -25510,11 +26050,13 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
     font-size: 24px;
     font-weight: bold;
     color: var(--paper-card-header-color, #000);
+    @apply(--paper-card-header-text);
   }
 
   .header .title-text.over-image {
     position: absolute;
     bottom: 0px;
+    @apply(--paper-card-header-image-text);
   }
 
   :host ::content .card-content {
@@ -27785,7 +28327,119 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
   });
 
 </script>
-<dom-module id="hero-block" assetpath="hero-block/">
+<dom-module id="tags-color" assetpath="../styles/"><template><style>
+        :root {
+            --android: #78C257;
+            --ux: #9C27B0;
+            --dart: #00B4AA;
+            --cloud: #4285F4;
+            --v8-engine: #00BCD4;
+            --gae: #FFC107;
+            --grpc: #617D8A;
+            --kubernetes: #326DE6;
+            --polymer: #D81B60;
+        }
+
+        paper-checkbox.android {
+            --paper-checkbox-checked-color: var(--android);
+            --paper-checkbox-checked-ink-color: var(--android);
+            --paper-checkbox-unchecked-ink-color: var(--android);
+        }
+        paper-checkbox.ux {
+            --paper-checkbox-checked-color: var(--ux);
+            --paper-checkbox-checked-ink-color: var(--ux);
+            --paper-checkbox-unchecked-ink-color: var(--ux);
+        }
+        paper-checkbox.dart {
+            --paper-checkbox-checked-color: var(--dart);
+            --paper-checkbox-checked-ink-color: var(--dart);
+            --paper-checkbox-unchecked-ink-color: var(--dart);
+        }
+        paper-checkbox.cloud {
+            --paper-checkbox-checked-color: var(--cloud);
+            --paper-checkbox-checked-ink-color: var(--cloud);
+            --paper-checkbox-unchecked-ink-color: var(--cloud);
+        }
+        paper-checkbox.v8-engine {
+            --paper-checkbox-checked-color: var(--v8-engine);
+            --paper-checkbox-checked-ink-color: var(--v8-engine);
+            --paper-checkbox-unchecked-ink-color: var(--v8-engine);
+        }
+        paper-checkbox.gae {
+            --paper-checkbox-checked-color: var(--gae);
+            --paper-checkbox-checked-ink-color: var(--gae);
+            --paper-checkbox-unchecked-ink-color: var(--gae);
+        }
+        paper-checkbox.grpc {
+            --paper-checkbox-checked-color: var(--grpc);
+            --paper-checkbox-checked-ink-color: var(--grpc);
+            --paper-checkbox-unchecked-ink-color: var(--grpc);
+        }
+        paper-checkbox.kubernetes {
+            --paper-checkbox-checked-color: var(--kubernetes);
+            --paper-checkbox-checked-ink-color: var(--kubernetes);
+            --paper-checkbox-unchecked-ink-color: var(--kubernetes);
+        }
+        paper-checkbox.polymer {
+            --paper-checkbox-checked-color: var(--polymer);
+            --paper-checkbox-checked-ink-color: var(--polymer);
+            --paper-checkbox-unchecked-ink-color: var(--polymer);
+        }
+
+        paper-radio-button.android {
+            --paper-radio-button-checked-color: var(--android);
+            --paper-radio-button-checked-ink-color: var(--android);
+            --paper-radio-button-unchecked-ink-color: var(--android);
+        }
+
+        paper-radio-button.ux {
+            --paper-radio-button-checked-color: var(--ux);
+            --paper-radio-button-checked-ink-color: var(--ux);
+            --paper-radio-button-unchecked-ink-color: var(--ux);
+        }
+
+        paper-radio-button.dart {
+            --paper-radio-button-checked-color: var(--dart);
+            --paper-radio-button-checked-ink-color: var(--dart);
+            --paper-radio-button-unchecked-ink-color: var(--dart);
+        }
+
+        paper-radio-button.cloud {
+            --paper-radio-button-checked-color: var(--cloud);
+            --paper-radio-button-checked-ink-color: var(--cloud);
+            --paper-radio-button-unchecked-ink-color: var(--cloud);
+        }
+
+        paper-radio-button.v8-engine {
+            --paper-radio-button-checked-color: var(--v8-engine);
+            --paper-radio-button-checked-ink-color: var(--v8-engine);
+            --paper-radio-button-unchecked-ink-color: var(--v8-engine);
+        }
+
+        paper-radio-button.gae {
+            --paper-radio-button-checked-color: var(--gae);
+            --paper-radio-button-checked-ink-color: var(--gae);
+            --paper-radio-button-unchecked-ink-color: var(--gae);
+        }
+
+        paper-radio-button.grpc {
+            --paper-radio-button-checked-color: var(--grpc);
+            --paper-radio-button-checked-ink-color: var(--grpc);
+            --paper-radio-button-unchecked-ink-color: var(--grpc);
+        }
+
+        paper-radio-button.kubernetes {
+            --paper-radio-button-checked-color: var(--kubernetes);
+            --paper-radio-button-checked-ink-color: var(--kubernetes);
+            --paper-radio-button-unchecked-ink-color: var(--kubernetes);
+        }
+
+        paper-radio-button.polymer {
+            --paper-radio-button-checked-color: var(--polymer);
+            --paper-radio-button-checked-ink-color: var(--polymer);
+            --paper-radio-button-unchecked-ink-color: var(--polymer);
+        }
+        </style></template></dom-module><dom-module id="hero-block" assetpath="hero-block/">
     <template>
         <style>
             :host {
@@ -29978,9 +30632,21 @@ Polymer({
 </script>
 <dom-module id="people-block" assetpath="people-block/">
     <template>
+        <style include="tags-color"></style>
         <style>
             :host {
                 display: block;
+                --paper-card: {
+                    background: transparent;
+                }
+                ;
+                --paper-card-content: {
+                    background: #fff;
+                }
+                ;
+                 --paper-card-actions: {
+                     background: #fff;
+                 };
             }
 
             .person-wrapper {
@@ -30016,7 +30682,7 @@ Polymer({
             }
 
             .card-wrapper {
-                margin-bottom: 30px;
+                margin-bottom: 20px;
             }
 
             .people-header {
@@ -30065,58 +30731,116 @@ Polymer({
                 -webkit-box-orient: vertical;
             }
 
+            .filters {
+                margin-bottom: 20px;
+            }
+
+            .filters .card-content {
+                border-bottom: 1px solid #eee;
+            }
+            .filters .header {
+                font-size: 20px;
+                font-weight: 400;
+            }
+            .filters .card-actions {
+                border: 0;
+            }
+
+            .selector-group > * {
+                padding: 14px 16px;
+            }
+
             @media (max-width: 767px) {
                 .person-wrapper,
                 .person {
                     @apply(--layout-fit);
                 }
+                .side-menu {
+                    order: -1;
+                }
+                .filters .card-actions {
+                    text-align: right;
+                }
             }
 
             @media (min-width: 768px) {
                 .card-wrapper {
-                    margin: 0 15px 30px;
-                    width: calc(100% / 4);
+                    width: calc(100% / 3);
+                }
+                .card-wrapper paper-material {
+                    margin: 0 10px;
+                }
+                .side-menu {
+                    padding-left: 20px;
                 }
             }
         </style>
         <iron-ajax auto="" url="[[source]]" handle-as="json" on-response="peopleLoaded" debounce-duration="300"></iron-ajax>
         <div id="people" class="container flex layout vertical">
-            <div class="flex layout vertical-horizontal center-justified wrap">
-                <template is="dom-repeat" items="[[people]]" as="person">
-                    <div class="card-wrapper layout horizontal">
-                        <paper-material class="flex pointer" on-tap="readMore">
-                            <div class="people-header relative">
-                                <iron-image src="[[person.photoUrl]]" class="placeholder-color fit" preload="" fade="" sizing="cover"></iron-image>
-                                <div class="people-image-overlay fit"></div>
-                                <ul class="badges relative text-right">
-                                    <template is="dom-repeat" items="[[person.badges]]" as="badge">
-                                        <li class="badge">
-                                            <a href="[[badge.link]]" target="_blank">[[badge.name]]</a>
-                                        </li>
-                                    </template>
-                                </ul>
-                                <div class="bottom-image-text">
-                                    <span class="people-name relative">[[person.name]]</span>
-                                    <div class="title">
-                                        <span>[[person.company]]</span>,
-                                        <span>[[person.country]]</span>
+            <div class="layout vertical-horizontal">
+                <div class="flex">
+                    <div class="layout vertical-horizontal center-justified wrap">
+                        <template id="peopleList" is="dom-repeat" items="[[people]]" as="person" filter="checkHiding">
+                            <div class="card-wrapper layout horizontal" hidden$="{{person.hide}}">
+                                <paper-material class="flex pointer" on-tap="readMore">
+                                    <div class="people-header relative">
+                                        <iron-image src="[[person.photoUrl]]" class="placeholder-color fit" preload="" fade="" sizing="cover"></iron-image>
+                                        <div class="people-image-overlay fit"></div>
+                                        <ul class="badges relative text-right">
+                                            <template is="dom-repeat" items="[[person.badges]]" as="badge">
+                                                <li class="badge">
+                                                    <a href="[[badge.link]]" target="_blank">[[badge.name]]</a>
+                                                </li>
+                                            </template>
+                                        </ul>
+                                        <div class="bottom-image-text">
+                                            <span class="people-name relative">[[person.name]]</span>
+                                            <div class="title">
+                                                <span>[[person.company]]</span>,
+                                                <span>[[person.country]]</span>
+                                            </div>
+                                        </div>
                                     </div>
-                                </div>
-                            </div>
-                            <!-- <div class="card-content flex people-description">
+                                    <!-- <div class="card-content flex people-description">
 
                             <marked-element class="brief" markdown="[[person.bio]]"></marked-element>
                         </div>
                         <div class="card-actions">
                             <paper-button on-tap="readMore">Open details</paper-button>
                         </div> -->
-                        </paper-material>
+                                </paper-material>
+                            </div>
+                        </template>
                     </div>
-                </template>
+                </div>
+                <div class="side-menu layout vertical">
+                    <paper-card class="filters">
+                        <div class="card-content header">
+                            <div class="title-text">Filters</div>
+                        </div>
+                        <div class="card-content">
+                            <div id="tagFilter" class="selector-group layout horizontal-vertical wrap">
+                                <template is="dom-repeat" items="[[tags]]" as="tag">
+                                    <paper-checkbox class$="[[tag.tagClass]]" on-change="_filter" checked="">[[tag.name]]</paper-checkbox>
+                                </template>
+                            </div>
+                        </div>
+                        <div class="card-content">
+                            <div id="badgeFilter" class="selector-group layout horizontal-vertical">
+                                <template is="dom-repeat" items="[[badges]]" as="badge">
+                                    <paper-checkbox class$="[[badge.badgeClass]]" on-change="_filter" checked="">[[badge.name]]</paper-checkbox>
+                                </template>
+                            </div>
+                        </div>
+                        <div class="card-actions">
+                            <a href="http://goo.gl/forms/kymZwijWFy" class="block-link self-center" target="_blank">
+                                <paper-button>Become a speaker</paper-button>
+                            </a>
+                        </div>
+                    </paper-card>
+
+                </div>
             </div>
-            <a href="http://goo.gl/forms/kymZwijWFy" class="block-link self-center" target="_blank">
-                <paper-button class="colorful" raised="">Become a speaker</paper-button>
-            </a>
         </div>
         <div id="personCon" class="person-wrapper container relative">
             <person-dialog id="person" class="person flex" person="{{selectedPerson}}" opened="{{opened}}"></person-dialog>
@@ -30132,6 +30856,12 @@ Polymer({
         ],
         properties: {
             source: String,
+            tags: Array,
+            badges: Array,
+            filters: {
+                type: Array,
+                value: []
+            },
             opened: {
                 type: Boolean,
                 observer: '_openedChanged'
@@ -30179,6 +30909,7 @@ Polymer({
         },
         peopleLoaded: function(event, response) {
             this.people = response.response;
+            this._generateFilters();
 
             this.async(function() {
                 var nodeList = this.$.people.querySelectorAll('.card-wrapper');
@@ -30196,6 +30927,37 @@ Polymer({
                     return true;
                 }
             }
+        },
+        _generateFilters: function() {
+            var tempTags = [];
+            var tempBadges = [];
+            for (var i = 0; i < this.people.length; i++) {
+                for (var j = 0; j < this.people[i].tags.length; j++) {
+                    var tagClass = app.generateClass(this.people[i].tags[j]);
+                    if (!app.findByPropertyValue(tempTags, 'tagClass', tagClass)) {
+                        tempTags.push({
+                            name: this.people[i].tags[j],
+                            tagClass: tagClass
+                        });
+                        this.filters.push(this.people[i].tags[j]);
+                    }
+                }
+                if (this.people[i].badges === undefined) {
+                    this.people[i].badges = [];
+                }
+                for (var k = 0; k < this.people[i].badges.length; j++) {
+                    var badgeClass = app.generateClass(this.people[i].badges[k].name);
+                    if (!app.findByPropertyValue(tempBadges, 'badgeClass', badgeClass)) {
+                        tempBadges.push({
+                            name: this.people[i].badges[k].name,
+                            badgeClass: badgeClass
+                        });
+                        this.filters.push(this.people[i].badges[k].name);
+                    }
+                }
+            }
+            this.tags = tempTags;
+            this.badges = tempBadges;
         },
         playLoadAnimation: function() {
             this.cancelAnimation();
@@ -30237,7 +30999,45 @@ Polymer({
             if (!this.opened) {
                 this.closePerson();
             }
+        },
+        _filter: function(event) {
+            var filterName = '';
+            if (event.model.tag !== undefined) {
+                filterName = event.model.tag.name;
+            } else if (event.model.badge !== undefined) {
+                filterName = event.model.badge.name;
+            } else {
+                return;
+            }
+
+            var filterStatus = event.srcElement.checked,
+                filterIndex = this.filters.indexOf(filterName);
+            if (filterStatus && filterIndex < 0) {
+                this.filters.push(filterName);
+            } else {
+                this.filters.splice(filterIndex, 1);
+            }
+            console.log(this.filters);
+            for (var i = 0; i < this.people.length; i++) {
+                this.people[i].hide = this._matchesFilters(this.people[i]);
+            }
+            this.$.peopleList.render();
+        },
+        _matchesFilters: function(person) {
+            if (!this.filters.length) {
+                return true;
+            }
+            for (var i = 0; i < this.filters.length; i++) {
+                if (person.tags.indexOf(this.filters[i]) > -1 || app.findByPropertyValue(person.badges, 'name', this.filters[i])) {
+                    return false;
+                }
+            }
+            return true;
+        },
+        checkHiding: function(person) {
+            return !person.hide;
         }
+
     });
 </script>
 <dom-module id="latest-news" assetpath="latest-news/">

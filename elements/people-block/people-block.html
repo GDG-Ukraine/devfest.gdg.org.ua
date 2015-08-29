@@ -1,9 +1,21 @@
 <link rel="import" href="../person-dialog/person-dialog.html">
 <dom-module id="people-block">
     <template>
+        <style include="tags-color"></style>
         <style>
             :host {
                 display: block;
+                --paper-card: {
+                    background: transparent;
+                }
+                ;
+                --paper-card-content: {
+                    background: #fff;
+                }
+                ;
+                 --paper-card-actions: {
+                     background: #fff;
+                 };
             }
 
             .person-wrapper {
@@ -39,7 +51,7 @@
             }
 
             .card-wrapper {
-                margin-bottom: 30px;
+                margin-bottom: 20px;
             }
 
             .people-header {
@@ -88,58 +100,116 @@
                 -webkit-box-orient: vertical;
             }
 
+            .filters {
+                margin-bottom: 20px;
+            }
+
+            .filters .card-content {
+                border-bottom: 1px solid #eee;
+            }
+            .filters .header {
+                font-size: 20px;
+                font-weight: 400;
+            }
+            .filters .card-actions {
+                border: 0;
+            }
+
+            .selector-group > * {
+                padding: 14px 16px;
+            }
+
             @media (max-width: 767px) {
                 .person-wrapper,
                 .person {
                     @apply(--layout-fit);
                 }
+                .side-menu {
+                    order: -1;
+                }
+                .filters .card-actions {
+                    text-align: right;
+                }
             }
 
             @media (min-width: 768px) {
                 .card-wrapper {
-                    margin: 0 15px 30px;
-                    width: calc(100% / 4);
+                    width: calc(100% / 3);
+                }
+                .card-wrapper paper-material {
+                    margin: 0 10px;
+                }
+                .side-menu {
+                    padding-left: 20px;
                 }
             }
         </style>
         <iron-ajax auto url="[[source]]" handle-as="json" on-response="peopleLoaded" debounce-duration="300"></iron-ajax>
         <div id="people" class="container flex layout vertical">
-            <div class="flex layout vertical-horizontal center-justified wrap">
-                <template is="dom-repeat" items="[[people]]" as="person">
-                    <div class="card-wrapper layout horizontal">
-                        <paper-material class="flex pointer" on-tap="readMore">
-                            <div class="people-header relative">
-                                <iron-image src="[[person.photoUrl]]" class="placeholder-color fit" preload fade sizing="cover"></iron-image>
-                                <div class="people-image-overlay fit"></div>
-                                <ul class="badges relative text-right">
-                                    <template is="dom-repeat" items="[[person.badges]]" as="badge">
-                                        <li class="badge">
-                                            <a href="[[badge.link]]" target="_blank">[[badge.name]]</a>
-                                        </li>
-                                    </template>
-                                </ul>
-                                <div class="bottom-image-text">
-                                    <span class="people-name relative">[[person.name]]</span>
-                                    <div class="title">
-                                        <span>[[person.company]]</span>,
-                                        <span>[[person.country]]</span>
+            <div class="layout vertical-horizontal">
+                <div class="flex">
+                    <div class="layout vertical-horizontal center-justified wrap">
+                        <template id="peopleList" is="dom-repeat" items="[[people]]" as="person" filter="checkHiding">
+                            <div class="card-wrapper layout horizontal" hidden$="{{person.hide}}">
+                                <paper-material class="flex pointer" on-tap="readMore">
+                                    <div class="people-header relative">
+                                        <iron-image src="[[person.photoUrl]]" class="placeholder-color fit" preload fade sizing="cover"></iron-image>
+                                        <div class="people-image-overlay fit"></div>
+                                        <ul class="badges relative text-right">
+                                            <template is="dom-repeat" items="[[person.badges]]" as="badge">
+                                                <li class="badge">
+                                                    <a href="[[badge.link]]" target="_blank">[[badge.name]]</a>
+                                                </li>
+                                            </template>
+                                        </ul>
+                                        <div class="bottom-image-text">
+                                            <span class="people-name relative">[[person.name]]</span>
+                                            <div class="title">
+                                                <span>[[person.company]]</span>,
+                                                <span>[[person.country]]</span>
+                                            </div>
+                                        </div>
                                     </div>
-                                </div>
-                            </div>
-                            <!-- <div class="card-content flex people-description">
+                                    <!-- <div class="card-content flex people-description">
 
                             <marked-element class="brief" markdown="[[person.bio]]"></marked-element>
                         </div>
                         <div class="card-actions">
                             <paper-button on-tap="readMore">Open details</paper-button>
                         </div> -->
-                        </paper-material>
+                                </paper-material>
+                            </div>
+                        </template>
                     </div>
-                </template>
+                </div>
+                <div class="side-menu layout vertical">
+                    <paper-card class="filters">
+                        <div class="card-content header">
+                            <div class="title-text">Filters</div>
+                        </div>
+                        <div class="card-content">
+                            <div id="tagFilter" class="selector-group layout horizontal-vertical wrap">
+                                <template is="dom-repeat" items="[[tags]]" as="tag">
+                                    <paper-checkbox class$="[[tag.tagClass]]" on-change="_filter" checked>[[tag.name]]</paper-checkbox>
+                                </template>
+                            </div>
+                        </div>
+                        <div class="card-content">
+                            <div id="badgeFilter" class="selector-group layout horizontal-vertical">
+                                <template is="dom-repeat" items="[[badges]]" as="badge">
+                                    <paper-checkbox class$="[[badge.badgeClass]]" on-change="_filter" checked>[[badge.name]]</paper-checkbox>
+                                </template>
+                            </div>
+                        </div>
+                        <div class="card-actions">
+                            <a href="http://goo.gl/forms/kymZwijWFy" class="block-link self-center" target="_blank">
+                                <paper-button>Become a speaker</paper-button>
+                            </a>
+                        </div>
+                    </paper-card>
+
+                </div>
             </div>
-            <a href="http://goo.gl/forms/kymZwijWFy" class="block-link self-center" target="_blank">
-                <paper-button class="colorful" raised>Become a speaker</paper-button>
-            </a>
         </div>
         <div id="personCon" class="person-wrapper container relative">
             <person-dialog id="person" class="person flex" person="{{selectedPerson}}" opened="{{opened}}"></person-dialog>
@@ -155,6 +225,12 @@
         ],
         properties: {
             source: String,
+            tags: Array,
+            badges: Array,
+            filters: {
+                type: Array,
+                value: []
+            },
             opened: {
                 type: Boolean,
                 observer: '_openedChanged'
@@ -202,6 +278,7 @@
         },
         peopleLoaded: function(event, response) {
             this.people = response.response;
+            this._generateFilters();
 
             this.async(function() {
                 var nodeList = this.$.people.querySelectorAll('.card-wrapper');
@@ -219,6 +296,37 @@
                     return true;
                 }
             }
+        },
+        _generateFilters: function() {
+            var tempTags = [];
+            var tempBadges = [];
+            for (var i = 0; i < this.people.length; i++) {
+                for (var j = 0; j < this.people[i].tags.length; j++) {
+                    var tagClass = app.generateClass(this.people[i].tags[j]);
+                    if (!app.findByPropertyValue(tempTags, 'tagClass', tagClass)) {
+                        tempTags.push({
+                            name: this.people[i].tags[j],
+                            tagClass: tagClass
+                        });
+                        this.filters.push(this.people[i].tags[j]);
+                    }
+                }
+                if (this.people[i].badges === undefined) {
+                    this.people[i].badges = [];
+                }
+                for (var k = 0; k < this.people[i].badges.length; j++) {
+                    var badgeClass = app.generateClass(this.people[i].badges[k].name);
+                    if (!app.findByPropertyValue(tempBadges, 'badgeClass', badgeClass)) {
+                        tempBadges.push({
+                            name: this.people[i].badges[k].name,
+                            badgeClass: badgeClass
+                        });
+                        this.filters.push(this.people[i].badges[k].name);
+                    }
+                }
+            }
+            this.tags = tempTags;
+            this.badges = tempBadges;
         },
         playLoadAnimation: function() {
             this.cancelAnimation();
@@ -260,6 +368,44 @@
             if (!this.opened) {
                 this.closePerson();
             }
+        },
+        _filter: function(event) {
+            var filterName = '';
+            if (event.model.tag !== undefined) {
+                filterName = event.model.tag.name;
+            } else if (event.model.badge !== undefined) {
+                filterName = event.model.badge.name;
+            } else {
+                return;
+            }
+
+            var filterStatus = event.srcElement.checked,
+                filterIndex = this.filters.indexOf(filterName);
+            if (filterStatus && filterIndex < 0) {
+                this.filters.push(filterName);
+            } else {
+                this.filters.splice(filterIndex, 1);
+            }
+            console.log(this.filters);
+            for (var i = 0; i < this.people.length; i++) {
+                this.people[i].hide = this._matchesFilters(this.people[i]);
+            }
+            this.$.peopleList.render();
+        },
+        _matchesFilters: function(person) {
+            if (!this.filters.length) {
+                return true;
+            }
+            for (var i = 0; i < this.filters.length; i++) {
+                if (person.tags.indexOf(this.filters[i]) > -1 || app.findByPropertyValue(person.badges, 'name', this.filters[i])) {
+                    return false;
+                }
+            }
+            return true;
+        },
+        checkHiding: function(person) {
+            return !person.hide;
         }
+
     });
 </script>
