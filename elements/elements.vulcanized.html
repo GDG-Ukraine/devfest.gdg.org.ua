@@ -28325,14 +28325,20 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 <dom-module id="tags-color" assetpath="../styles/"><template><style>
             :root {
                 --android: #78C257;
-                --ux: #9C27B0;
-                --dart: #00B4AA;
-                --cloud: #4285F4;
-                --v8-engine: #00BCD4;
-                --gae: #FFC107;
-                --grpc: #617D8A;
-                --kubernetes: #326DE6;
+                --web: #2196F3;
+                --cloud: #3F51B5;
+                --community: #E91E63;
+                --angularjs: #E0343D;
                 --polymer: #D81B60;
+                --dart: #00B4AA;
+                --kubernetes: #326DE6;
+                --v8-engine: #009688;
+                --gae: #FFC107;
+                --ndk: #4CAF50;
+                --ci: #CDDC39;
+                --grpc: #617D8A;
+                --ux: #9C27B0;
+                --material-design: #009688;
             }
 
             paper-checkbox.android {
@@ -28341,10 +28347,34 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
                 --paper-checkbox-unchecked-ink-color: var(--android);
             }
 
-            paper-checkbox.ux {
-                --paper-checkbox-checked-color: var(--ux);
-                --paper-checkbox-checked-ink-color: var(--ux);
-                --paper-checkbox-unchecked-ink-color: var(--ux);
+            paper-checkbox.web {
+                --paper-checkbox-checked-color: var(--web);
+                --paper-checkbox-checked-ink-color: var(--web);
+                --paper-checkbox-unchecked-ink-color: var(--web);
+            }
+
+            paper-checkbox.cloud {
+                --paper-checkbox-checked-color: var(--cloud);
+                --paper-checkbox-checked-ink-color: var(--cloud);
+                --paper-checkbox-unchecked-ink-color: var(--cloud);
+            }
+
+            paper-checkbox.community {
+                --paper-checkbox-checked-color: var(--community);
+                --paper-checkbox-checked-ink-color: var(--community);
+                --paper-checkbox-unchecked-ink-color: var(--community);
+            }
+
+            paper-checkbox.angularjs {
+                --paper-checkbox-checked-color: var(--angularjs);
+                --paper-checkbox-checked-ink-color: var(--angularjs);
+                --paper-checkbox-unchecked-ink-color: var(--angularjs);
+            }
+
+            paper-checkbox.polymer {
+                --paper-checkbox-checked-color: var(--polymer);
+                --paper-checkbox-checked-ink-color: var(--polymer);
+                --paper-checkbox-unchecked-ink-color: var(--polymer);
             }
 
             paper-checkbox.dart {
@@ -28353,10 +28383,10 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
                 --paper-checkbox-unchecked-ink-color: var(--dart);
             }
 
-            paper-checkbox.cloud {
-                --paper-checkbox-checked-color: var(--cloud);
-                --paper-checkbox-checked-ink-color: var(--cloud);
-                --paper-checkbox-unchecked-ink-color: var(--cloud);
+            paper-checkbox.kubernetes {
+                --paper-checkbox-checked-color: var(--kubernetes);
+                --paper-checkbox-checked-ink-color: var(--kubernetes);
+                --paper-checkbox-unchecked-ink-color: var(--kubernetes);
             }
 
             paper-checkbox.v8-engine {
@@ -28371,98 +28401,73 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
                 --paper-checkbox-unchecked-ink-color: var(--gae);
             }
 
+            paper-checkbox.ndk {
+                --paper-checkbox-checked-color: var(--ndk);
+                --paper-checkbox-checked-ink-color: var(--ndk);
+                --paper-checkbox-unchecked-ink-color: var(--ndk);
+            }
+
+            paper-checkbox.ci {
+                --paper-checkbox-checked-color: var(--ci);
+                --paper-checkbox-checked-ink-color: var(--ci);
+                --paper-checkbox-unchecked-ink-color: var(--ci);
+            }
+
             paper-checkbox.grpc {
                 --paper-checkbox-checked-color: var(--grpc);
                 --paper-checkbox-checked-ink-color: var(--grpc);
                 --paper-checkbox-unchecked-ink-color: var(--grpc);
             }
 
-            paper-checkbox.kubernetes {
-                --paper-checkbox-checked-color: var(--kubernetes);
-                --paper-checkbox-checked-ink-color: var(--kubernetes);
-                --paper-checkbox-unchecked-ink-color: var(--kubernetes);
+            paper-checkbox.ux {
+                --paper-checkbox-checked-color: var(--ux);
+                --paper-checkbox-checked-ink-color: var(--ux);
+                --paper-checkbox-unchecked-ink-color: var(--ux);
             }
 
-            paper-checkbox.polymer {
-                --paper-checkbox-checked-color: var(--polymer);
-                --paper-checkbox-checked-ink-color: var(--polymer);
-                --paper-checkbox-unchecked-ink-color: var(--polymer);
-            }
-
-            paper-radio-button.android {
-                --paper-radio-button-checked-color: var(--android);
-                --paper-radio-button-checked-ink-color: var(--android);
-                --paper-radio-button-unchecked-ink-color: var(--android);
-            }
-
-            paper-radio-button.ux {
-                --paper-radio-button-checked-color: var(--ux);
-                --paper-radio-button-checked-ink-color: var(--ux);
-                --paper-radio-button-unchecked-ink-color: var(--ux);
-            }
-
-            paper-radio-button.dart {
-                --paper-radio-button-checked-color: var(--dart);
-                --paper-radio-button-checked-ink-color: var(--dart);
-                --paper-radio-button-unchecked-ink-color: var(--dart);
-            }
-
-            paper-radio-button.cloud {
-                --paper-radio-button-checked-color: var(--cloud);
-                --paper-radio-button-checked-ink-color: var(--cloud);
-                --paper-radio-button-unchecked-ink-color: var(--cloud);
-            }
-
-            paper-radio-button.v8-engine {
-                --paper-radio-button-checked-color: var(--v8-engine);
-                --paper-radio-button-checked-ink-color: var(--v8-engine);
-                --paper-radio-button-unchecked-ink-color: var(--v8-engine);
-            }
-
-            paper-radio-button.gae {
-                --paper-radio-button-checked-color: var(--gae);
-                --paper-radio-button-checked-ink-color: var(--gae);
-                --paper-radio-button-unchecked-ink-color: var(--gae);
-            }
-
-            paper-radio-button.grpc {
-                --paper-radio-button-checked-color: var(--grpc);
-                --paper-radio-button-checked-ink-color: var(--grpc);
-                --paper-radio-button-unchecked-ink-color: var(--grpc);
-            }
-
-            paper-radio-button.kubernetes {
-                --paper-radio-button-checked-color: var(--kubernetes);
-                --paper-radio-button-checked-ink-color: var(--kubernetes);
-                --paper-radio-button-unchecked-ink-color: var(--kubernetes);
-            }
-
-            paper-radio-button.polymer {
-                --paper-radio-button-checked-color: var(--polymer);
-                --paper-radio-button-checked-ink-color: var(--polymer);
-                --paper-radio-button-unchecked-ink-color: var(--polymer);
+            paper-checkbox.material-design {
+                --paper-checkbox-checked-color: var(--material-design);
+                --paper-checkbox-checked-ink-color: var(--material-design);
+                --paper-checkbox-unchecked-ink-color: var(--material-design);
             }
 
             .tag-label {
                 padding: 4px 6px;
                 color: #fff;
                 font-size: 11px;
+                background: var(--default-primary-color);
             }
 
             .tag-label.android {
                 background: var(--android);
             }
 
-            .tag-label.ux {
-                background: var(--ux);
+            .tag-label.web {
+                background: var(--web);
+            }
+
+            .tag-label.cloud {
+                background: var(--cloud);
+            }
+
+            .tag-label.community {
+                background: var(--community);
+            }
+
+            .tag-label.angularjs {
+                background: var(--angularjs);
+            }
+
+            .tag-label.polymer {
+                background: var(--polymer);
             }
 
             .tag-label.dart {
                 background: var(--dart);
             }
 
-            .tag-label.cloud {
-                background: var(--cloud);
+            .tag-label.kubernetes {
+                background: var(--kubernetes);
             }
 
             .tag-label.v8-engine {
@@ -28473,12 +28478,24 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
                 background: var(--gae);
             }
 
+            .tag-label.ndk {
+                background: var(--ndk);
+            }
+
+            .tag-label.ci {
+                background: var(--ci);
+            }
+
             .tag-label.grpc {
                 background: var(--grpc);
             }
 
-            .tag-label.kubernetes {
-                background: var(--kubernetes);
+            .tag-label.ux {
+                background: var(--ux);
+            }
+
+            .tag-label.material-design {
+                background: var(--material-design);
             }
 
             paper-scroll-header-panel.android {
@@ -28492,24 +28509,13 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
                 ;
             }
 
-            paper-scroll-header-panel.ux {
+            paper-scroll-header-panel.web {
                 --paper-scroll-header-panel-full-header: {
-                    background-color: var(--ux);
+                    background-color: var(--web);
                 }
                 ;
                 --paper-scroll-header-panel-condensed-header: {
-                    background-color: var(--ux);
-                }
-                ;
-            }
-
-            paper-scroll-header-panel.dart {
-                --paper-scroll-header-panel-full-header: {
-                    background-color: var(--dart);
-                }
-                ;
-                --paper-scroll-header-panel-condensed-header: {
-                    background-color: var(--dart);
+                    background-color: var(--web);
                 }
                 ;
             }
@@ -28525,57 +28531,13 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
                 ;
             }
 
-            paper-scroll-header-panel.v8-engine {
+            paper-scroll-header-panel.community {
                 --paper-scroll-header-panel-full-header: {
-                    background-color: var(--v8-engine);
+                    background-color: var(--community);
                 }
                 ;
                 --paper-scroll-header-panel-condensed-header: {
-                    background-color: var(--v8-engine);
-                }
-                ;
-            }
-
-            paper-scroll-header-panel.gae {
-                --paper-scroll-header-panel-full-header: {
-                    background-color: var(--gae);
-                }
-                ;
-                --paper-scroll-header-panel-condensed-header: {
-                    background-color: var(--gae);
-                }
-                ;
-            }
-
-            paper-scroll-header-panel.grpc {
-                --paper-scroll-header-panel-full-header: {
-                    background-color: var(--grpc);
-                }
-                ;
-                --paper-scroll-header-panel-condensed-header: {
-                    background-color: var(--grpc);
-                }
-                ;
-            }
-
-            paper-scroll-header-panel.kubernetes {
-                --paper-scroll-header-panel-full-header: {
-                    background-color: var(--kubernetes);
-                }
-                ;
-                --paper-scroll-header-panel-condensed-header: {
-                    background-color: var(--kubernetes);
-                }
-                ;
-            }
-
-            paper-scroll-header-panel.polymer {
-                --paper-scroll-header-panel-full-header: {
-                    background-color: var(--polymer);
-                }
-                ;
-                --paper-scroll-header-panel-condensed-header: {
-                    background-color: var(--polymer);
+                    background-color: var(--community);
                 }
                 ;
             }
@@ -30603,6 +30565,10 @@ Polymer({
                 margin: 0;
             }
 
+            .card-actions {
+                border-top: 1px solid #e8e8e8;
+            }
+
             .subtitle {
                 margin-bottom: 5px;
                 font-size: 16px;
@@ -30610,7 +30576,7 @@ Polymer({
             }
 
             .content {
-                padding: 16px 10px;
+                padding: 16px 10px 0;
             }
 
             .person-description {
@@ -30637,6 +30603,21 @@ Polymer({
 
             .tag {
                 margin-left: 5px;
+            }
+
+            .session {
+                padding: 20px 0;
+                border-top: 1px solid #e8e8e8;
+            }
+
+            .session-meta {
+                margin-right: 10px;
+                font-size: 14px;
+            }
+
+            .session-title {
+                font-size: 22px;
+                font-weight: 400;
             }
 
             @media (min-width: 768px) {
@@ -30691,6 +30672,20 @@ Polymer({
                         </template>
                         <marked-element markdown="[[person.bio]]"></marked-element>
                     </div>
+                    <div class="card-content sessions">
+                        <template is="dom-repeat" items="[[person.sessions]]" as="session">
+                            <div class="session">
+                                <h3 class="session-title">[[session.title]]</h3>
+                                <span class="session-meta">Language:
+                                    <span>[[session.language]]</span>
+                                </span>
+                                <span class="session-meta">Complexity:
+                                    <span>[[session.complexity]]</span>
+                                </span>
+                                <marked-element markdown="[[session.description]]"></marked-element>
+                            </div>
+                        </template>
+                    </div>
                     <div class="card-actions">
                         <div class="align-pb-block">
                             <template is="dom-repeat" items="[[person.socials]]" as="social">
@@ -30724,6 +30719,20 @@ Polymer({
                 </template>
                 <div class="card-content people-description">
                     <marked-element markdown="[[person.bio]]"></marked-element>
+                </div>
+                <div class="card-content sessions">
+                    <template is="dom-repeat" items="[[person.sessions]]" as="session">
+                        <div class="session">
+                            <h3 class="session-title">[[session.title]]</h3>
+                            <span class="session-meta">Language:
+                                <span>[[session.language]]</span>
+                            </span>
+                            <span class="session-meta">Complexity:
+                                <span>[[session.complexity]]</span>
+                            </span>
+                            <marked-element markdown="[[session.description]]"></marked-element>
+                        </div>
+                    </template>
                 </div>
                 <div class="card-actions">
                     <div class="align-pb-block">
@@ -30763,7 +30772,9 @@ Polymer({
         },
         _personChanged: function() {
             this.$.scrollHeaderPanel.$.headerBg.style.background = 'linear-gradient(to top, rgba(0, 0, 0, 0.4) -10%, rgba(0, 0, 0, 0.1) 50%), url(' + this.person.photoUrl + ') 0 / cover no-repeat';
-            // this.$.scrollHeaderPanel.className += ' ' + app.generateClass(this.person.tags[0]);
+            // var panelClass = 'visible-xs fit ' + app.generateClass(this.person.tags[0]);
+            // this.set('person.panelClass', panelClass);
+            // this.toggleClass(app.generateClass(this.person.tags[0]), true, this.$.scrollHeaderPanel);
             this.async(function() {
                 this.$.scrollHeaderPanel.measureHeaderHeight();
                 this.$.scrollHeaderPanel.scroller.scrollTop = 0;
@@ -30826,6 +30837,10 @@ Polymer({
                 font-weight: 300;
             }
 
+            paper-material {
+                background: #fff;
+            }
+
             .card-content {
                 padding: 16px;
             }
@@ -30834,6 +30849,14 @@ Polymer({
                 border-top: 1px solid #e8e8e8;
                 padding: 5px 16px;
                 position: relative;
+            }
+
+            .sessions h3:not(:last-of-type){
+                margin-bottom: 10px;
+            }
+
+            .session-title {
+                font-size: 18px;
             }
 
             .card-wrapper {
@@ -30932,11 +30955,12 @@ Polymer({
                 }
             }
         </style>
-        <iron-ajax auto="" url="[[source]]" handle-as="json" on-response="peopleLoaded" debounce-duration="300"></iron-ajax>
+        <iron-ajax auto="" url="[[source]]" handle-as="json" last-response="{{peopleTemp}}"></iron-ajax>
+        <iron-ajax auto="" url="[[sessionsSource]]" handle-as="json" last-response="{{sessions}}"></iron-ajax>
         <div id="people" class="container flex layout vertical">
             <div class="layout vertical-horizontal">
                 <div class="flex">
-                    <div class="layout vertical-horizontal center-justified wrap">
+                    <div class="layout vertical-horizontal wrap">
                         <template id="peopleList" is="dom-repeat" items="[[people]]" as="person" filter="checkHiding">
                             <div class="card-wrapper layout horizontal" hidden$="{{person.hide}}">
                                 <paper-material class="flex pointer" on-tap="readMore">
@@ -30958,47 +30982,48 @@ Polymer({
                                             </div>
                                         </div>
                                     </div>
-                                    <!-- <div class="card-content flex people-description">
-
-                            <marked-element class="brief" markdown="[[person.bio]]"></marked-element>
-                        </div>
-                        <div class="card-actions">
+                                    <div class="card-content flex sessions">
+                                        <template is="dom-repeat" items="[[person.sessions]]" as="session">
+                                            <h3 class="session-title">[[session.title]]</h3>
+                                        </template>
+                                    </div>
+                                    <!-- <div class="card-actions">
                             <paper-button on-tap="readMore">Open details</paper-button>
-                        </div>
+                        </div> -->
                                 </paper-material>
-                            </div> -->
-                        </paper-material></div></template>
-                        </div>
-                    </div>
-                    <div class="side-menu layout vertical">
-                        <paper-card class="filters">
-                            <div class="card-content header">
-                                <div class="title-text">Filters</div>
                             </div>
-                            <div class="card-content">
-                                <div id="tagFilter" class="selector-group layout horizontal-vertical wrap">
-                                    <template is="dom-repeat" items="{{tags}}" as="tag">
-                                        <paper-checkbox class$="[[tag.tagClass]]" on-change="_filter" checked="">[[tag.name]]</paper-checkbox>
-                                    </template>
-                                </div>
-                            </div>
-                            <div class="card-content">
-                                <div id="badgeFilter" class="selector-group layout horizontal-vertical">
-                                    <template is="dom-repeat" items="[[badges]]" as="badge">
-                                        <paper-checkbox class$="[[badge.badgeClass]]" on-change="_filter" checked="">[[badge.name]]</paper-checkbox>
-                                    </template>
-                                </div>
-                            </div>
-                            <div class="card-content">
-                                <paper-button on-tap="_toggleFilters">{{toggleFiltersButton.title}}</paper-button>
-                            </div>
-                        </paper-card>
+                        </template>
                     </div>
                 </div>
+                <div class="side-menu layout vertical">
+                    <paper-card class="filters">
+                        <div class="card-content header">
+                            <div class="title-text">Filters</div>
+                        </div>
+                        <div class="card-content">
+                            <div id="tagFilter" class="selector-group layout horizontal-vertical wrap">
+                                <template is="dom-repeat" items="{{tags}}" as="tag">
+                                    <paper-checkbox class$="[[tag.tagClass]]" on-change="_filter" checked="">[[tag.name]]</paper-checkbox>
+                                </template>
+                            </div>
+                        </div>
+                        <div class="card-content">
+                            <div id="badgeFilter" class="selector-group layout horizontal-vertical">
+                                <template is="dom-repeat" items="[[badges]]" as="badge">
+                                    <paper-checkbox class$="[[badge.badgeClass]]" on-change="_filter" checked="">[[badge.name]]</paper-checkbox>
+                                </template>
+                            </div>
+                        </div>
+                        <div class="card-content">
+                            <paper-button on-tap="_toggleFilters">{{toggleFiltersButton.title}}</paper-button>
+                        </div>
+                    </paper-card>
+                </div>
             </div>
-            <div id="personCon" class="person-wrapper container relative">
-                <person-dialog id="person" class="person flex" person="{{selectedPerson}}" opened="{{opened}}"></person-dialog>
-            </div>
+        </div>
+        <div id="personCon" class="person-wrapper container relative">
+            <person-dialog id="person" class="person flex" person="{{selectedPerson}}" opened="{{opened}}"></person-dialog>
+        </div>
     </template>
 </dom-module>
 <script>
@@ -31010,6 +31035,7 @@ Polymer({
         ],
         properties: {
             source: String,
+            sessionsSource: String,
             tags: Array,
             badges: Array,
             filters: {
@@ -31068,11 +31094,23 @@ Polymer({
                 }
             }
         },
+        observers: [
+            'generatePeople(peopleTemp, sessions)'
+        ],
         listeners: {
             'neon-animation-finish': '_onNeonAnimationFinish'
         },
-        peopleLoaded: function(event, response) {
-            this.people = response.response;
+        generatePeople: function(peopleTemp, sessions) {
+            for (var i = 0; i < peopleTemp.length; i++) {
+                peopleTemp[i].sessions = [];
+                for (var j = 0; j < sessions.length; j++) {
+                    if (sessions[j].speakers.indexOf(peopleTemp[i].id) > -1) {
+                        peopleTemp[i].sessions.push(sessions[j]);
+                    }
+                }
+            }
+            this.people = peopleTemp;
+
             this._generateFilters();
 
             this.async(function() {
@@ -31379,7 +31417,7 @@ Polymer({
                     <span class="additional-info block">*Before September 27 or 150 tickets</span>
                 </div>
                 <div class="price-block flex text-center">
-                    <span class="ticket-name block">Last Chance</span>
+                    <span class="ticket-name block">Lazy Bird</span>
                     <span class="price">800</span>
                     <span class="currency">UAH</span>
                     <span class="additional-info block">*Before October 23</span>
@@ -31429,8 +31467,7 @@ Polymer({
     <template>
         <style>
             :host {
-                display: none;
-                position: absolute;
+                display: block;
             }
 
             .paper-card-container {
@@ -31446,7 +31483,7 @@ Polymer({
                 font-size: 14px;
                 color: var(--secondary-text-color);
             }
-    
+
             @media (min-width: 768px) {
                 paper-card {
                     width: 80%;
@@ -31456,15 +31493,12 @@ Polymer({
                 }
             }
         </style>
-        <iron-ajax id="ajax" url="[[postUrl]]" handle-as="text" on-response="postLoaded"></iron-ajax>
+        <iron-ajax auto="" id="ajax" url="[[source]]" handle-as="text" last-response="{{cod}}"></iron-ajax>
         <div class="relative layout horizontal center-justified">
             <paper-card>
                 <div class="paper-card-container">
-                    <!-- <div class="card-content">
-                        <span class="title block">Or don't be a jerk policy</span>
-                    </div> -->
                     <div class="card-content">
-                        <marked-element markdown="[[post]]"></marked-element>
+                        <marked-element markdown="[[cod]]"></marked-element>
                     </div>
                 </div>
             </paper-card>
@@ -31474,54 +31508,8 @@ Polymer({
 <script>
 Polymer({
     is: 'cod-block',
-    behaviors: [
-        Polymer.NeonSharedElementAnimatableBehavior
-    ],
     properties: {
-        source: {
-            type: String,
-            observer: '_sourceChanged'
-        },
-        animationConfig: {
-            value: function() {
-                return {
-                    'entry': {
-                        name: 'transform-animation',
-                        node: this,
-                        transformFrom: 'translateY(100vh)',
-                        transformTo: 'none',
-                        timing: {
-                            duration: 1000
-                        }
-                    },
-                    'exit': {
-                        name: 'transform-animation',
-                        node: this,
-                        transformFrom: 'none',
-                        transformTo: 'translateY(100vh)',
-                        timing: {
-                            duration: 1000
-                        }
-                    }
-                };
-            }
-        },
-        closing: {
-            type: Boolean,
-            notify: true
-        }
-    },
-    _sourceChanged: function() {
-        this.postUrl = this.source;
-        this.style.display = 'block';
-        this.$.ajax.generateRequest();
-    },
-    postLoaded: function(event, response) {
-        this.post = response.response;
-        this.style.position = 'relative';
-    },
-    closePost: function() {
-        this.closing = true;
+        source: String
     }
 });
 </script>
