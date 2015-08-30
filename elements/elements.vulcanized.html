@@ -19604,82 +19604,77 @@ module.exports = Array.isArray || function (arr) {
 },{}]},{},[1])(1)
 });</script>
 <script>
-  function trackPageview(path) { // jshint ignore:line
-      /* jshint ignore:start */
-      ga('set', 'page', path);
-      ga('send', 'pageview');
-      /* jshint ignore:end */
-
-      var hero = document.querySelectorAll('#hero');
-      for (var i = hero.length - 1; i >= 0; i--) {
-          app.smoothScroll(hero[i], 200);
-      }
-  }
-
-  window.addEventListener('WebComponentsReady', function() {
-    page('/', function () {
-      trackPageview('/');
-      app.route = 'home';
-    });
-
-    page('/#pricetable', function() {
-        trackPageview('/#pricetable');
-        app.route = 'home';
-        var pricetable = document.querySelector('#pricetable');
-        app.smoothScroll(pricetable, 0);
-    });
-
-    page('/blog', function () {
-      trackPageview('/blog');
-      app.route = 'blog';
-    });
-
-    page('/blog/:title', function (data) {
-      trackPageview('/blog/' + data.params.title);
-      app.route = 'blog';
-      app.params = data.params;
-    });
-
-    page('/speakers', function () {
-      trackPageview('/speakers');
-      app.route = 'speakers';
-    });
-
-    page('/speakers/:id', function (data) {
-      trackPageview('/speakers/' + data.params.id);
-      app.route = 'speakers';
-      app.params = data.params;
-    });
-
-
-    page('/contact', function () {
-      trackPageview('/contact');
-      app.route = 'contact';
-    });
-
-    page('/code-of-conduct', function () {
-      trackPageview('/code-of-conduct');
-      app.route = 'code-of-conduct';
-    });
-
-    page('*', function () {
-      page.redirect('/');
-    });
-
-    page({
-      hashbang: true
-    });
-
-    function redirectLink(e) {
-        page.redirect('/' + this.getAttribute('data-route'));
-        e.preventDefault();
+    function trackPageview(path) { // jshint ignore:line
+        /* jshint ignore:start */
+        ga('set', 'page', path);
+        ga('send', 'pageview');
+        /* jshint ignore:end */
     }
 
-    var routerLinks = document.querySelectorAll('a[href^="#!"],a[dynamic-link]');
-    for (var i = 0; i < routerLinks.length; i++) {
-        routerLinks[i].addEventListener('click', redirectLink, false);
-    }
-  });
+    window.addEventListener('WebComponentsReady', function() {
+        page('/', function() {
+            trackPageview('/');
+            app.route = 'home';
+            app.scrollToTop();
+        });
+
+        page('/#pricetable', function() {
+            trackPageview('/#pricetable');
+            app.route = 'home';
+            var pricetable = document.querySelector('#pricetable');
+            app.smoothScroll(pricetable, 0);
+        });
+
+        page('/blog', function() {
+            trackPageview('/blog');
+            app.route = 'blog';
+        });
+
+        page('/blog/:title', function(data) {
+            trackPageview('/blog/' + data.params.title);
+            app.route = 'blog';
+            app.params = data.params;
+        });
+
+        page('/speakers', function() {
+            trackPageview('/speakers');
+            app.route = 'speakers';
+        });
+
+        page('/speakers/:id', function(data) {
+            trackPageview('/speakers/' + data.params.id);
+            app.route = 'speakers';
+            app.params = data.params;
+        });
+
+        page('/contact', function() {
+            trackPageview('/contact');
+            app.route = 'contact';
+        });
+
+        page('/code-of-conduct', function() {
+            trackPageview('/code-of-conduct');
+            app.route = 'code-of-conduct';
+        });
+
+        page('*', function() {
+            page.redirect('/');
+        });
+
+        page({
+            hashbang: true
+        });
+
+        function redirectLink(e) {
+            page.redirect('/' + this.getAttribute('data-route'));
+            e.preventDefault();
+        }
+
+        var routerLinks = document.querySelectorAll('a[href^="#!"],a[dynamic-link]');
+        for (var i = 0; i < routerLinks.length; i++) {
+            routerLinks[i].addEventListener('click', redirectLink, false);
+        }
+    });
 </script>
 </head><body><div hidden="" by-vulcanize=""><dom-module id="iron-icon" assetpath="../bower_components/iron-icon/">
 
@@ -28328,117 +28323,262 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 
 </script>
 <dom-module id="tags-color" assetpath="../styles/"><template><style>
-        :root {
-            --android: #78C257;
-            --ux: #9C27B0;
-            --dart: #00B4AA;
-            --cloud: #4285F4;
-            --v8-engine: #00BCD4;
-            --gae: #FFC107;
-            --grpc: #617D8A;
-            --kubernetes: #326DE6;
-            --polymer: #D81B60;
-        }
+            :root {
+                --android: #78C257;
+                --ux: #9C27B0;
+                --dart: #00B4AA;
+                --cloud: #4285F4;
+                --v8-engine: #00BCD4;
+                --gae: #FFC107;
+                --grpc: #617D8A;
+                --kubernetes: #326DE6;
+                --polymer: #D81B60;
+            }
 
-        paper-checkbox.android {
-            --paper-checkbox-checked-color: var(--android);
-            --paper-checkbox-checked-ink-color: var(--android);
-            --paper-checkbox-unchecked-ink-color: var(--android);
-        }
-        paper-checkbox.ux {
-            --paper-checkbox-checked-color: var(--ux);
-            --paper-checkbox-checked-ink-color: var(--ux);
-            --paper-checkbox-unchecked-ink-color: var(--ux);
-        }
-        paper-checkbox.dart {
-            --paper-checkbox-checked-color: var(--dart);
-            --paper-checkbox-checked-ink-color: var(--dart);
-            --paper-checkbox-unchecked-ink-color: var(--dart);
-        }
-        paper-checkbox.cloud {
-            --paper-checkbox-checked-color: var(--cloud);
-            --paper-checkbox-checked-ink-color: var(--cloud);
-            --paper-checkbox-unchecked-ink-color: var(--cloud);
-        }
-        paper-checkbox.v8-engine {
-            --paper-checkbox-checked-color: var(--v8-engine);
-            --paper-checkbox-checked-ink-color: var(--v8-engine);
-            --paper-checkbox-unchecked-ink-color: var(--v8-engine);
-        }
-        paper-checkbox.gae {
-            --paper-checkbox-checked-color: var(--gae);
-            --paper-checkbox-checked-ink-color: var(--gae);
-            --paper-checkbox-unchecked-ink-color: var(--gae);
-        }
-        paper-checkbox.grpc {
-            --paper-checkbox-checked-color: var(--grpc);
-            --paper-checkbox-checked-ink-color: var(--grpc);
-            --paper-checkbox-unchecked-ink-color: var(--grpc);
-        }
-        paper-checkbox.kubernetes {
-            --paper-checkbox-checked-color: var(--kubernetes);
-            --paper-checkbox-checked-ink-color: var(--kubernetes);
-            --paper-checkbox-unchecked-ink-color: var(--kubernetes);
-        }
-        paper-checkbox.polymer {
-            --paper-checkbox-checked-color: var(--polymer);
-            --paper-checkbox-checked-ink-color: var(--polymer);
-            --paper-checkbox-unchecked-ink-color: var(--polymer);
-        }
+            paper-checkbox.android {
+                --paper-checkbox-checked-color: var(--android);
+                --paper-checkbox-checked-ink-color: var(--android);
+                --paper-checkbox-unchecked-ink-color: var(--android);
+            }
 
-        paper-radio-button.android {
-            --paper-radio-button-checked-color: var(--android);
-            --paper-radio-button-checked-ink-color: var(--android);
-            --paper-radio-button-unchecked-ink-color: var(--android);
-        }
+            paper-checkbox.ux {
+                --paper-checkbox-checked-color: var(--ux);
+                --paper-checkbox-checked-ink-color: var(--ux);
+                --paper-checkbox-unchecked-ink-color: var(--ux);
+            }
 
-        paper-radio-button.ux {
-            --paper-radio-button-checked-color: var(--ux);
-            --paper-radio-button-checked-ink-color: var(--ux);
-            --paper-radio-button-unchecked-ink-color: var(--ux);
-        }
+            paper-checkbox.dart {
+                --paper-checkbox-checked-color: var(--dart);
+                --paper-checkbox-checked-ink-color: var(--dart);
+                --paper-checkbox-unchecked-ink-color: var(--dart);
+            }
 
-        paper-radio-button.dart {
-            --paper-radio-button-checked-color: var(--dart);
-            --paper-radio-button-checked-ink-color: var(--dart);
-            --paper-radio-button-unchecked-ink-color: var(--dart);
-        }
+            paper-checkbox.cloud {
+                --paper-checkbox-checked-color: var(--cloud);
+                --paper-checkbox-checked-ink-color: var(--cloud);
+                --paper-checkbox-unchecked-ink-color: var(--cloud);
+            }
 
-        paper-radio-button.cloud {
-            --paper-radio-button-checked-color: var(--cloud);
-            --paper-radio-button-checked-ink-color: var(--cloud);
-            --paper-radio-button-unchecked-ink-color: var(--cloud);
-        }
+            paper-checkbox.v8-engine {
+                --paper-checkbox-checked-color: var(--v8-engine);
+                --paper-checkbox-checked-ink-color: var(--v8-engine);
+                --paper-checkbox-unchecked-ink-color: var(--v8-engine);
+            }
 
-        paper-radio-button.v8-engine {
-            --paper-radio-button-checked-color: var(--v8-engine);
-            --paper-radio-button-checked-ink-color: var(--v8-engine);
-            --paper-radio-button-unchecked-ink-color: var(--v8-engine);
-        }
+            paper-checkbox.gae {
+                --paper-checkbox-checked-color: var(--gae);
+                --paper-checkbox-checked-ink-color: var(--gae);
+                --paper-checkbox-unchecked-ink-color: var(--gae);
+            }
 
-        paper-radio-button.gae {
-            --paper-radio-button-checked-color: var(--gae);
-            --paper-radio-button-checked-ink-color: var(--gae);
-            --paper-radio-button-unchecked-ink-color: var(--gae);
-        }
+            paper-checkbox.grpc {
+                --paper-checkbox-checked-color: var(--grpc);
+                --paper-checkbox-checked-ink-color: var(--grpc);
+                --paper-checkbox-unchecked-ink-color: var(--grpc);
+            }
 
-        paper-radio-button.grpc {
-            --paper-radio-button-checked-color: var(--grpc);
-            --paper-radio-button-checked-ink-color: var(--grpc);
-            --paper-radio-button-unchecked-ink-color: var(--grpc);
-        }
+            paper-checkbox.kubernetes {
+                --paper-checkbox-checked-color: var(--kubernetes);
+                --paper-checkbox-checked-ink-color: var(--kubernetes);
+                --paper-checkbox-unchecked-ink-color: var(--kubernetes);
+            }
 
-        paper-radio-button.kubernetes {
-            --paper-radio-button-checked-color: var(--kubernetes);
-            --paper-radio-button-checked-ink-color: var(--kubernetes);
-            --paper-radio-button-unchecked-ink-color: var(--kubernetes);
-        }
+            paper-checkbox.polymer {
+                --paper-checkbox-checked-color: var(--polymer);
+                --paper-checkbox-checked-ink-color: var(--polymer);
+                --paper-checkbox-unchecked-ink-color: var(--polymer);
+            }
 
-        paper-radio-button.polymer {
-            --paper-radio-button-checked-color: var(--polymer);
-            --paper-radio-button-checked-ink-color: var(--polymer);
-            --paper-radio-button-unchecked-ink-color: var(--polymer);
-        }
+            paper-radio-button.android {
+                --paper-radio-button-checked-color: var(--android);
+                --paper-radio-button-checked-ink-color: var(--android);
+                --paper-radio-button-unchecked-ink-color: var(--android);
+            }
+
+            paper-radio-button.ux {
+                --paper-radio-button-checked-color: var(--ux);
+                --paper-radio-button-checked-ink-color: var(--ux);
+                --paper-radio-button-unchecked-ink-color: var(--ux);
+            }
+
+            paper-radio-button.dart {
+                --paper-radio-button-checked-color: var(--dart);
+                --paper-radio-button-checked-ink-color: var(--dart);
+                --paper-radio-button-unchecked-ink-color: var(--dart);
+            }
+
+            paper-radio-button.cloud {
+                --paper-radio-button-checked-color: var(--cloud);
+                --paper-radio-button-checked-ink-color: var(--cloud);
+                --paper-radio-button-unchecked-ink-color: var(--cloud);
+            }
+
+            paper-radio-button.v8-engine {
+                --paper-radio-button-checked-color: var(--v8-engine);
+                --paper-radio-button-checked-ink-color: var(--v8-engine);
+                --paper-radio-button-unchecked-ink-color: var(--v8-engine);
+            }
+
+            paper-radio-button.gae {
+                --paper-radio-button-checked-color: var(--gae);
+                --paper-radio-button-checked-ink-color: var(--gae);
+                --paper-radio-button-unchecked-ink-color: var(--gae);
+            }
+
+            paper-radio-button.grpc {
+                --paper-radio-button-checked-color: var(--grpc);
+                --paper-radio-button-checked-ink-color: var(--grpc);
+                --paper-radio-button-unchecked-ink-color: var(--grpc);
+            }
+
+            paper-radio-button.kubernetes {
+                --paper-radio-button-checked-color: var(--kubernetes);
+                --paper-radio-button-checked-ink-color: var(--kubernetes);
+                --paper-radio-button-unchecked-ink-color: var(--kubernetes);
+            }
+
+            paper-radio-button.polymer {
+                --paper-radio-button-checked-color: var(--polymer);
+                --paper-radio-button-checked-ink-color: var(--polymer);
+                --paper-radio-button-unchecked-ink-color: var(--polymer);
+            }
+
+            .tag-label {
+                padding: 4px 6px;
+                color: #fff;
+                font-size: 11px;
+            }
+
+            .tag-label.android {
+                background: var(--android);
+            }
+
+            .tag-label.ux {
+                background: var(--ux);
+            }
+
+            .tag-label.dart {
+                background: var(--dart);
+            }
+
+            .tag-label.cloud {
+                background: var(--cloud);
+            }
+
+            .tag-label.v8-engine {
+                background: var(--v8-engine);
+            }
+
+            .tag-label.gae {
+                background: var(--gae);
+            }
+
+            .tag-label.grpc {
+                background: var(--grpc);
+            }
+
+            .tag-label.kubernetes {
+                background: var(--kubernetes);
+            }
+
+            paper-scroll-header-panel.android {
+                --paper-scroll-header-panel-full-header: {
+                    background-color: var(--android);
+                }
+                ;
+                --paper-scroll-header-panel-condensed-header: {
+                    background-color: var(--android);
+                }
+                ;
+            }
+
+            paper-scroll-header-panel.ux {
+                --paper-scroll-header-panel-full-header: {
+                    background-color: var(--ux);
+                }
+                ;
+                --paper-scroll-header-panel-condensed-header: {
+                    background-color: var(--ux);
+                }
+                ;
+            }
+
+            paper-scroll-header-panel.dart {
+                --paper-scroll-header-panel-full-header: {
+                    background-color: var(--dart);
+                }
+                ;
+                --paper-scroll-header-panel-condensed-header: {
+                    background-color: var(--dart);
+                }
+                ;
+            }
+
+            paper-scroll-header-panel.cloud {
+                --paper-scroll-header-panel-full-header: {
+                    background-color: var(--cloud);
+                }
+                ;
+                --paper-scroll-header-panel-condensed-header: {
+                    background-color: var(--cloud);
+                }
+                ;
+            }
+
+            paper-scroll-header-panel.v8-engine {
+                --paper-scroll-header-panel-full-header: {
+                    background-color: var(--v8-engine);
+                }
+                ;
+                --paper-scroll-header-panel-condensed-header: {
+                    background-color: var(--v8-engine);
+                }
+                ;
+            }
+
+            paper-scroll-header-panel.gae {
+                --paper-scroll-header-panel-full-header: {
+                    background-color: var(--gae);
+                }
+                ;
+                --paper-scroll-header-panel-condensed-header: {
+                    background-color: var(--gae);
+                }
+                ;
+            }
+
+            paper-scroll-header-panel.grpc {
+                --paper-scroll-header-panel-full-header: {
+                    background-color: var(--grpc);
+                }
+                ;
+                --paper-scroll-header-panel-condensed-header: {
+                    background-color: var(--grpc);
+                }
+                ;
+            }
+
+            paper-scroll-header-panel.kubernetes {
+                --paper-scroll-header-panel-full-header: {
+                    background-color: var(--kubernetes);
+                }
+                ;
+                --paper-scroll-header-panel-condensed-header: {
+                    background-color: var(--kubernetes);
+                }
+                ;
+            }
+
+            paper-scroll-header-panel.polymer {
+                --paper-scroll-header-panel-full-header: {
+                    background-color: var(--polymer);
+                }
+                ;
+                --paper-scroll-header-panel-condensed-header: {
+                    background-color: var(--polymer);
+                }
+                ;
+            }
         </style></template></dom-module><dom-module id="hero-block" assetpath="hero-block/">
     <template>
         <style>
@@ -28475,10 +28615,6 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
             ::content .top-section {
                 padding-top: 20px;
                 font-size: 20px;
-            }
-
-            ::content .title-wrapper {
-                min-height: 150px;
             }
 
             ::content h3 {
@@ -28532,6 +28668,9 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
                 }
                 ::content .right-section {
                     height: initial;
+                }
+                ::content .title-wrapper {
+                    min-height: 150px;
                 }
             }
         </style>
@@ -28952,121 +29091,121 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 <dom-module id="footer-block" assetpath="footer-block/">
     <template>
         <style>
-        :host {
-            display: block;
-            background: #FCFCFC;
-            overflow: hidden;
-        }
-
-        .container {
-            padding: 16px;
-            font-size: 14px;
-        }
-
-        .container paper-button {
-            font-size: 0.9em;
-        }
-
-        .footer {
-            min-height: 200px;
-            color: #757575;
-        }
-
-        .gdg-logo {
-            margin-top: 10px;
-            height: 30px;
-            display: block;
-        }
-
-        a {
-            color: inherit !important;
-        }
-
-        .footer-backtotop {
-            margin-bottom: 20px;
-        }
-
-        .footer-content {
-            padding-top: 16px;
-            padding-bottom: 16px;
-        }
-
-        .footer-links-container {
-            padding-top: 0;
-        }
-
-        .link-block {
-            margin-top: 0;
-            padding: 0;
-        }
-
-        .link-block li {
-            margin-bottom: 9px;
-            list-style-type: none;
-        }
-
-        .link-block-title {
-            margin-bottom: 10px;
-            font-size: 1.3em;
-            font-weight: 300;
-        }
-
-        .link-block a {
-            font-weight: 100;
-        }
-
-        .link-block a:hover {
-            text-decoration: underline;
-        }
-
-        .link-block-wrapper {
-            margin-bottom: 30px;
-        }
-
-        .icons-wrapper {
-            margin-top: -5px;
-        }
-
-        .gplus {
-            padding-top: 10px;
-        }
-
-        @media (min-width: 768px) {
-            nav {
-                flex-direction: row !important;
-                justify-content: flex-end !important;
-                align-self: flex-end !important;
+            :host {
+                display: block;
+                background: #FCFCFC;
+                overflow: hidden;
             }
+
             .container {
-                padding: 0;
+                padding: 16px;
+                font-size: 14px;
             }
+
+            .container paper-button {
+                font-size: 0.9em;
+            }
+
+            .footer {
+                min-height: 200px;
+                color: #757575;
+            }
+
+            .gdg-logo {
+                margin-top: 10px;
+                height: 30px;
+                display: block;
+            }
+
+            a {
+                color: inherit !important;
+            }
+
             .footer-backtotop {
-                margin-top: -10px;
-                margin-bottom: 0;
+                margin-bottom: 20px;
             }
+
             .footer-content {
-                padding: 32px 0;
-                flex: 1;
+                padding-top: 16px;
+                padding-bottom: 16px;
             }
+
             .footer-links-container {
                 padding-top: 0;
             }
-            .footer-bottom {
-                padding: 16px 0;
-            }
+
             .link-block {
-                padding: 0;
-            }
-            .link-block-title {
-                margin-bottom: 15px;
-            }
-            .gdg-logo {
                 margin-top: 0;
-            }
-            .gplus {
                 padding: 0;
             }
-        }
+
+            .link-block li {
+                margin-bottom: 9px;
+                list-style-type: none;
+            }
+
+            .link-block-title {
+                margin-bottom: 10px;
+                font-size: 1.3em;
+                font-weight: 300;
+            }
+
+            .link-block a {
+                font-weight: 100;
+            }
+
+            .link-block a:hover {
+                text-decoration: underline;
+            }
+
+            .link-block-wrapper {
+                margin-bottom: 30px;
+            }
+
+            .icons-wrapper {
+                margin-top: -5px;
+            }
+
+            .gplus {
+                padding-top: 10px;
+            }
+
+            @media (min-width: 768px) {
+                nav {
+                    flex-direction: row !important;
+                    justify-content: flex-end !important;
+                    align-self: flex-end !important;
+                }
+                .container {
+                    padding: 0;
+                }
+                .footer-backtotop {
+                    margin-top: -10px;
+                    margin-bottom: 0;
+                }
+                .footer-content {
+                    padding: 32px 0;
+                    flex: 1;
+                }
+                .footer-links-container {
+                    padding-top: 0;
+                }
+                .footer-bottom {
+                    padding: 16px 0;
+                }
+                .link-block {
+                    padding: 0;
+                }
+                .link-block-title {
+                    margin-bottom: 15px;
+                }
+                .gdg-logo {
+                    margin-top: 0;
+                }
+                .gplus {
+                    padding: 0;
+                }
+            }
         </style>
         <div class="line full-width"></div>
         <div class="container footer layout vertical">
@@ -29138,30 +29277,27 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
     </template>
 </dom-module>
 <script>
-(function() {
-    Polymer.NeonAnimatableBehavior = [Polymer.NeonAnimatableBehavior, Polymer.IronResizableBehavior];
-})();
-Polymer({
-    is: 'footer-block',
-    ready: function() {
-        this.url = 'http://gdg.us11.list-manage.com/subscribe/post?u=b7e853a79164ddfdbda3ed77b&amp;id=7993e39fbe';
-        this.name = 'b_b7e853a79164ddfdbda3ed77b_7993e39fbe';
-    },
-    backToTop: function() {
-        var hero = document.querySelectorAll('#hero');
-        for (var i = hero.length - 1; i >= 0; i--) {
-            app.smoothScroll(hero[i], 1500);
+    (function() {
+        Polymer.NeonAnimatableBehavior = [Polymer.NeonAnimatableBehavior, Polymer.IronResizableBehavior];
+    })();
+    Polymer({
+        is: 'footer-block',
+        ready: function() {
+            this.url = 'http://gdg.us11.list-manage.com/subscribe/post?u=b7e853a79164ddfdbda3ed77b&amp;id=7993e39fbe';
+            this.name = 'b_b7e853a79164ddfdbda3ed77b_7993e39fbe';
+        },
+        backToTop: function() {
+            app.scrollToTop();
         }
-    }
-});
-(function() {
-    var po = document.createElement('script');
-    po.type = 'text/javascript';
-    po.async = true;
-    po.src = 'https://apis.google.com/js/platform.js';
-    var s = document.getElementsByTagName('script')[0];
-    s.parentNode.insertBefore(po, s);
-})();
+    });
+    (function() {
+        var po = document.createElement('script');
+        po.type = 'text/javascript';
+        po.async = true;
+        po.src = 'https://apis.google.com/js/platform.js';
+        var s = document.getElementsByTagName('script')[0];
+        s.parentNode.insertBefore(po, s);
+    })();
 </script>
 <iron-iconset-svg name="app-icons" size="24">
     <svg>
@@ -30440,81 +30576,91 @@ Polymer({
 </script>
 <dom-module id="person-dialog" assetpath="person-dialog/">
     <template>
+        <style include="tags-color"></style>
         <style>
-        :host {
-            display: block;
-            z-index: 9;
-            height: 100%;
-        }
-
-        paper-scroll-header-panel {
-            background: #fff;
-            height: 100%;
-            --paper-scroll-header-panel-condensed-header: {
-                background-color: var(--default-primary-color);
+            :host {
+                display: block;
+                z-index: 9;
+                height: 100%;
+                --paper-card: #fff;
             }
-            ;
-        }
 
-        paper-toolbar {
-            background-color: transparent;
-            color: #fff;
-        }
-
-        paper-toolbar .title {
-            margin: 0;
-        }
-
-        .subtitle {
-            margin-bottom: 5px;
-            font-size: 16px;
-            color: var(--secondary-text-color);
-        }
-
-        .content {
-            padding: 16px 10px;
-        }
-
-        .person-description {
-            padding-top: 0;
-        }
-
-        .badge {
-            color: var(--secondary-text-color);
-            font-size: 14px;
-        }
-        .person-tags {
-            padding-top: 0;
-            padding-bottom: 0;
-            color: var(--secondary-text-color);
-            font-size: 16px;
-        }
-        .tags-label {
-            font-weight: 400;
-        }
-        .tag {
-            margin-left: 5px;
-        }
-
-        @media (min-width: 768px) {
-            paper-card {
-                width: 70%;
+            paper-scroll-header-panel {
+                background: #fff;
+                height: 100%;
+                --paper-scroll-header-panel-condensed-header: {
+                    background-color: var(--default-primary-color);
+                }
+                ;
             }
-            .person-img {
-                height: 120px;
-                width: 120px;
+
+            paper-toolbar {
+                background-color: transparent;
+                color: #fff;
             }
-            .person-detail {
-                margin-left: 15px;
+
+            paper-toolbar .title {
+                margin: 0;
             }
-            .name {
-                font-size: 22px;
-                color: var(--default-primary-color);
+
+            .subtitle {
+                margin-bottom: 5px;
+                font-size: 16px;
+                color: var(--secondary-text-color);
             }
-            .title {
+
+            .content {
+                padding: 16px 10px;
+            }
+
+            .person-description {
+                padding-top: 0;
+            }
+
+            .badge {
+                color: var(--secondary-text-color);
                 font-size: 14px;
             }
-        }
+
+            .person-tags {
+                margin-bottom: 10px;
+                padding-top: 0;
+                padding-bottom: 0;
+                color: var(--secondary-text-color);
+                font-size: 16px;
+            }
+
+            .tags-label {
+                font-weight: 400;
+                font-size: 14px;
+            }
+
+            .tag {
+                margin-left: 5px;
+            }
+
+            @media (min-width: 768px) {
+                paper-card {
+                    width: 70%;
+                }
+                .person-img {
+                    height: 130px;
+                    width: 130px;
+                    margin-top: -70px;
+                    border: 2px solid #fff;
+                }
+                .person-detail {
+                    margin-top: -10px;
+                    margin-left: 15px;
+                }
+                .name {
+                    font-size: 22px;
+                    color: var(--default-primary-color);
+                }
+                .title {
+                    font-size: 14px;
+                }
+            }
         </style>
         <div class="relative layout horizontal center-justified hidden-xs">
             <paper-card>
@@ -30535,8 +30681,8 @@ Polymer({
                     </div>
                     <div class="card-content person-tags">
                         <span class="tags-label">Tags:</span>
-                        <template is="dom-repeat" items="[[person.tags]]" as="tag">
-                            <span class="tag">[[tag]]</span>
+                        <template is="dom-repeat" items="[[tags]]" as="tag">
+                            <span class$="[[tag.tagClass]]">[[tag.name]]</span>
                         </template>
                     </div>
                     <div class="card-content person-description">
@@ -30567,6 +30713,12 @@ Polymer({
                     <span>[[person.company]]</span>,
                     <span>[[person.country]]</span>
                 </div>
+                <div class="card-content person-tags">
+                    <span class="tags-label">Tags:</span>
+                    <template is="dom-repeat" items="[[tags]]" as="tag">
+                        <span class$="[[tag.tagClass]]">[[tag.name]]</span>
+                    </template>
+                </div>
                 <template is="dom-repeat" items="[[person.badges]]" as="badge">
                     <a class="badge block" href="[[badge.link]]" target="_blank">[[badge.description]]</a>
                 </template>
@@ -30587,48 +30739,50 @@ Polymer({
     </template>
 </dom-module>
 <script>
-(function() {
-    Polymer.NeonAnimatableBehavior = [Polymer.NeonAnimatableBehavior, Polymer.IronResizableBehavior];
-})();
-Polymer({
-    is: 'person-dialog',
-    properties: {
-        person: {
-            type: Object,
-            observer: '_setBackground'
+    Polymer({
+        is: 'person-dialog',
+        properties: {
+            person: {
+                type: Object,
+                observer: '_personChanged'
+            },
+            opened: {
+                type: Boolean,
+                notify: true
+            },
+            testClass: String
         },
-        opened: {
-            type: Boolean,
-            notify: true
+        ready: function() {
+            var title = this.$.title;
+            addEventListener('paper-header-transform', function(e) {
+                var d = e.detail;
+                var m = d.height - d.condensedHeight;
+                var transform = 50 * d.y / m;
+                Polymer.Base.transform('translate3d(' + transform + 'px,0,0)', title);
+            });
+        },
+        _personChanged: function() {
+            this.$.scrollHeaderPanel.$.headerBg.style.background = 'linear-gradient(to top, rgba(0, 0, 0, 0.4) -10%, rgba(0, 0, 0, 0.1) 50%), url(' + this.person.photoUrl + ') 0 / cover no-repeat';
+            // this.$.scrollHeaderPanel.className += ' ' + app.generateClass(this.person.tags[0]);
+            this.async(function() {
+                this.$.scrollHeaderPanel.measureHeaderHeight();
+                this.$.scrollHeaderPanel.scroller.scrollTop = 0;
+            });
+            var tempTags = [];
+            for (var i = 0; i < this.person.tags.length; i++) {
+                var tagName = this.person.tags[i],
+                    tagClass = app.generateClass(tagName);
+                tempTags.push({
+                    name: tagName,
+                    tagClass: 'tag tag-label ' + tagClass
+                });
+            }
+            this.tags = tempTags;
+        },
+        closePeople: function() {
+            this.opened = false;
         }
-    },
-    ready: function() {
-        var title = this.$.title;
-        addEventListener('paper-header-transform', function(e) {
-            var d = e.detail;
-            var m = d.height - d.condensedHeight;
-            var transform = 50 * d.y / m;
-            Polymer.Base.transform('translate3d(' + transform + 'px,0,0)', title);
-        });
-    },
-    _setBackground: function() {
-        this.$.scrollHeaderPanel.$.headerBg.style.background = 'linear-gradient(to top, rgba(0, 0, 0, 0.4) -10%, rgba(0, 0, 0, 0.1) 50%), url(' + this.person.photoUrl + ') 0 / cover no-repeat';
-        this.async(function() {
-            this.$.scrollHeaderPanel.measureHeaderHeight();
-            this.$.scrollHeaderPanel.scroller.scrollTop = 0;
-        });
-    },
-    closePeople: function() {
-        this.opened = false;
-    },
-    _calculateIcon: function(event) {
-        return 'app-icons:' + event.model.social.name;
-    },
-    calculateIcon: function(event) {
-        return 'app-icons:' + event.model.social.name;
-    }
-
-});
+    });
 </script>
 <dom-module id="people-block" assetpath="people-block/">
     <template>
@@ -30810,44 +30964,41 @@ Polymer({
                         </div>
                         <div class="card-actions">
                             <paper-button on-tap="readMore">Open details</paper-button>
-                        </div> -->
+                        </div>
                                 </paper-material>
+                            </div> -->
+                        </paper-material></div></template>
+                        </div>
+                    </div>
+                    <div class="side-menu layout vertical">
+                        <paper-card class="filters">
+                            <div class="card-content header">
+                                <div class="title-text">Filters</div>
                             </div>
-                        </template>
+                            <div class="card-content">
+                                <div id="tagFilter" class="selector-group layout horizontal-vertical wrap">
+                                    <template is="dom-repeat" items="{{tags}}" as="tag">
+                                        <paper-checkbox class$="[[tag.tagClass]]" on-change="_filter" checked="">[[tag.name]]</paper-checkbox>
+                                    </template>
+                                </div>
+                            </div>
+                            <div class="card-content">
+                                <div id="badgeFilter" class="selector-group layout horizontal-vertical">
+                                    <template is="dom-repeat" items="[[badges]]" as="badge">
+                                        <paper-checkbox class$="[[badge.badgeClass]]" on-change="_filter" checked="">[[badge.name]]</paper-checkbox>
+                                    </template>
+                                </div>
+                            </div>
+                            <div class="card-content">
+                                <paper-button on-tap="_toggleFilters">{{toggleFiltersButton.title}}</paper-button>
+                            </div>
+                        </paper-card>
                     </div>
                 </div>
-                <div class="side-menu layout vertical">
-                    <paper-card class="filters">
-                        <div class="card-content header">
-                            <div class="title-text">Filters</div>
-                        </div>
-                        <div class="card-content">
-                            <div id="tagFilter" class="selector-group layout horizontal-vertical wrap">
-                                <template is="dom-repeat" items="[[tags]]" as="tag">
-                                    <paper-checkbox class$="[[tag.tagClass]]" on-change="_filter" checked="">[[tag.name]]</paper-checkbox>
-                                </template>
-                            </div>
-                        </div>
-                        <div class="card-content">
-                            <div id="badgeFilter" class="selector-group layout horizontal-vertical">
-                                <template is="dom-repeat" items="[[badges]]" as="badge">
-                                    <paper-checkbox class$="[[badge.badgeClass]]" on-change="_filter" checked="">[[badge.name]]</paper-checkbox>
-                                </template>
-                            </div>
-                        </div>
-                        <div class="card-actions">
-                            <a href="http://goo.gl/forms/kymZwijWFy" class="block-link self-center" target="_blank">
-                                <paper-button>Become a speaker</paper-button>
-                            </a>
-                        </div>
-                    </paper-card>
-
-                </div>
             </div>
-        </div>
-        <div id="personCon" class="person-wrapper container relative">
-            <person-dialog id="person" class="person flex" person="{{selectedPerson}}" opened="{{opened}}"></person-dialog>
-        </div>
+            <div id="personCon" class="person-wrapper container relative">
+                <person-dialog id="person" class="person flex" person="{{selectedPerson}}" opened="{{opened}}"></person-dialog>
+            </div>
     </template>
 </dom-module>
 <script>
@@ -30868,6 +31019,16 @@ Polymer({
             opened: {
                 type: Boolean,
                 observer: '_openedChanged'
+            },
+            toggleFiltersButton: {
+                type: Object,
+                value: function() {
+                    return {
+                        title: 'Clear All',
+                        selectAll: false
+                    };
+                },
+                notify: true
             },
             animationConfig: {
                 value: function() {
@@ -31005,8 +31166,43 @@ Polymer({
                 this.closePerson();
             }
         },
+        _toggleFilters: function() {
+            var tags = this.$.tagFilter.children,
+                badges = this.$.badgeFilter.children;
+
+            for (var i = 0; i < tags.length - 1; i++) {
+                if (this.toggleFiltersButton.selectAll && !tags[i].checked) {
+                    tags[i].checked = true;
+                    this.filters.push(this.tags[i].name);
+                } else if (!this.toggleFiltersButton.selectAll && tags[i].checked) {
+                    tags[i].checked = false;
+                    this.filters.splice(this.filters.indexOf(this.tags[i].name), 1);
+                }
+            }
+            for (var j = 0; j < badges.length - 1; j++) {
+                if (this.toggleFiltersButton.selectAll && !badges[j].checked) {
+                    badges[j].checked = true;
+                    this.filters.push(this.badges[j].name);
+                } else if (!this.toggleFiltersButton.selectAll && badges[j].checked) {
+                    badges[j].checked = false;
+                    this.filters.splice(this.filters.indexOf(this.badges[j].name), 1);
+                }
+            }
+            for (var k = 0; k < this.people.length; k++) {
+                this.people[k].hide = this._matchesFilters(this.people[k]);
+            }
+            if (this.toggleFiltersButton.selectAll) {
+                this.set('toggleFiltersButton.title', 'Clear All');
+            } else {
+                this.set('toggleFiltersButton.title', 'Select All');
+            }
+            this.toggleFiltersButton.selectAll = !this.toggleFiltersButton.selectAll;
+            this.$.peopleList.render();
+        },
         _filter: function(event) {
             var filterName = '';
+            var index = event.model.index;
+            this.tags[index].checked = !this.tags[index].checked;
             if (event.model.tag !== undefined) {
                 filterName = event.model.tag.name;
             } else if (event.model.badge !== undefined) {
