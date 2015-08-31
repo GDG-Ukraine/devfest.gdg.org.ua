@@ -70,7 +70,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
     });
 
     test('check physical item size', function(done) {
-      var setSize = 10;
+      var setSize = list._physicalCount - 1;
       container.data = buildDataSet(setSize);
 
       flush(function() {
@@ -151,28 +151,6 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 
       });
     });
-
-    test('reset items', function(done) {
-      list.items = buildDataSet(100);
-
-      flush(function() {
-        var firstItem = getFirstItemFromList(list);
-        assert.equal(firstItem.textContent, '0');
-
-        list.items = null;
-
-        flush(function() {
-          assert.notEqual(getFirstItemFromList(list), firstItem);
-          list.items = buildDataSet(100);
-
-          flush(function() {
-            assert.equal(getFirstItemFromList(list), firstItem);
-            done();
-          });
-        });
-      });
-    });
-
   });
 </script>
 

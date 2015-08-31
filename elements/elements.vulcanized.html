@@ -9610,7 +9610,7 @@ This event is fired by any element that implements `IronResizableBehavior`.
 
 By default, elements such as `iron-pages`, `paper-tabs` or `paper-dialog` will trigger
 this event automatically. If you hide the list manually (e.g. you use `display: none`)
-you might want to implement `IronResizableBehavior` or fire this event manually right
+you might want to implement `IronResizableBehavior` or fire this event manually right 
 after the list became visible again. e.g.
 
     document.querySelector('iron-list').fire('resize');
@@ -15127,6 +15127,9 @@ Custom property | Description | Default
 ----------------|-------------|----------
 `--paper-card-header-color` | The color of the header text | `#000`
 `--paper-card-header` | Mixin applied to the card header section | `{}`
+`--paper-card-header-text` | Mixin applied to the title in the card header section | `{}`
+`--paper-card-header-image` | Mixin applied to the image in the card header section | `{}`
+`--paper-card-header-image-text` | Mixin applied to the text overlapping the image in the card header section | `{}`
 `--paper-card-content` | Mixin applied to the card content section| `{}`
 `--paper-card-actions` | Mixin applied to the card action section | `{}`
 `--paper-card` | Mixin applied to the card | `{}`
@@ -20561,6 +20564,7 @@ module.exports = Array.isArray || function (arr) {
 
     :host {
       display: block;
+      will-change: transform;
     }
 
     :host(.has-scroller) {
@@ -20576,19 +20580,13 @@ module.exports = Array.isArray || function (arr) {
       box-sizing: border-box;
       position: absolute;
       top: 0;
-      will-change: transform;
     }
 
   </style>
   <template>
-
-    <array-selector id="selector" items="{{items}}" selected="{{selectedItems}}" selected-item="{{selectedItem}}">
-    </array-selector>
-
     <div id="items">
       <content></content>
     </div>
-
   </template>
 </dom-module>
 
@@ -20632,61 +20630,12 @@ module.exports = Array.isArray || function (arr) {
       indexAs: {
         type: String,
         value: 'index'
-      },
-
-      /**
-       * The name of the variable to add to the binding scope to indicate
-       * if the row is selected.
-       */
-      selectedAs: {
-        type: String,
-        value: 'selected'
-      },
-
-      /**
-       * When true, tapping a row will select the item, placing its data model
-       * in the set of selected items retrievable via the selection property.
-       *
-       * Note that tapping focusable elements within the list item will not
-       * result in selection, since they are presumed to have their * own action.
-       */
-      selectionEnabled: {
-        type: Boolean,
-        value: false
-      },
-
-      /**
-       * When `multiSelection` is false, this is the currently selected item, or `null`
-       * if no item is selected.
-       */
-      selectedItem: {
-        type: Object,
-        notify: true
-      },
-
-      /**
-       * When `multiSelection` is true, this is an array that contains the selected items.
-       */
-      selectedItems: {
-        type: Object,
-        notify: true
-      },
-
-      /**
-       * When `true`, multiple items may be selected at once (in this case,
-       * `selected` is an array of currently selected items).  When `false`,
-       * only one item may be selected at a time.
-       */
-      multiSelection: {
-        type: Boolean,
-        value: false
       }
+
     },
 
     observers: [
-      '_itemsChanged(items.*)',
-      '_selectionEnabledChanged(selectionEnabled)',
-      '_multiSelectionChanged(multiSelection)'
+      '_itemsChanged(items.*)'
     ],
 
     behaviors: [
@@ -20722,7 +20671,7 @@ module.exports = Array.isArray || function (arr) {
     /**
      * The number of tiles in the DOM.
      */
-    _physicalCount: 0,
+    _physicalCount: DEFAULT_PHYSICAL_COUNT,
 
     /**
      * The k-th tile that is at the top of the scrolling list.
@@ -20805,7 +20754,7 @@ module.exports = Array.isArray || function (arr) {
      * True if the current item list was rendered for the first time
      * after attached.
      */
-    _itemsRendered: false,
+    _initRendered: false,
 
     /**
      * The bottom of the physical content.
@@ -20880,7 +20829,7 @@ module.exports = Array.isArray || function (arr) {
     * True if the current list is visible.
     */
     get _isVisible() {
-      return this._scroller && Boolean(this._scroller.offsetWidth || this._scroller.offsetHeight);
+      return !!(this.offsetWidth || this.offsetHeight);
     },
 
     /**
@@ -20907,16 +20856,6 @@ module.exports = Array.isArray || function (arr) {
       return this._firstVisibleIndexVal;
     },
 
-    ready: function() {
-      if (IOS_TOUCH_SCROLLING) {
-        this._scrollListener = function() {
-          requestAnimationFrame(this._scrollHandler.bind(this));
-        }.bind(this);
-      } else {
-        this._scrollListener = this._scrollHandler.bind(this);
-      }
-    },
-
     /**
      * When the element has been attached to the DOM tree.
      */
@@ -20932,13 +20871,19 @@ module.exports = Array.isArray || function (arr) {
         this.classList.add('has-scroller');
       }
 
+      this.updateViewportBoundaries();
+
       if (IOS_TOUCH_SCROLLING) {
         this._scroller.style.webkitOverflowScrolling = 'touch';
+
+        this._scroller.addEventListener('scroll', function() {
+          requestAnimationFrame(this._scrollHandler.bind(this));
+        }.bind(this));
+      } else {
+        this._scroller.addEventListener('scroll', this._scrollHandler.bind(this));
       }
 
-      this._scroller.addEventListener('scroll', this._scrollListener);
-
-      this.updateViewportBoundaries();
+      // render the list of items if we haven't rendered them yet
       this._render();
     },
 
@@ -20946,10 +20891,7 @@ module.exports = Array.isArray || function (arr) {
      * When the element has been removed from the DOM tree.
      */
     detached: function() {
-      this._itemsRendered = false;
-      if (this._scroller) {
-        this._scroller.removeEventListener('scroll', this._scrollListener);
-      }
+      this._initRendered = false;
     },
 
     /**
@@ -21175,11 +21117,9 @@ module.exports = Array.isArray || function (arr) {
      * but it also ensures that only one `update` cycle is created.
      */
     _render: function() {
-      var requiresUpdate = this._virtualCount > 0 || this._physicalCount > 0;
-
-      if (this.isAttached && !this._itemsRendered && this._isVisible && requiresUpdate)  {
+      if (this.isAttached && !this._initRendered && this._isVisible && this.items) {
         this._update();
-        this._itemsRendered = true;
+        this._initRendered = true;
       }
     },
 
@@ -21189,16 +21129,12 @@ module.exports = Array.isArray || function (arr) {
     _ensureTemplatized: function() {
       if (!this.ctor) {
         // Template instance props that should be excluded from forwarding
-        var props = {};
-
-        props.__key__ = true;
-        props[this.as] = true;
-        props[this.indexAs] = true;
-        props[this.selectedAs] = true;
-
-        this._instanceProps = props;
+        this._instanceProps = {
+          __key__: true
+        };
+        this._instanceProps[this.as] = true;
+        this._instanceProps[this.indexAs] = true;
         this._userTemplate = Polymer.dom(this).querySelector('template');
-
         if (this._userTemplate) {
           this.templatize(this._userTemplate);
         } else {
@@ -21277,7 +21213,7 @@ module.exports = Array.isArray || function (arr) {
     _itemsChanged: function(change) {
       if (change.path === 'items') {
         // render the new set
-        this._itemsRendered = false;
+        this._initRendered = false;
 
         // update the whole set
         this._virtualStartVal = 0;
@@ -21291,16 +21227,16 @@ module.exports = Array.isArray || function (arr) {
 
         // create the initial physical items
         if (!this._physicalItems) {
-          this._physicalCount = Math.max(1, Math.min(DEFAULT_PHYSICAL_COUNT, this._virtualCount));
           this._physicalItems = this._createPool(this._physicalCount);
           this._physicalSizes = new Array(this._physicalCount);
         }
 
         this.debounce('refresh', this._render);
 
+
       } else if (change.path === 'items.splices') {
         // render the new set
-        this._itemsRendered = false;
+        this._initRendered = false;
 
         this._adjustVirtualIndex(change.value.indexSplices);
         this._virtualCount = this.items ? this.items.length : 0;
@@ -21314,15 +21250,9 @@ module.exports = Array.isArray || function (arr) {
     },
 
     _adjustVirtualIndex: function(splices) {
-      var i, splice, idx;
-
-      for (i = 0; i < splices.length; i++) {
-        splice = splices[i];
-
-        // deselect removed items
-        splice.removed.forEach(this.$.selector.deselect, this.$.selector);
-
-        idx = splice.index;
+      for (var i = 0; i < splices.length; i++) {
+        var splice = splices[i];
+        var idx = splice.index;
         // We only need to care about changes happening above the current position
         if (idx >= this._virtualStartVal) {
           break;
@@ -21381,7 +21311,6 @@ module.exports = Array.isArray || function (arr) {
         if (item) {
           inst[this.as] = item;
           inst.__key__ = this._collection.getKey(item);
-          inst[this.selectedAs] = this.$.selector.isSelected(item);
           inst[this.indexAs] = vidx;
           el.removeAttribute('hidden');
           this._physicalIndexForKey[inst.__key__] = pidx;
@@ -21464,14 +21393,12 @@ module.exports = Array.isArray || function (arr) {
      * of the physical items in the DOM tree.
      *
      * @method scrollToIndex
-     * @param {number} idx The index of the item
      */
     scrollToIndex: function(idx) {
       if (typeof idx !== 'number') {
         return;
       }
 
-      var itemSet;
       var firstVisible = this.firstVisibleIndex;
 
       idx = Math.min(Math.max(idx, 0), this._virtualCount-1);
@@ -21510,12 +21437,6 @@ module.exports = Array.isArray || function (arr) {
       // set the new scroll position
       this._resetScrollPosition(this._physicalTop + targetOffsetTop + 1);
 
-      // increase the pool of physical items if needed
-      if (itemSet = this._increasePoolIfNeeded()) {
-        // set models to the new items
-        this.async(this._update.bind(this, itemSet));
-      }
-
       // clear cached visible index
       this._firstVisibleIndexVal = null;
     },
@@ -21534,143 +21455,12 @@ module.exports = Array.isArray || function (arr) {
      */
     _resizeHandler: function() {
       this.debounce('resize', function() {
-        this._render();
-        if (this._itemsRendered && this._physicalItems && this._isVisible) {
+        if (this._physicalItems && this._isVisible) {
           this._resetAverage();
           this.updateViewportBoundaries();
           this.scrollToIndex(this.firstVisibleIndex);
         }
       });
-    },
-
-    _getModelFromItem: function(item) {
-      var key = this._collection.getKey(item);
-      var pidx = this._physicalIndexForKey[key];
-
-      if (pidx !== undefined) {
-        return this._physicalItems[pidx]._templateInstance;
-      }
-      return null;
-    },
-
-    /**
-     * Select the list item at the given index.
-     *
-     * @method selectItem
-     * @param {(Object|number)} item the item object or its index
-     */
-    selectItem: function(item) {
-      if (typeof item === 'number') {
-        item = this.items[item];
-        if (!item) {
-          throw new RangeError('<item> not found');
-        }
-      } else {
-        if (this._collection.getKey(item) === undefined) {
-          throw new TypeError('<item> should be a valid item');
-        }
-      }
-
-      var model = this._getModelFromItem(item);
-
-      if (!this.multiSelection && this.selectedItem) {
-        this.deselectItem(this.selectedItem);
-      }
-      if (model) {
-        model[this.selectedAs] = true;
-      }
-      this.$.selector.select(item);
-    },
-
-    /**
-     * Deselects the given item list if it is already selected.
-     *
-     * @method deselect
-     * @param {(Object|number)} item the item object or its index
-     */
-    deselectItem: function(item) {
-      if (typeof item === 'number') {
-        item = this.items[item];
-        if (!item) {
-          throw new RangeError('<item> not found');
-        }
-      } else {
-        if (this._collection.getKey(item) === undefined) {
-          throw new TypeError('<item> should be a valid item');
-        }
-      }
-
-      var model = this._getModelFromItem(item);
-
-      if (model) {
-        model[this.selectedAs] = false;
-      }
-      this.$.selector.deselect(item);
-    },
-
-    /**
-     * Select or deselect a given item depending on whether the item
-     * has already been selected.
-     *
-     * @method toggleSelectionForItem
-     * @param {(Object|number)} item the item object or its index
-     */
-    toggleSelectionForItem: function(item) {
-      var item = typeof item === 'number' ? this.items[item] : item;
-      if (this.$.selector.isSelected(item)) {
-        this.deselectItem(item);
-      } else {
-        this.selectItem(item);
-      }
-    },
-
-    /**
-     * Clears the current selection state of the list.
-     *
-     * @method clearSelection
-     */
-    clearSelection: function() {
-      function unselect(item) {
-        var model = this._getModelFromItem(item);
-        if (model) {
-          model[this.selectedAs] = false;
-        }
-      }
-
-      if (Array.isArray(this.selectedItems)) {
-        this.selectedItems.forEach(unselect, this);
-      } else if (this.selectedItem) {
-        unselect.call(this, this.selectedItem);
-      }
-     
-      this.$.selector.clearSelection();    
-    },
-
-    /**
-     * Add an event listener to `tap` if `selectionEnabled` is true,
-     * it will remove the listener otherwise.
-     */
-    _selectionEnabledChanged: function(selectionEnabled) {
-      if (selectionEnabled) {
-        this.listen(this, 'tap', '_selectionHandler');
-      } else {
-        this.unlisten(this, 'tap', '_selectionHandler');
-      }
-    },
-
-    /**
-     * Select an item from an event object.
-     */
-    _selectionHandler: function(e) {
-      var model = this.modelForElement(e.target);
-      if (model) {
-        this.toggleSelectionForItem(model[this.as]);
-      }
-    },
-
-    _multiSelectionChanged: function(multiSelection) {
-      this.clearSelection();
-      this.$.selector.multi = multiSelection;
     }
   });
 
@@ -24168,6 +23958,14 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
           },
 
           /**
+           * If provided, this will be the element that will be focused when
+           * the dropdown opens.
+           */
+          focusTarget: {
+            type: Object
+          },
+
+          /**
            * Set to true to disable animations when opening and closing the
            * dropdown.
            */
@@ -24207,6 +24005,17 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
           return Polymer.dom(this.$.content).getDistributedNodes()[0];
         },
 
+        /**
+         * The element that should be focused when the dropdown opens.
+         */
+        get _focusTarget() {
+          return this.focusTarget || this.containedElement;
+        },
+
+        /**
+         * The element that should be used to position the dropdown when
+         * it opens, if no position target is configured.
+         */
         get _defaultPositionTarget() {
           var parent = Polymer.dom(this).parentNode;
 
@@ -24217,6 +24026,9 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
           return parent;
         },
 
+        /**
+         * The bounding rect of the position target.
+         */
         get _positionRect() {
           if (!this._positionRectMemo && this.positionTarget) {
             this._positionRectMemo = this.positionTarget.getBoundingClientRect();
@@ -24225,6 +24037,9 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
           return this._positionRectMemo;
         },
 
+        /**
+         * The horizontal offset value used to position the dropdown.
+         */
         get _horizontalAlignTargetValue() {
           var target;
 
@@ -24239,6 +24054,9 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
           return Math.max(target, 0);
         },
 
+        /**
+         * The vertical offset value used to position the dropdown.
+         */
         get _verticalAlignTargetValue() {
           var target;
 
@@ -24253,27 +24071,41 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
           return Math.max(target, 0);
         },
 
+        /**
+         * Called when the value of `opened` changes.
+         *
+         * @param {boolean} opened True if the dropdown is opened.
+         */
         _openedChanged: function(opened) {
           if (opened && this.disabled) {
             this.cancel();
           } else {
-            this._cancelAnimations();
+            this.cancelAnimation();
             this._prepareDropdown();
             Polymer.IronOverlayBehaviorImpl._openedChanged.apply(this, arguments);
           }
+
+          if (this.opened) {
+            this._focusContent();
+          }
         },
 
+        /**
+         * Overridden from `IronOverlayBehavior`.
+         */
         _renderOpened: function() {
           Polymer.IronDropdownScrollManager.pushScrollLock(this);
           if (!this.noAnimations && this.animationConfig && this.animationConfig.open) {
             this.$.contentWrapper.classList.add('animating');
             this.playAnimation('open');
           } else {
-            this._focusContent();
             Polymer.IronOverlayBehaviorImpl._renderOpened.apply(this, arguments);
           }
         },
 
+        /**
+         * Overridden from `IronOverlayBehavior`.
+         */
         _renderClosed: function() {
           Polymer.IronDropdownScrollManager.removeScrollLock(this);
           if (!this.noAnimations && this.animationConfig && this.animationConfig.close) {
@@ -24284,6 +24116,12 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
           }
         },
 
+        /**
+         * Called when animation finishes on the dropdown (when opening or
+         * closing). Responsible for "completing" the process of opening or
+         * closing the dropdown by positioning it or setting its display to
+         * none.
+         */
         _onNeonAnimationFinish: function() {
           this.$.contentWrapper.classList.remove('animating');
           if (this.opened) {
@@ -24293,6 +24131,9 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
           }
         },
 
+        /**
+         * Called when an `iron-resize` event fires.
+         */
         _onIronResize: function() {
           var containedElement = this.containedElement;
           var scrollTop;
@@ -24315,14 +24156,17 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
           }
         },
 
+        /**
+         * Called when the `positionTarget` property changes.
+         */
         _positionTargetChanged: function() {
           this._updateOverlayPosition();
         },
 
-        _cancelAnimations: function() {
-          this.cancelAnimation();
-        },
-
+        /**
+         * Constructs the final animation config from different properties used
+         * to configure specific parts of the opening and closing animations.
+         */
         _updateAnimationConfig: function() {
           var animationConfig = {};
           var animations = [];
@@ -24350,12 +24194,21 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
           this.animationConfig = animationConfig;
         },
 
+        /**
+         * Prepares the dropdown for opening by updating measured layout
+         * values.
+         */
         _prepareDropdown: function() {
           this.sizingTarget = this.containedElement || this.sizingTarget;
           this._updateAnimationConfig();
           this._updateOverlayPosition();
         },
 
+        /**
+         * Updates the overlay position based on configured horizontal
+         * and vertical alignment, and re-memoizes these values for the sake
+         * of behavior in `IronFitBehavior`.
+         */
         _updateOverlayPosition: function() {
           this._positionRectMemo = null;
 
@@ -24381,10 +24234,17 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
           }
         },
 
+        /**
+         * Focuses the configured focus target.
+         */
         _focusContent: function() {
-          if (this.containedElement) {
-            this.containedElement.focus();
-          }
+          // NOTE(cdata): This is async so that it can attempt the focus after
+          // `display: none` is removed from the element.
+          this.async(function() {
+            if (this._focusTarget) {
+              this._focusTarget.focus();
+            }
+          });
         }
       });
     })();
@@ -24501,9 +24361,9 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
     <div id="trigger" on-tap="open">
       <content select=".dropdown-trigger"></content>
     </div>
-    <iron-dropdown id="dropdown" opened="{{opened}}" horizontal-align="[[horizontalAlign]]" vertical-align="[[verticalAlign]]" horizontal-offset="[[horizontalOffset]]" vertical-offset="[[verticalOffset]]" open-animation-config="[[openAnimationConfig]]" close-animation-config="[[closeAnimationConfig]]" no-animations="[[noAnimations]]">
+    <iron-dropdown id="dropdown" opened="{{opened}}" horizontal-align="[[horizontalAlign]]" vertical-align="[[verticalAlign]]" horizontal-offset="[[horizontalOffset]]" vertical-offset="[[verticalOffset]]" open-animation-config="[[openAnimationConfig]]" close-animation-config="[[closeAnimationConfig]]" no-animations="[[noAnimations]]" focus-target="[[_dropdownContent]]">
       <paper-material class="dropdown-content">
-        <content select=".dropdown-content"></content>
+        <content id="content" select=".dropdown-content"></content>
       </paper-material>
     </iron-dropdown>
   </template>
@@ -24540,7 +24400,8 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
         opened: {
           type: Boolean,
           value: false,
-          notify: true
+          notify: true,
+          observer: '_openedChanged'
         },
 
         /**
@@ -24598,7 +24459,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
          * Set to true to disable automatically closing the dropdown after
          * a selection has been made.
          */
-        ignoreActivate: {
+        ignoreSelect: {
           type: Boolean,
           value: false
         },
@@ -24661,6 +24522,14 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
               }
             }];
           }
+        },
+
+        /**
+         * This is the element intended to be bound as the focus target
+         * for the `iron-dropdown` contained by `paper-menu-button`.
+         */
+        _dropdownContent: {
+          type: Object
         }
       },
 
@@ -24670,7 +24539,14 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
       },
 
       listeners: {
-        'iron-activate': '_onIronActivate'
+        'iron-select': '_onIronSelect'
+      },
+
+      /**
+       * The content element that is contained by the menu button, if any.
+       */
+      get contentElement() {
+        return Polymer.dom(this.$.content).getDistributedNodes()[0];
       },
 
       /**
@@ -24693,14 +24569,14 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
       },
 
       /**
-       * When an `iron-activate` event is received, the dropdown should
+       * When an `iron-select` event is received, the dropdown should
        * automatically close on the assumption that a value has been chosen.
        *
        * @param {CustomEvent} event A CustomEvent instance with type
-       * set to `"iron-activate"`.
+       * set to `"iron-select"`.
        */
-      _onIronActivate: function(event) {
-        if (!this.ignoreActivate) {
+      _onIronSelect: function(event) {
+        if (!this.ignoreSelect) {
           this.close();
         }
       },
@@ -24714,6 +24590,12 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
        */
       _openedChanged: function(opened, oldOpened) {
         if (opened) {
+          // TODO(cdata): Update this when we can measure changes in distributed
+          // children in an idiomatic way.
+          // We poke this property in case the element has changed. This will
+          // cause the focus target for the `iron-dropdown` to be updated as
+          // necessary:
+          this._dropdownContent = this.contentElement;
           this.fire('paper-dropdown-open');
         } else if (oldOpened != null) {
           this.fire('paper-dropdown-close');
@@ -24960,15 +24842,25 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
       },
 
       attached: function() {
-        var trimmedText = Polymer.dom(this).textContent.trim();
-        if (trimmedText === '') {
-          this.$.checkboxLabel.hidden = true;
-        }
-        // Don't stomp over a user-set aria-label.
-        if (trimmedText !== '' && !this.getAttribute('aria-label')) {
-          this.setAttribute('aria-label', trimmedText);
-        }
         this._isReady = true;
+
+        // Don't stomp over a user-set aria-label.
+        if (!this.getAttribute('aria-label')) {
+          this.updateAriaLabel();
+        }
+      },
+
+
+      /**
+       * Update the checkbox aria-label. This is a temporary workaround not
+       * being able to observe changes in <content>
+       * (see: https://github.com/Polymer/polymer/issues/1773)
+       *
+       * Call this if you manually change the contents of the checkbox
+       * and want the aria-label to match the new contents.
+       */
+      updateAriaLabel: function() {
+        this.setAttribute('aria-label', Polymer.dom(this).textContent.trim());
       },
 
       // button-behavior hook
@@ -26662,7 +26554,8 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
     is: 'paper-tab',
 
     behaviors: [
-      Polymer.IronControlState
+      Polymer.IronControlState,
+      Polymer.IronButtonState
     ],
 
     properties: {
@@ -26684,7 +26577,11 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
     },
 
     listeners: {
-      down: '_onDown'
+      down: '_updateNoink'
+    },
+
+    attached: function() {
+      this._updateNoink();
     },
 
     get _parentNoink () {
@@ -26692,7 +26589,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
       return !!parent && !!parent.noink;
     },
 
-    _onDown: function(e) {
+    _updateNoink: function() {
       this.noink = !!this.noink || !!this._parentNoink;
     }
   });
@@ -27124,6 +27021,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
   .header img {
     width: 100%;
     pointer-events: none;
+    @apply(--paper-card-header-image);
   }
 
   .header .title-text {
@@ -27131,11 +27029,13 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
     font-size: 24px;
     font-weight: bold;
     color: var(--paper-card-header-color, #000);
+    @apply(--paper-card-header-text);
   }
 
   .header .title-text.over-image {
     position: absolute;
     bottom: 0px;
+    @apply(--paper-card-header-image-text);
   }
 
   :host ::content .card-content {
@@ -29889,26 +29789,26 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
     <template>
         <div class="photo-wrapper layout horizontal">
             <div class="flex relative big">
-                <iron-image src="{{photos.big}}" class="placeholder-color fit" sizing="cover" preload="" fade=""></iron-image>
+                <iron-image src="{{photos.big}}" class="placeholder-color fit poiner" on-tap="openGallery" sizing="cover" preload="" fade=""></iron-image>
             </div>
             <div class="flex layout vertical">
                 <div class="flex relative">
-                    <iron-image src="{{photos.small.0}}" class="placeholder-color fit" sizing="cover" preload="" fade=""></iron-image>
+                    <iron-image src="{{photos.small.0}}" class="placeholder-color fit poiner" on-tap="openGallery" sizing="cover" preload="" fade=""></iron-image>
                 </div>
                 <div class="flex relative hidden-xs">
-                    <iron-image src="{{photos.small.1}}" class="placeholder-color fit" sizing="cover" preload="" fade=""></iron-image>
+                    <iron-image src="{{photos.small.1}}" class="placeholder-color fit poiner" on-tap="openGallery" sizing="cover" preload="" fade=""></iron-image>
                 </div>
             </div>
         </div>
-        <!-- <paper-dialog id="photosDialog" class="gallery-dialog fit" entry-animation="scale-up-animation" exit-animation="fade-out-animation">
+        <paper-dialog id="photosDialog" class="gallery-dialog fit" entry-animation="scale-up-animation" exit-animation="fade-out-animation">
             <paper-toolbar class="navbar-overlay fit">
                 <paper-icon-button icon="icons:arrow-back" on-tap="closeGallery"></paper-icon-button>
                 <div class="title text-left">GDG DevFest Ukraine 2014 - Photos</div>
             </paper-toolbar>
             <div class="gallery-container fit">
-                <photo-gallery user-id="102444623953913144164" album-id="6066676524229268177"></photo-gallery>
+                <photo-gallery user-id="104154992083455126443" album-id="6189295328162771457"></photo-gallery>
             </div>
-        </paper-dialog> -->
+        </paper-dialog>
     </template>
 </dom-module>
 
