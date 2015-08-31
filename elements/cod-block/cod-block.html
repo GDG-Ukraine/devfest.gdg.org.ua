@@ -2,7 +2,8 @@
     <template>
         <style>
             :host {
-                display: block;
+                display: none;
+                position: absolute;
             }
 
             .paper-card-container {
@@ -18,7 +19,7 @@
                 font-size: 14px;
                 color: var(--secondary-text-color);
             }
-
+    
             @media (min-width: 768px) {
                 paper-card {
                     width: 80%;
@@ -28,12 +29,15 @@
                 }
             }
         </style>
-        <iron-ajax auto id="ajax" url="[[source]]" handle-as="text" last-response="{{cod}}"></iron-ajax>
+        <iron-ajax id="ajax" url="[[postUrl]]" handle-as="text" on-response="postLoaded"></iron-ajax>
         <div class="relative layout horizontal center-justified">
             <paper-card>
                 <div class="paper-card-container">
+                    <!-- <div class="card-content">
+                        <span class="title block">Or don't be a jerk policy</span>
+                    </div> -->
                     <div class="card-content">
-                        <marked-element markdown="[[cod]]"></marked-element>
+                        <marked-element markdown="[[post]]"></marked-element>
                     </div>
                 </div>
             </paper-card>
@@ -43,8 +47,54 @@
 <script>
 Polymer({
     is: 'cod-block',
+    behaviors: [
+        Polymer.NeonSharedElementAnimatableBehavior
+    ],
     properties: {
-        source: String
+        source: {
+            type: String,
+            observer: '_sourceChanged'
+        },
+        animationConfig: {
+            value: function() {
+                return {
+                    'entry': {
+                        name: 'transform-animation',
+                        node: this,
+                        transformFrom: 'translateY(100vh)',
+                        transformTo: 'none',
+                        timing: {
+                            duration: 1000
+                        }
+                    },
+                    'exit': {
+                        name: 'transform-animation',
+                        node: this,
+                        transformFrom: 'none',
+                        transformTo: 'translateY(100vh)',
+                        timing: {
+                            duration: 1000
+                        }
+                    }
+                };
+            }
+        },
+        closing: {
+            type: Boolean,
+            notify: true
+        }
+    },
+    _sourceChanged: function() {
+        this.postUrl = this.source;
+        this.style.display = 'block';
+        this.$.ajax.generateRequest();
+    },
+    postLoaded: function(event, response) {
+        this.post = response.response;
+        this.style.position = 'relative';
+    },
+    closePost: function() {
+        this.closing = true;
     }
 });
 </script>
