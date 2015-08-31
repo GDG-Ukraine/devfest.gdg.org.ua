@@ -19634,6 +19634,7 @@ module.exports = Array.isArray || function (arr) {
             trackPageview('/blog/' + data.params.title);
             app.route = 'blog';
             app.params = data.params;
+            app.scrollToTop();
         });
 
         page('/speakers', function() {
@@ -19645,20 +19646,19 @@ module.exports = Array.isArray || function (arr) {
             trackPageview('/speakers/' + data.params.id);
             app.route = 'speakers';
             app.params = data.params;
+            app.scrollToTop();
         });
 
         page('/contact', function() {
             trackPageview('/contact');
             app.route = 'contact';
+            app.scrollToTop();
         });
 
         page('/code-of-conduct', function() {
             trackPageview('/code-of-conduct');
             app.route = 'code-of-conduct';
-        });
-
-        page('*', function() {
-            page.redirect('/');
+            app.scrollToTop();
         });
 
         page({
@@ -19670,7 +19670,7 @@ module.exports = Array.isArray || function (arr) {
             e.preventDefault();
         }
 
-        var routerLinks = document.querySelectorAll('a[href^="#!"],a[dynamic-link]');
+        var routerLinks = document.querySelectorAll('a[href^="#!"], a[dynamic-link]');
         for (var i = 0; i < routerLinks.length; i++) {
             routerLinks[i].addEventListener('click', redirectLink, false);
         }
@@ -28956,7 +28956,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
                     <h5 class="logos-block-title text-center">[[block.title]]</h5>
                     <div class="wrap layout horizontal center-center">
                         <template is="dom-repeat" items="[[block.logos]]" as="logo">
-                            <a class="logo-item" href="[[logo.url]]" title="[[logo.name]]">
+                            <a class="logo-item" href="[[logo.url]]" title="[[logo.name]]" target="_blank">
                                 <iron-image class="logo-img flex" src="[[logo.logoUrl]]" preload="" fade="" sizing="contain"></iron-image>
                             </a>
                         </template>
@@ -31291,13 +31291,13 @@ Polymer({
                 <div class="flex-5">
                     <span class="title block">[[news.0.title]]</span>
                     <marked-element markdown="[[news.0.brief]]"></marked-element>
-                    <a data-route="[[news.0.url]]" href="[[news.0.url]]" dynamic-link="">Continue reading</a>
+                    <a data-route$="[[news.0.dataRoute]]" href$="[[news.0.url]]" dynamic-link="">Continue reading</a>
                 </div>
                 <span class="flex"></span>
                 <div class="flex-5 second-block">
                     <span class="title block">[[news.1.title]]</span>
                     <marked-element markdown="[[news.1.brief]]"></marked-element>
-                    <a data-route="[[news.1.url]]" href="[[news.1.url]]" dynamic-link="">Continue reading</a>
+                    <a data-route$="[[news.1.dataRoute]]" href="[[news.1.url]]" dynamic-link="">Continue reading</a>
                 </div>
             </div>
         </div>
@@ -31314,6 +31314,7 @@ Polymer({
             var temp = response.response.reverse().slice(0, 2);
             for (var i = 0; i < temp.length; i++) {
                 temp[i].url = '#!/blog/' + temp[i].titleUrl;
+                temp[i].dataRoute = 'blog/' + temp[i].titleUrl;
             }
             this.news = temp;
         }
@@ -31477,7 +31478,7 @@ Polymer({
             }
         </style>
         <iron-ajax auto="" id="ajax" url="[[source]]" handle-as="text" last-response="{{cod}}"></iron-ajax>
-        <div class="relative layout horizontal center-justified">
+        <div class="container relative layout horizontal center-justified">
             <paper-card>
                 <div class="paper-card-container">
                     <div class="card-content">
