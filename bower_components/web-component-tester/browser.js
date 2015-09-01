@@ -36,42 +36,28 @@
       callback();
     };
 
-    function componentsReady() {
-      // handle Polymer 0.5 readiness
+    function importsReady() {
+      window.removeEventListener('WebComponentsReady', importsReady);
+      debug('WebComponentsReady');
+
       if (window.Polymer && Polymer.whenReady) {
-        Polymer.whenReady(done);
+        Polymer.whenReady(function() {
+          debug('polymer-ready');
+          done();
+        });
       } else {
         done();
       }
     }
 
     // All our supported framework configurations depend on imports.
-    if (window.WebComponents) {
-      if (WebComponents.whenReady) {
-        WebComponents.whenReady(function() {
-          debug('WebComponents Ready');
-          componentsReady();
-        });
-      } else {
-        whenWebComponentsReady(componentsReady);
-      }
-    } else if (window.HTMLImports) {
-      HTMLImports.whenReady(function() {
-        debug('HTMLImports Ready');
-        componentsReady();
-      });
-    } else {
+    if (!window.HTMLImports) {
       done();
+    } else if (HTMLImports.ready) {
+      importsReady();
+    } else {
+      window.addEventListener('WebComponentsReady', importsReady);
     }
-  }
-
-  function whenWebComponentsReady(cb) {
-    var after = function after() {
-      window.removeEventListener('WebComponentsReady', after);
-      debug('WebComponentsReady');
-      cb();
-    };
-    window.addEventListener('WebComponentsReady', after);
   }
 
   /**
@@ -501,8 +487,7 @@
       'chai/chai.js',
       'sinonjs/sinon.js',
       'sinon-chai/lib/sinon-chai.js',
-      'accessibility-developer-tools/dist/js/axs_testing.js',
-      'web-component-tester/runtime-helpers/a11ySuite.js'
+      'accessibility-developer-tools/dist/js/axs_testing.js'
     ],
 
     /** Absolute root for client scripts. Detected in `setup()` if not set. */
@@ -510,11 +495,6 @@
 
     /** By default, we wait for any web component frameworks to load. */
     waitForFrameworks: true,
-
-    /** Alternate callback for waiting for tests.
-     * `this` for the callback will be the window currently running tests.
-     */
-    waitFor: null,
 
     /** How many `.html` suites that can be concurrently loaded & run. */
     numConcurrentSuites: 1,
@@ -697,8 +677,7 @@
    */
   function _runMocha(reporter, done, waited) {
     if (config_js.get('waitForFrameworks') && !waited) {
-      var waitFor = (config_js.get('waitFor') || util_js.whenFrameworksReady).bind(window);
-      waitFor(_runMocha.bind(null, reporter, done, true));
+      util_js.whenFrameworksReady(_runMocha.bind(null, reporter, done, true));
       return;
     }
     util_js.debug('_runMocha');
@@ -1815,6 +1794,59 @@
       }
     }
     next();
+  };
+
+  /**
+   * Runs the Chrome Accessibility Developer Tools Audit against a test-fixture
+   *
+   * @param {String} fixtureId ID of the fixture element in the document to use
+   */
+  window.a11ySuite = function a11ySuite(fixtureId) {
+
+    // capture a reference to the fixture element early
+    var fixtureElement = document.getElementById(fixtureId);
+
+    // build a mocha suite
+    suite('A11y Audit', function() {
+
+      // keep an easy reference to the a11y audit results
+      var auditResults;
+      function getResult(index) {
+        return auditResults[index];
+      }
+
+      // build an audit config to disable certain ignorable tests
+      var axsConfig = new axs.AuditConfiguration();
+      axsConfig.scope = document.body;
+      axsConfig.showUnsupportedRulesWarning = false;
+
+      // filter out rules that only run in the extension
+      var rules = axs.AuditRules.getRules().filter(function(rule) {
+        return !rule.requiresConsoleAPI;
+      });
+
+      rules.forEach(function(rule, index) {
+        test(rule.heading, function() {
+          var result = getResult(index);
+          if (result.result === 'FAIL') {
+            var message = axs.Audit.accessibilityErrorMessage(result);
+            assert.fail(null, null, message);
+          }
+        });
+      });
+
+      // setup fixture and run audit
+      suiteSetup(function() {
+        assert.ok(fixtureElement, 'fixtureElement should be defined');
+        fixtureElement.create();
+        auditResults = axs.Audit.run(axsConfig);
+      });
+
+      // teardown fixture
+      suiteTeardown(function() {
+        fixtureElement.restore();
+      });
+    });
   };
 
   /**
