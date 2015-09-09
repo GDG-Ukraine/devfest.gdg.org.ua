@@ -36,7 +36,7 @@
     }, {
         "name": "NETWORK",
         "url": "http://network-ua.com/",
-        "logoUrl": "../images/partners/network.jpg"
+        "logoUrl": "../images/partners/network.png"
     }, {
         "name": "career4it",
         "url": "http://career4it.com/en/",
@@ -57,5 +57,13 @@
         "name": "AfishaLviv",
         "url": "http://afishalviv.net/",
         "logoUrl": "../images/partners/afishalviv.png"
+    }, {
+        "name": "CyberBionic",
+        "url": "http://edu.cbsystematics.com/en/",
+        "logoUrl": "../images/partners/cyber-bionic.png"
+    }, {
+        "name": "ITVDN",
+        "url": "http://itvdn.com/en",
+        "logoUrl": "../images/partners/itvdn.png"
     }]
 }]
