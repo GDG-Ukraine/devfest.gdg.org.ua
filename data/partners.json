@@ -53,5 +53,9 @@
         "name": "Software Engineering 2015",
         "url": "http://seconf.org.ua/",
         "logoUrl": "../images/partners/se2015.png"
+    }, {
+        "name": "AfishaLviv",
+        "url": "http://afishalviv.net/",
+        "logoUrl": "../images/partners/afishalviv.png"
     }]
 }]
