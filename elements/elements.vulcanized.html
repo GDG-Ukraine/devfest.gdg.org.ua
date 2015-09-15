@@ -7287,6 +7287,27 @@ Example:
   /** @polymerBehavior */
   Polymer.IronSelectableBehavior = {
 
+      /**
+       *  Fired when iron-selector is activated (selected or deselected).
+       *  It is fired before the selected items are changed.
+       *  Cancel the event to abort selection.
+       *
+       * @event iron-activate
+       *
+       **/
+      /**
+       *  Fired when an item is selected
+       *
+       * @event iron-select
+       *
+       **/
+      /**
+       *  Fired when an item is deselected
+       *
+       * @event iron-deselect
+       *
+       **/
+
     properties: {
 
       /**
@@ -7340,7 +7361,7 @@ Example:
       },
 
       /**
-       * This is a CSS selector sting.  If this is set, only items that matches the CSS selector
+       * This is a CSS selector string.  If this is set, only items that match the CSS selector
        * are selectable.
        *
        * @attribute selectable
@@ -7368,17 +7389,29 @@ Example:
       selectedAttribute: {
         type: String,
         value: null
-      }
+      },
 
+      /**
+       * The set of excluded elements where the key is the `localName` 
+       * of the element that will be ignored from the item list.
+       *
+       * @type {object}
+       * @default {template: 1}
+       */
+
+      excludedLocalNames: {
+        type: Object,
+        value: function() {
+          return {
+            'template': 1
+          };
+        }
+      }
     },
 
     observers: [
       '_updateSelected(attrForSelected, selected)'
     ],
-
-    excludedLocalNames: {
-      'template': 1
-    },
 
     created: function() {
       this._bindFilterItem = this._filterItem.bind(this);
@@ -7458,9 +7491,7 @@ Example:
     },
 
     _removeListener: function(eventName) {
-      // There is no unlisten yet...
-      // https://github.com/Polymer/polymer/issues/1639
-      //this.removeEventListener(eventName, this._bindActivateHandler);
+      this.unlisten(this, eventName, '_activateHandler');
     },
 
     _activateEventChanged: function(eventName, old) {
@@ -7549,11 +7580,6 @@ Example:
     },
 
     _activateHandler: function(e) {
-      // TODO: remove this when https://github.com/Polymer/polymer/issues/1639 is fixed so we
-      // can just remove the old event listener.
-      if (e.type !== this.activateEvent) {
-        return;
-      }
       var t = e.target;
       var items = this.items;
       while (t && t != this) {
@@ -14287,6 +14313,11 @@ is separate from validation, and `allowed-pattern` does not affect how the input
   Polymer.PaperInputBehaviorImpl = {
 
     properties: {
+      /**
+       * Fired when the input changes due to user interaction.
+       *
+       * @event change
+       */
 
       /**
        * The label for this input. Bind this to `<paper-input-container>`'s `label` property.
@@ -14657,6 +14688,19 @@ is separate from validation, and `allowed-pattern` does not affect how the input
         label.id = labelledBy;
       }
       this._ariaLabelledBy = labelledBy;
+    },
+
+    _onChange:function(event) {
+      // In the Shadow DOM, the `change` event is not leaked into the
+      // ancestor tree, so we must do this manually.
+      // See https://w3c.github.io/webcomponents/spec/shadow/#events-that-are-not-leaked-into-ancestor-trees.
+      if (this.shadowRoot) {
+        this.fire(event.type, {sourceEvent: event}, {
+          node: this,
+          bubbles: event.bubbles,
+          cancelable: event.cancelable
+        });
+      }
     }
 
   };
@@ -26598,7 +26642,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 
       <label hidden$="[[!label]]">[[label]]</label>
 
-      <input is="iron-input" id="input" aria-labelledby$="[[_ariaLabelledBy]]" aria-describedby$="[[_ariaDescribedBy]]" disabled$="[[disabled]]" bind-value="{{value}}" invalid="{{invalid}}" prevent-invalid-input="[[preventInvalidInput]]" allowed-pattern="[[allowedPattern]]" validator="[[validator]]" type$="[[type]]" pattern$="[[pattern]]" required$="[[required]]" autocomplete$="[[autocomplete]]" autofocus$="[[autofocus]]" inputmode$="[[inputmode]]" minlength$="[[minlength]]" maxlength$="[[maxlength]]" min$="[[min]]" max$="[[max]]" step$="[[step]]" name$="[[name]]" placeholder$="[[placeholder]]" readonly$="[[readonly]]" list$="[[list]]" size$="[[size]]" autocapitalize$="[[autocapitalize]]" autocorrect$="[[autocorrect]]">
+      <input is="iron-input" id="input" aria-labelledby$="[[_ariaLabelledBy]]" aria-describedby$="[[_ariaDescribedBy]]" disabled$="[[disabled]]" bind-value="{{value}}" invalid="{{invalid}}" prevent-invalid-input="[[preventInvalidInput]]" allowed-pattern="[[allowedPattern]]" validator="[[validator]]" type$="[[type]]" pattern$="[[pattern]]" required$="[[required]]" autocomplete$="[[autocomplete]]" autofocus$="[[autofocus]]" inputmode$="[[inputmode]]" minlength$="[[minlength]]" maxlength$="[[maxlength]]" min$="[[min]]" max$="[[max]]" step$="[[step]]" name$="[[name]]" placeholder$="[[placeholder]]" readonly$="[[readonly]]" list$="[[list]]" size$="[[size]]" autocapitalize$="[[autocapitalize]]" autocorrect$="[[autocorrect]]" on-change="_onChange">
 
       <content select="[suffix]"></content>
 
