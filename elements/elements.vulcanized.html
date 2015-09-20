@@ -29794,6 +29794,22 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
                 background: var(--dart);
             }
 
+            .tag-label.firebase {
+                background: var(--firebase);
+            }
+
+            .tag-label.appengine {
+                background: var(--appengine);
+            }
+
+            .tag-label.serviceworkers {
+                background: var(--serviceworkers);
+            }
+
+            .tag-label.web-rtc {
+                background: var(--web-rtc);
+            }
+
             .tag-label.kubernetes {
                 background: var(--kubernetes);
             }
@@ -29810,8 +29826,16 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
                 background: var(--ndk);
             }
 
+            .tag-label.ble {
+                background: var(--ble);
+            }
+
             .tag-label.ci {
                 background: var(--ci);
+            }
+
+            .tag-label.tv {
+                background: var(--tv);
             }
 
             .tag-label.grpc {
@@ -29824,6 +29848,10 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 
             .tag-label.material-design {
                 background: var(--material-design);
+            }
+
+            .tag-label.entrepreneurship {
+                background: var(--entrepreneurship);
             }
 
             paper-scroll-header-panel.android {
@@ -31727,7 +31755,7 @@ Polymer({
                 </div>
             </paper-card>
         </div>
-        <paper-scroll-header-panel id="scrollHeaderPanel" class="visible-xs fit" condenses="" keep-condensed-header="">
+        <paper-scroll-header-panel id="scrollHeaderPanel" class="visible-xs hidden-sm hidden-md hidden-lg fit" condenses="" keep-condensed-header="">
             <paper-toolbar class="tall">
                 <paper-icon-button class="back-button" on-tap="closePost" icon="arrow-back"></paper-icon-button>
                 <div id="title" class="bottom title">[[meta.title]]</div>
@@ -32143,7 +32171,7 @@ Polymer({
                 </div>
             </paper-card>
         </div>
-        <paper-scroll-header-panel id="scrollHeaderPanel" class="visible-xs fit" condenses="" keep-condensed-header="">
+        <paper-scroll-header-panel id="scrollHeaderPanel" class="visible-xs hidden-sm hidden-md hidden-lg fit" condenses="" keep-condensed-header="">
             <paper-toolbar class="tall">
                 <paper-icon-button class="back-button" on-tap="closePeople" icon="arrow-back"></paper-icon-button>
                 <div id="title" class="bottom title">[[person.name]]</div>
