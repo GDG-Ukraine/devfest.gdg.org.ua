@@ -8832,15 +8832,18 @@ if (!window.Promise) {
 }
 </script>
 <!--
+@group Iron Elements
+
 iron-request can be used to perform XMLHttpRequests.
 
     <iron-request id="xhr"></iron-request>
     ...
     this.$.xhr.send({url: url, params: params});
--->
-<script>
-  'use strict'
 
+@element iron-request
+-->
+
+<script>
   Polymer({
     is: 'iron-request',
 
@@ -8868,7 +8871,7 @@ iron-request can be used to perform XMLHttpRequests.
        * resolved.
        *
        * @attribute response
-       * @type {*}
+       * @type Object
        * @default null
        */
       response: {
@@ -8878,32 +8881,6 @@ iron-request can be used to perform XMLHttpRequests.
         value: function() {
          return null;
         }
-      },
-
-      /**
-       * A reference to the status code, if the `xhr` has completely resolved.
-       *
-       * @attribute status
-       * @default 0
-       */
-      status: {
-        type: Number,
-        notify: true,
-        readOnly: true,
-        value: 0
-      },
-
-      /**
-       * A reference to the status text, if the `xhr` has completely resolved.
-       *
-       * @attribute statusText
-       * @default ""
-       */
-      statusText: {
-        type: String,
-        notify: true,
-        readOnly: true,
-        value: ''
       },
 
       /**
@@ -8964,7 +8941,7 @@ iron-request can be used to perform XMLHttpRequests.
      * the status code 0 is accepted as a success even though the outcome may
      * be ambiguous.
      *
-     * @return {boolean}
+     * @return boolean
      */
     get succeeded() {
       var status = this.xhr.status || 0;
@@ -8978,11 +8955,12 @@ iron-request can be used to perform XMLHttpRequests.
     /**
      * Sends an HTTP request to the server and returns the XHR object.
      *
+     * @method request
      * @param {{
      *   url: string,
      *   method: (string|undefined),
      *   async: (boolean|undefined),
-     *   body: (ArrayBuffer|ArrayBufferView|Blob|Document|FormData|null|string|undefined|Object),
+     *   body: (ArrayBuffer|ArrayBufferView|Blob|Document|FormData|null|string|undefined),
      *   headers: (Object|undefined),
      *   handleAs: (string|undefined),
      *   withCredentials: (boolean|undefined)}} options -
@@ -8994,18 +8972,17 @@ iron-request can be used to perform XMLHttpRequests.
      *     headers HTTP request headers.
      *     handleAs The response type. Default is 'text'.
      *     withCredentials Whether or not to send credentials on the request. Default is false.
-     * @return {Promise}
+     * @return Promise
      */
     send: function (options) {
       var xhr = this.xhr;
 
       if (xhr.readyState > 0) {
-        return null;
+        return;
       }
 
       xhr.addEventListener('readystatechange', function () {
         if (xhr.readyState === 4 && !this.aborted) {
-          this._updateStatus();
 
           if (!this.succeeded) {
             this.rejectCompletes(new Error('The request failed with status code: ' + this.xhr.status));
@@ -9026,12 +9003,10 @@ iron-request can be used to perform XMLHttpRequests.
       }.bind(this))
 
       xhr.addEventListener('error', function (error) {
-        this._updateStatus();
         this.rejectCompletes(error);
       }.bind(this));
 
       xhr.addEventListener('abort', function () {
-        this._updateStatus();
         this.rejectCompletes(new Error('Request aborted.'));
       }.bind(this));
 
@@ -9050,35 +9025,16 @@ iron-request can be used to perform XMLHttpRequests.
         }, this);
       }
 
-      var contentType;
-      if (options.headers) {
-        contentType = options.headers['Content-Type'];
-      }
-      var body = this._encodeBodyObject(options.body, contentType);
-
       // In IE, `xhr.responseType` is an empty string when the response
       // returns. Hence, caching it as `xhr._responseType`.
       xhr.responseType = xhr._responseType = (options.handleAs || 'text');
       xhr.withCredentials = !!options.withCredentials;
 
-
-
-      xhr.send(
-        /** @type {ArrayBuffer|ArrayBufferView|Blob|Document|FormData|
-                   null|string|undefined} */
-        (body));
+      xhr.send(options.body);
 
       return this.completes;
     },
 
-    /**
-     * Attempts to parse the response body of the XHR. If parsing succeeds,
-     * the value returned will be deserialized based on the `responseType`
-     * set on the XHR.
-     *
-     * @return {*} The parsed response,
-     * or undefined if there was an empty response or parsing failed.
-     */
     parseResponse: function () {
       var xhr = this.xhr;
       var responseType = this.xhr.responseType ||
@@ -9096,7 +9052,7 @@ iron-request can be used to perform XMLHttpRequests.
               // If accessing `xhr.responseText` throws, responseType `json`
               // is supported and the result is rightly `undefined`.
               try {
-                /** @suppress {suspiciousCode} */ xhr.responseText;
+                xhr.responseText;
               } catch (e) {
                 return xhr.response;
               }
@@ -9123,71 +9079,9 @@ iron-request can be used to perform XMLHttpRequests.
       }
     },
 
-    /**
-     * Aborts the request.
-     */
     abort: function () {
       this._setAborted(true);
       this.xhr.abort();
-    },
-
-    /**
-     * @param {*} body The given body of the request to try and encode.
-     * @param {?string} contentType The given content type, to infer an encoding
-     *     from.
-     * @return {*} Either the encoded body as a string, if successful,
-     *     or the unaltered body object if no encoding could be inferred.
-     */
-    _encodeBodyObject: function(body, contentType) {
-      if (typeof body == 'string') {
-        return body;  // Already encoded.
-      }
-      var bodyObj = /** @type {Object} */ (body);
-      switch(contentType) {
-        case('application/json'):
-          return JSON.stringify(bodyObj);
-        case('application/x-www-form-urlencoded'):
-          return this._wwwFormUrlEncode(bodyObj);
-      }
-      return body;
-    },
-
-    /**
-     * @param {Object} object The object to encode as x-www-form-urlencoded.
-     * @return {string} .
-     */
-    _wwwFormUrlEncode: function(object) {
-      if (!object) {
-        return '';
-      }
-      var pieces = [];
-      Object.keys(object).forEach(function(key) {
-        // TODO(rictic): handle array values here, in a consistent way with
-        //   iron-ajax params.
-        pieces.push(
-            this._wwwFormUrlEncodePiece(key) + '=' +
-            this._wwwFormUrlEncodePiece(object[key]));
-      }, this);
-      return pieces.join('&');
-    },
-
-    /**
-     * @param {*} str A key or value to encode as x-www-form-urlencoded.
-     * @return {string} .
-     */
-    _wwwFormUrlEncodePiece: function(str) {
-      // Spec says to normalize newlines to \r\n and replace %20 spaces with +.
-      // jQuery does this as well, so this is likely to be widely compatible.
-      return encodeURIComponent(str.toString().replace(/\r?\n/g, '\r\n'))
-          .replace(/%20/g, '+');
-    },
-
-    /**
-     * Updates the status code and status text.
-     */
-    _updateStatus: function() {
-      this._setStatus(this.xhr.status);
-      this._setStatusText((this.xhr.statusText === undefined) ? '' : this.xhr.statusText);
     }
   });
 </script>
@@ -9212,13 +9106,9 @@ Note: The `params` attribute must be double quoted JSON.
 
 You can trigger a request explicitly by calling `generateRequest` on the
 element.
-
-@demo demo/index.html
-@hero hero.svg
 -->
 
 <script>
-  'use strict';
 
   Polymer({
 
@@ -9253,9 +9143,7 @@ element.
 
       /**
        * An object that contains query parameters to be appended to the
-       * specified `url` when generating a request. If you wish to set the body
-       * content when making a POST request, you should use the `body` property
-       * instead.
+       * specified `url` when generating a request.
        */
       params: {
         type: Object,
@@ -9282,10 +9170,8 @@ element.
        *         auto
        *         url="http://somesite.com"
        *         headers='{"X-Requested-With": "XMLHttpRequest"}'
-       *         handle-as="json"></iron-ajax>
-       *
-       * Note: setting a `Content-Type` header here will override the value
-       * specified by the `contentType` property of this element.
+       *         handle-as="json"
+       *         last-response-changed="{{handleResponse}}"></iron-ajax>
        */
       headers: {
         type: Object,
@@ -9295,37 +9181,27 @@ element.
       },
 
       /**
-       * Content type to use when sending data. If the `contentType` property
-       * is set and a `Content-Type` header is specified in the `headers`
-       * property, the `headers` property value will take precedence.
+       * Content type to use when sending data. If the contenttype is set
+       * and a `Content-Type` header is specified in the `headers` attribute,
+       * the `headers` attribute value will take precedence.
        */
       contentType: {
         type: String,
-        value: null
+        value: 'application/x-www-form-urlencoded'
       },
 
       /**
-       * Body content to send with the request, typically used with "POST"
-       * requests.
+       * Optional raw body content to send when method === "POST".
        *
-       * If body is a string it will be sent unmodified.
+       * Example:
        *
-       * If Content-Type is set to a value listed below, then
-       * the body will be encoded accordingly.
-       *
-       *    * `content-type="application/json"`
-       *      * body is encoded like `{"foo":"bar baz","x":1}`
-       *    * `content-type="application/x-www-form-urlencoded"`
-       *      * body is encoded like `foo=bar+baz&x=1`
-       *
-       * Otherwise the body will be passed to the browser unmodified, and it
-       * will handle any encoding (e.g. for FormData, Blob, ArrayBuffer).
-       *
-       * @type (ArrayBuffer|ArrayBufferView|Blob|Document|FormData|null|string|undefined|Object)
+       *     <iron-ajax method="POST" auto url="http://somesite.com"
+       *         body='{"foo":1, "bar":2}'>
+       *     </iron-ajax>
        */
       body: {
-        type: Object,
-        value: null
+        type: String,
+        value: ''
       },
 
       /**
@@ -9339,7 +9215,7 @@ element.
 
       /**
        * Specifies what data to store in the `response` property, and
-       * to deliver as `event.detail.response` in `response` events.
+       * to deliver as `event.response` in `response` events.
        *
        * One of:
        *
@@ -9407,7 +9283,7 @@ element.
       /**
        * Will be set to the most recent response received by a request
        * that originated from this iron-ajax element. The type of the response
-       * is determined by the value of `handleAs` at the time that the request
+       * is determined by the value of `handleas` at the time that the request
        * was generated.
        */
       lastResponse: {
@@ -9435,7 +9311,7 @@ element.
         notify: true,
         readOnly: true,
         value: function() {
-          return [];
+          this._setActiveRequests([]);
         }
       },
 
@@ -9451,22 +9327,23 @@ element.
       _boundHandleResponse: {
         type: Function,
         value: function() {
-          return this._handleResponse.bind(this);
+          return this.handleResponse.bind(this);
+        }
+      },
+
+      _boundDiscardRequest: {
+        type: Function,
+        value: function() {
+          return this.discardRequest.bind(this);
         }
       }
     },
 
     observers: [
-      '_requestOptionsChanged(url, method, params, headers,' +
+      'requestOptionsChanged(url, method, params, headers,' +
         'contentType, body, sync, handleAs, withCredentials, auto)'
     ],
 
-    /**
-     * The query string that should be appended to the `url`, serialized from
-     * the current value of `params`.
-     *
-     * @return {string}
-     */
     get queryString () {
       var queryParts = [];
       var param;
@@ -9486,12 +9363,6 @@ element.
       return queryParts.join('&');
     },
 
-    /**
-     * The `url` with query string (if `params` are specified), suitable for
-     * providing to an `iron-request` instance.
-     *
-     * @return {string}
-     */
     get requestUrl() {
       var queryString = this.queryString;
 
@@ -9502,22 +9373,10 @@ element.
       return this.url;
     },
 
-    /**
-     * An object that maps header names to header values, first applying the
-     * the value of `Content-Type` and then overlaying the headers specified
-     * in the `headers` property.
-     *
-     * @return {Object}
-     */
     get requestHeaders() {
-      var headers = {};
-      var contentType = this.contentType;
-      if (contentType == null && (typeof this.body === 'string')) {
-        contentType = 'application/x-www-form-urlencoded';
-      }
-      if (contentType) {
-        headers['Content-Type'] = contentType;
-      }
+      var headers = {
+        'content-type': this.contentType
+      };
       var header;
 
       if (this.headers instanceof Object) {
@@ -9529,19 +9388,6 @@ element.
       return headers;
     },
 
-    /**
-     * Request options suitable for generating an `iron-request` instance based
-     * on the current state of the `iron-ajax` instance's properties.
-     *
-     * @return {{
-     *   url: string,
-     *   method: (string|undefined),
-     *   async: (boolean|undefined),
-     *   body: (ArrayBuffer|ArrayBufferView|Blob|Document|FormData|null|string|undefined|Object),
-     *   headers: (Object|undefined),
-     *   handleAs: (string|undefined),
-     *   withCredentials: (boolean|undefined)}}
-     */
     toRequestOptions: function() {
       return {
         url: this.requestUrl,
@@ -9554,13 +9400,25 @@ element.
       };
     },
 
+    requestOptionsChanged: function() {
+      this.debounce('generate-request', function() {
+        if (!this.url && this.url !== '') {
+          return;
+        }
+
+        if (this.auto) {
+          this.generateRequest();
+        }
+      }, this.debounceDuration);
+    },
+
     /**
      * Performs an AJAX request to the specified URL.
      *
-     * @return {!IronRequestElement}
+     * @method generateRequest
      */
     generateRequest: function() {
-      var request = /** @type {!IronRequestElement} */ (document.createElement('iron-request'));
+      var request = document.createElement('iron-request');
       var requestOptions = this.toRequestOptions();
 
       this.activeRequests.push(request);
@@ -9568,15 +9426,14 @@ element.
       request.completes.then(
         this._boundHandleResponse
       ).catch(
-        this._handleError.bind(this, request)
+        this.handleError.bind(this, request)
       ).then(
-        this._discardRequest.bind(this, request)
+        this._boundDiscardRequest
       );
 
       request.send(requestOptions);
 
       this._setLastRequest(request);
-      this._setLoading(true);
 
       this.fire('request', {
         request: request,
@@ -9586,12 +9443,12 @@ element.
       return request;
     },
 
-    _handleResponse: function(request) {
+    handleResponse: function(request) {
       this._setLastResponse(request.response);
       this.fire('response', request);
     },
 
-    _handleError: function(request, error) {
+    handleError: function(request, error) {
       if (this.verbose) {
         console.error(error);
       }
@@ -9606,30 +9463,13 @@ element.
       });
     },
 
-    _discardRequest: function(request) {
+    discardRequest: function(request) {
       var requestIndex = this.activeRequests.indexOf(request);
 
-      if (requestIndex > -1) {
+      if (requestIndex > 0) {
         this.activeRequests.splice(requestIndex, 1);
       }
-
-      if (this.activeRequests.length === 0) {
-        this._setLoading(false);
-      }
-    },
-
-    _requestOptionsChanged: function() {
-      this.debounce('generate-request', function() {
-        if (!this.url && this.url !== '') {
-          return;
-        }
-
-        if (this.auto) {
-          this.generateRequest();
-        }
-      }, this.debounceDuration);
-    },
-
+    }
   });
 </script>
 <!--
@@ -15858,7 +15698,7 @@ The `google-map` element renders a Google Map.
 
 <b>Example</b> - with Google directions, using data-binding inside another Polymer element
 
-    <google-map map="{{map}}"></google-map>
+    <google-map map="{{map}}" libraries="places"></google-map>
     <google-map-directions map="{{map}}"
         start-address="San Francisco" end-address="Mountain View">
     </google-map-directions>
@@ -17311,15 +17151,24 @@ if (typeof module !== 'undefined' && typeof exports === 'object') {
 }());
 </script>
 <!--
-Element wrapper for the [marked](http://marked.org/) library.
+Element wrapper for the [marked](https://github.com/chjj/marked) library.
 
-`<marked-element>` accepts Markdown source either via its `markdown` attribute:
+`<marked-element>` accepts Markdown source, and renders it to a child
+element with the class `markdown-html`. This child element can be styled
+as you would a normal DOM element. If you do not provide a child element
+with the `markdown-html` class, the Markdown source will still be rendered,
+but to a shadow DOM child that cannot be styled.
 
-    <marked-element markdown="`Markdown` is _awesome_!"></marked-element>
+The Markdown source can be specified either via the `markdown` attribute:
+
+    <marked-element markdown="`Markdown` is _awesome_!">
+      <div class="markdown-html"></div>
+    </marked-element>
 
 Or, you can provide it via a `<script type="text/markdown">` element child:
 
     <marked-element>
+      <div class="markdown-html"></div>
       <script type="text/markdown">
         Check out my markdown!
 
@@ -17336,6 +17185,19 @@ Or, you can provide it via a `<script type="text/markdown">` element child:
 
 Note that the `<script type="text/markdown">` approach is _static_. Changes to
 the script content will _not_ update the rendered markdown!
+
+### Styling
+If you are using a child with the `markdown-html` class, you can style it
+as you would a regular DOM element:
+
+    .markdown-html p {
+      color: red;
+    }
+
+    .markdown-html td:first-child {
+      padding-left: 24px;
+    }
+
 @element marked-element
 @group Molecules
 @hero hero.svg
@@ -18599,15 +18461,17 @@ Configuration:
     _constructServiceWorkerUrl: function() {
       var paramsPromises = [];
       var children = Polymer.dom(this).children;
+      var baseUri = new URL(this.baseUri, window.location.href);
+
       for (var i = 0; i < children.length; i++) {
         if (typeof children[i]._getParameters === 'function') {
-          paramsPromises.push(children[i]._getParameters(this.baseUri));
+          paramsPromises.push(children[i]._getParameters(baseUri));
         }
       }
 
       return Promise.all(paramsPromises).then(function(paramsResolutions) {
         var params = {
-          baseURI: this.baseUri,
+          baseURI: baseUri,
           version: this._version
         };
 
@@ -20801,6 +20665,10 @@ module.exports = Array.isArray || function (arr) {
       overflow: auto;
     }
 
+    :host(:not(.has-scroller)) {
+      position: relative;
+    }
+
     #items {
       position: relative;
     }
@@ -20934,7 +20802,7 @@ module.exports = Array.isArray || function (arr) {
 
     /**
      * The ratio of hidden tiles that should remain in the scroll direction.
-     * Recommended value ≈ 0.5, so it will distribute tiles evely in both directions.
+     * Recommended value ~0.5, so it will distribute tiles evely in both directions.
      */
     _ratio: 0.5,
 
@@ -21005,9 +20873,14 @@ module.exports = Array.isArray || function (arr) {
     _physicalIndexForKey: null,
 
     /**
-     * The average scroll size
+     * The estimated scroll height based on `_physicalAverage`
      */
-    _scrollSize: 0,
+    _estScrollHeight: 0,
+
+    /**
+     * The scroll height of the dom node
+     */
+    _scrollHeight: 0,
 
     /**
      * The size of the viewport
@@ -21079,7 +20952,7 @@ module.exports = Array.isArray || function (arr) {
      * The maximum scroll top value.
      */
     get _maxScrollTop() {
-      return this._scrollSize - this._viewportSize;
+      return this._estScrollHeight - this._viewportSize;
     },
 
     /**
@@ -21508,6 +21381,10 @@ module.exports = Array.isArray || function (arr) {
       }
     },
 
+    /**
+     * Called when the items have changed. That is, ressignments
+     * to `items`, splices or updates to a single item.
+     */
     _itemsChanged: function(change) {
       if (change.path === 'items') {
         // render the new set
@@ -21571,6 +21448,10 @@ module.exports = Array.isArray || function (arr) {
       this._refresh();
     },
 
+    /**
+     * Executes a provided function per every physical index in `itemSet`
+     * `itemSet` default value is equivalent to the entire set of physical indexes.
+     */
     _iterateItems: function(fn, itemSet) {
       var pidx, vidx, rtn, i;
 
@@ -21606,6 +21487,9 @@ module.exports = Array.isArray || function (arr) {
       }
     },
 
+    /**
+     * Assigns the data models to a given set of items.
+     */
     _assignModels: function(itemSet) {
       this._iterateItems(function(pidx, vidx) {
         var el = this._physicalItems[pidx];
@@ -21627,6 +21511,9 @@ module.exports = Array.isArray || function (arr) {
       }, itemSet);
     },
 
+    /**
+     * Updates the height for a given set of items.
+     */
     _updateMetrics: function() {
       var total = 0;
       var prevAvgCount = this._physicalAverageCount;
@@ -21652,6 +21539,9 @@ module.exports = Array.isArray || function (arr) {
       }
     },
 
+    /**
+     * Updates the position of the physical items.
+     */
     _positionItems: function(itemSet) {
       this._adjustScrollPosition();
 
@@ -21665,6 +21555,9 @@ module.exports = Array.isArray || function (arr) {
       }, itemSet);
     },
 
+    /**
+     * Adjusts the scroll position when it was overestimated.
+     */
     _adjustScrollPosition: function() {
       var deltaHeight = this._virtualStartVal === 0 ? this._physicalTop :
           Math.min(this._scrollPosition + this._physicalTop, 0);
@@ -21679,6 +21572,9 @@ module.exports = Array.isArray || function (arr) {
       }
     },
 
+    /**
+     * Sets the position of the scroll.
+     */
     _resetScrollPosition: function(pos) {
       if (this._scroller) {
         this._scroller.scrollTop = pos;
@@ -21686,11 +21582,21 @@ module.exports = Array.isArray || function (arr) {
       }
     },
 
-    _updateScrollerSize: function() {
-      this._scrollSize = (this._physicalBottom +
+    /**
+     * Sets the scroll height, that's the height of the content,
+     */
+    _updateScrollerSize: function(forceUpdate) {
+      this._estScrollHeight = (this._physicalBottom +
           Math.max(this._virtualCount - this._physicalCount - this._virtualStartVal, 0) * this._physicalAverage);
 
-      this.$.items.style.height = this._scrollSize + 'px';
+      forceUpdate = forceUpdate || this._scrollHeight === 0;
+      forceUpdate = forceUpdate || this._scrollPosition >= this._estScrollHeight - this._physicalSize;
+
+      // amortize height adjustment, so it won't trigger repaints very often
+      if (forceUpdate || Math.abs(this._estScrollHeight - this._scrollHeight) >= this._optPhysicalSize) {
+        this.$.items.style.height = this._estScrollHeight + 'px';
+        this._scrollHeight = this._estScrollHeight;
+      }
     },
 
     /**
@@ -21736,7 +21642,7 @@ module.exports = Array.isArray || function (arr) {
       }
 
       // update the scroller size
-      this._updateScrollerSize();
+      this._updateScrollerSize(true);
 
       // update the position of the items
       this._positionItems();
@@ -21876,8 +21782,8 @@ module.exports = Array.isArray || function (arr) {
       } else if (this.selectedItem) {
         unselect.call(this, this.selectedItem);
       }
-     
-      this.$.selector.clearSelection();    
+
+      this.$.selector.clearSelection();
     },
 
     /**
@@ -27852,7 +27758,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
       this._listeners = {};
       this.marker = new google.maps.Marker({
         map: this.map,
-        position: new google.maps.LatLng(this.latitude, this.longitude),
+        position: {lat: this.latitude, lng: this.longitude},
         title: this.title,
         draggable: this.draggable,
         visible: !this.hidden,
@@ -28034,12 +27940,12 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 
       /**
        * A comma separated list (e.g. "places,geometry") of libraries to load
-       * with this map. Defaults to "places". For more information see
+       * with this map. Defaults to "". For more information see
        * https://developers.google.com/maps/documentation/javascript/libraries.
        */
       libraries: {
         type: String,
-        value: 'places'
+        value: ''
       },
 
       /**
@@ -28050,6 +27956,15 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
         value: -122.41942,
         notify: true,
         reflectToAttribute: true
+      },
+
+      /**
+       * A kml file to load.
+       */
+      kml: {
+        type: String,
+        value: null,
+        observer: '_loadKml'
       },
 
       /**
@@ -28244,6 +28159,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
       this.map = new google.maps.Map(this.$.map, this._getMapOptions());
       this._listeners = {};
       this._updateCenter();
+      this._loadKml();
       this._updateMarkers();
       this._addMapListeners();
       this.fire('google-map-ready');
@@ -28352,6 +28268,15 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
         if (this.fitToMarkers) { // we might not have a center if we are doing fit-to-markers
           this._fitToMarkersChanged();
         }
+      }
+    },
+
+    _loadKml: function() {
+      if (this.kml) {
+        var kmlfile = new google.maps.KmlLayer({
+          url: this.kml,
+          map: this.map
+        });
       }
     },
 
@@ -29330,9 +29255,15 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
   });
 </script>
 <dom-module id="marked-element" assetpath="../bower_components/marked-element/">
-
   <template>
-    <div id="content"></div>
+    <style>
+      /* Thanks IE 10. */
+      .hidden {
+        display: none !important;
+      }
+    </style>
+    <content select=".markdown-html"></content>
+    <div id="content" class="hidden"></div>
   </template>
 
 </dom-module>
@@ -29381,11 +29312,22 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
      */
     attached: function() {
       this._attached = true;
+      this._outputElement = this.outputElement;
       this.render();
     },
 
     detached: function() {
       this._attached = false;
+    },
+
+    get outputElement () {
+      var child = Polymer.dom(this).queryDistributedElements('.markdown-html')[0];
+
+      if (child)
+        return child;
+
+      this.toggleClass('hidden', false, this.$.content);
+      return this.$.content;
     },
 
     /**
@@ -29400,11 +29342,11 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
     render: function() {
       if (!this._attached) return;
       if (!this.markdown) {
-        this.$.content.innerHTML = '';
+        Polymer.dom(this._outputElement).innerHTML = '';
         return;
       }
 
-      this.$.content.innerHTML = marked(this.markdown, {
+      Polymer.dom(this._outputElement).innerHTML = marked(this.markdown, {
         highlight: this._highlight.bind(this),
       });
     },
