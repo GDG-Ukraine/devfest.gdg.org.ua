@@ -12,7 +12,7 @@ addEventListener('DOMContentLoaded', resolve);
 }
 }
 }());
-Polymer = {
+window.Polymer = {
 Settings: function () {
 var user = window.Polymer || {};
 location.search.slice(1).split('&').forEach(function (o) {
@@ -40,15 +40,21 @@ useNativeCustomElements: useNativeCustomElements
 (function () {
 var userPolymer = window.Polymer;
 window.Polymer = function (prototype) {
-var ctor = desugar(prototype);
-prototype = ctor.prototype;
+if (typeof prototype === 'function') {
+prototype = prototype.prototype;
+}
+if (!prototype) {
+prototype = {};
+}
+var factory = desugar(prototype);
+prototype = factory.prototype;
 var options = { prototype: prototype };
 if (prototype.extends) {
 options.extends = prototype.extends;
 }
 Polymer.telemetry._registrate(prototype);
 document.registerElement(prototype.is, options);
-return ctor;
+return factory;
 };
 var desugar = function (prototype) {
 var base = Polymer.Base;
@@ -125,6 +131,8 @@ _addFeature: function (feature) {
 this.extend(this, feature);
 },
 registerCallback: function () {
+this._desugarBehaviors();
+this._doBehavior('beforeRegister');
 this._registerFeatures();
 this._doBehavior('registered');
 },
@@ -209,6 +217,9 @@ Polymer.telemetry.instanceCount = 0;
 (function () {
 var modules = {};
 var lcModules = {};
+var findModule = function (id) {
+return modules[id] || lcModules[id.toLowerCase()];
+};
 var DomModule = function () {
 return document.createElement('dom-module');
 };
@@ -227,15 +238,17 @@ lcModules[id.toLowerCase()] = this;
 }
 },
 import: function (id, selector) {
-var m = modules[id] || lcModules[id.toLowerCase()];
+if (id) {
+var m = findModule(id);
 if (!m) {
 forceDocumentUpgrade();
-m = modules[id];
+m = findModule(id);
 }
 if (m && selector) {
 m = m.querySelector(selector);
 }
 return m;
+}
 }
 });
 var cePolyfill = window.CustomElements && !CustomElements.useNative;
@@ -244,8 +257,7 @@ function forceDocumentUpgrade() {
 if (cePolyfill) {
 var script = document._currentScript || document.currentScript;
 var doc = script && script.ownerDocument;
-if (doc && !doc.__customElementsForceUpgraded) {
-doc.__customElementsForceUpgraded = true;
+if (doc) {
 CustomElements.upgradeAll(doc);
 }
 }
@@ -267,11 +279,17 @@ this.is = this.is.toLowerCase();
 });
 Polymer.Base._addFeature({
 behaviors: [],
-_prepBehaviors: function () {
+_desugarBehaviors: function () {
 if (this.behaviors.length) {
-this.behaviors = this._flattenBehaviorsList(this.behaviors);
+this.behaviors = this._desugarSomeBehaviors(this.behaviors);
 }
-this._prepAllBehaviors(this.behaviors);
+},
+_desugarSomeBehaviors: function (behaviors) {
+behaviors = this._flattenBehaviorsList(behaviors);
+for (var i = behaviors.length - 1; i >= 0; i--) {
+this._mixinBehavior(behaviors[i]);
+}
+return behaviors;
 },
 _flattenBehaviorsList: function (behaviors) {
 var flat = [];
@@ -285,15 +303,6 @@ this._warn(this._logf('_flattenBehaviorsList', 'behavior is null, check for miss
 }
 }, this);
 return flat;
-},
-_prepAllBehaviors: function (behaviors) {
-for (var i = behaviors.length - 1; i >= 0; i--) {
-this._mixinBehavior(behaviors[i]);
-}
-for (var i = 0, l = behaviors.length; i < l; i++) {
-this._prepBehavior(behaviors[i]);
-}
-this._prepBehavior(this);
 },
 _mixinBehavior: function (b) {
 Object.getOwnPropertyNames(b).forEach(function (n) {
@@ -317,6 +326,15 @@ this.copyOwnProperty(n, b, this);
 break;
 }
 }, this);
+},
+_prepBehaviors: function () {
+this._prepFlattenedBehaviors(this.behaviors);
+},
+_prepFlattenedBehaviors: function (behaviors) {
+for (var i = 0, l = behaviors.length; i < l; i++) {
+this._prepBehavior(behaviors[i]);
+}
+this._prepBehavior(this);
 },
 _doBehavior: function (name, args) {
 this.behaviors.forEach(function (b) {
@@ -550,7 +568,7 @@ debouncer.stop();
 }
 }
 });
-Polymer.version = '1.1.0';
+Polymer.version = '1.1.3';
 Polymer.Base._addFeature({
 _registerFeatures: function () {
 this._prepIs();
@@ -1019,47 +1037,43 @@ Polymer.dom.addDebouncer(host.debounce('_distribute', host._distributeContent));
 }
 },
 appendChild: function (node) {
-var handled;
-this._ensureContentLogicalInfo(node);
-this._removeNodeFromHost(node, true);
-if (this._nodeIsInLogicalTree(this.node)) {
-this._addLogicalInfo(node, this.node);
-this._addNodeToHost(node);
-handled = this._maybeDistribute(node, this.node);
-} else {
-this._addNodeToHost(node);
-}
-if (!handled && !this._tryRemoveUndistributedNode(node)) {
-var container = this.node._isShadyRoot ? this.node.host : this.node;
-addToComposedParent(container, node);
-nativeAppendChild.call(container, node);
-}
-return node;
+return this._addNode(node);
 },
 insertBefore: function (node, ref_node) {
-if (!ref_node) {
-return this.appendChild(node);
-}
-var handled;
-this._ensureContentLogicalInfo(node);
+return this._addNode(node, ref_node);
+},
+_addNode: function (node, ref_node) {
 this._removeNodeFromHost(node, true);
-if (this._nodeIsInLogicalTree(this.node)) {
+var addedInsertionPoint;
+var root = this.getOwnerRoot();
+if (root) {
+addedInsertionPoint = this._maybeAddInsertionPoint(node, this.node);
+}
+if (this._nodeHasLogicalChildren(this.node)) {
+if (ref_node) {
 var children = this.childNodes;
 var index = children.indexOf(ref_node);
 if (index < 0) {
 throw Error('The ref_node to be inserted before is not a child ' + 'of this node');
 }
-this._addLogicalInfo(node, this.node, index);
-this._addNodeToHost(node);
-handled = this._maybeDistribute(node, this.node);
-} else {
-this._addNodeToHost(node);
 }
-if (!handled && !this._tryRemoveUndistributedNode(node)) {
+this._addLogicalInfo(node, this.node, index);
+}
+this._addNodeToHost(node);
+if (!this._maybeDistribute(node, this.node) && !this._tryRemoveUndistributedNode(node)) {
+if (ref_node) {
 ref_node = ref_node.localName === CONTENT ? this._firstComposedNode(ref_node) : ref_node;
+}
 var container = this.node._isShadyRoot ? this.node.host : this.node;
 addToComposedParent(container, node, ref_node);
+if (ref_node) {
 nativeInsertBefore.call(container, node, ref_node);
+} else {
+nativeAppendChild.call(container, node);
+}
+}
+if (addedInsertionPoint) {
+this._updateInsertionPoints(root.host);
 }
 return node;
 },
@@ -1067,14 +1081,8 @@ removeChild: function (node) {
 if (factory(node).parentNode !== this.node) {
 console.warn('The node to be removed is not a child of this node', node);
 }
-var handled;
-if (this._nodeIsInLogicalTree(this.node)) {
 this._removeNodeFromHost(node);
-handled = this._maybeDistribute(node, this.node);
-} else {
-this._removeNodeFromHost(node);
-}
-if (!handled) {
+if (!this._maybeDistribute(node, this.node)) {
 var container = this.node._isShadyRoot ? this.node.host : this.node;
 if (container === node.parentNode) {
 removeFromComposedParent(container, node);
@@ -1122,7 +1130,6 @@ if (hasContent) {
 var root = this._ownerShadyRootForNode(parent);
 if (root) {
 var host = root.host;
-this._updateInsertionPoints(host);
 this._lazyDistribute(host);
 }
 }
@@ -1132,10 +1139,30 @@ this._lazyDistribute(parent);
 }
 return parentNeedsDist || hasContent && !wrappedContent;
 },
+_maybeAddInsertionPoint: function (node, parent) {
+var added;
+if (node.nodeType === Node.DOCUMENT_FRAGMENT_NODE && !node.__noContent) {
+var c$ = factory(node).querySelectorAll(CONTENT);
+for (var i = 0, n, np, na; i < c$.length && (n = c$[i]); i++) {
+np = factory(n).parentNode;
+if (np === node) {
+np = parent;
+}
+na = this._maybeAddInsertionPoint(n, np);
+added = added || na;
+}
+} else if (node.localName === CONTENT) {
+saveLightChildrenIfNeeded(parent);
+saveLightChildrenIfNeeded(node);
+added = true;
+}
+return added;
+},
 _tryRemoveUndistributedNode: function (node) {
 if (this.node.shadyRoot) {
-if (node._composedParent) {
-nativeRemoveChild.call(node._composedParent, node);
+var parent = getComposedParent(node);
+if (parent) {
+nativeRemoveChild.call(parent, node);
 }
 return true;
 }
@@ -1148,20 +1175,8 @@ saveLightChildrenIfNeeded(c);
 saveLightChildrenIfNeeded(factory(c).parentNode);
 }
 },
-_nodeIsInLogicalTree: function (node) {
-return Boolean(node._lightParent !== undefined || node._isShadyRoot || node.shadyRoot);
-},
-_ensureContentLogicalInfo: function (node) {
-if (node.nodeType === Node.DOCUMENT_FRAGMENT_NODE) {
-saveLightChildrenIfNeeded(this.node);
-var c$ = Array.prototype.slice.call(node.childNodes);
-for (var i = 0, n; i < c$.length && (n = c$[i]); i++) {
-this._ensureContentLogicalInfo(n);
-}
-} else if (node.localName === CONTENT) {
-saveLightChildrenIfNeeded(this.node);
-saveLightChildrenIfNeeded(node);
-}
+_nodeHasLogicalChildren: function (node) {
+return Boolean(node._lightChildren !== undefined);
 },
 _parentNeedsDistribution: function (parent) {
 return parent && parent.shadyRoot && hasInsertionPoint(parent.shadyRoot);
@@ -1171,6 +1186,7 @@ var hostNeedsDist;
 var root;
 var parent = node._lightParent;
 if (parent) {
+factory(node)._distributeParent();
 root = this._ownerShadyRootForNode(node);
 if (root) {
 root.host._elementRemove(node);
@@ -1183,7 +1199,7 @@ if (root && hostNeedsDist) {
 this._updateInsertionPoints(root.host);
 this._lazyDistribute(root.host);
 } else if (ensureComposedRemoval) {
-removeFromComposedParent(parent || node.parentNode, node);
+removeFromComposedParent(getComposedParent(node), node);
 }
 },
 _removeDistributedChildren: function (root, container) {
@@ -1407,7 +1423,7 @@ configurable: true
 },
 parentNode: {
 get: function () {
-return this.node._lightParent || (this.node.__patched ? this.node._composedParent : this.node.parentNode);
+return this.node._lightParent || getComposedParent(this.node);
 },
 configurable: true
 },
@@ -1529,6 +1545,18 @@ DomApi.prototype._getComposedInnerHTML = function () {
 return getInnerHTML(this.node, true);
 };
 } else {
+var forwardMethods = [
+'cloneNode',
+'appendChild',
+'insertBefore',
+'removeChild',
+'replaceChild'
+];
+forwardMethods.forEach(function (name) {
+DomApi.prototype[name] = function () {
+return this.node[name].apply(this.node, arguments);
+};
+});
 DomApi.prototype.querySelectorAll = function (selector) {
 return Array.prototype.slice.call(this.node.querySelectorAll(selector));
 };
@@ -1540,9 +1568,6 @@ return n;
 }
 n = n.parentNode;
 }
-};
-DomApi.prototype.cloneNode = function (deep) {
-return this.node.cloneNode(deep);
 };
 DomApi.prototype.importNode = function (externalNode, deep) {
 var doc = this.node instanceof Document ? this.node : this.node.ownerDocument;
@@ -1590,7 +1615,7 @@ return this.node.innerHTML = value;
 configurable: true
 }
 });
-var forwards = [
+var forwardProperties = [
 'parentNode',
 'firstChild',
 'lastChild',
@@ -1601,7 +1626,7 @@ var forwards = [
 'nextElementSibling',
 'previousElementSibling'
 ];
-forwards.forEach(function (name) {
+forwardProperties.forEach(function (name) {
 Object.defineProperty(DomApi.prototype, name, {
 get: function () {
 return this.node[name];
@@ -1685,6 +1710,9 @@ node._composedChildren = null;
 addNodeToComposedChildren(node, parent, children, i);
 }
 }
+function getComposedParent(node) {
+return node.__patched ? node._composedParent : node.parentNode;
+}
 function addNodeToComposedChildren(node, parent, children, i) {
 node._composedParent = parent;
 children.splice(i >= 0 ? i : children.length, 0, node);
@@ -1709,12 +1737,13 @@ node._lightChildren = c$;
 }
 }
 function hasInsertionPoint(root) {
-return Boolean(root._insertionPoints.length);
+return Boolean(root && root._insertionPoints.length);
 }
 var p = Element.prototype;
 var matchesSelector = p.matches || p.matchesSelector || p.mozMatchesSelector || p.msMatchesSelector || p.oMatchesSelector || p.webkitMatchesSelector;
 return {
 getLightChildren: getLightChildren,
+getComposedParent: getComposedParent,
 getComposedChildren: getComposedChildren,
 removeFromComposedParent: removeFromComposedParent,
 saveLightChildrenIfNeeded: saveLightChildrenIfNeeded,
@@ -1903,7 +1932,9 @@ var composed = getComposedChildren(container);
 var splices = Polymer.ArraySplice.calculateSplices(children, composed);
 for (var i = 0, d = 0, s; i < splices.length && (s = splices[i]); i++) {
 for (var j = 0, n; j < s.removed.length && (n = s.removed[j]); j++) {
+if (getComposedParent(n) === container) {
 remove(n);
+}
 composed.splice(s.index + d, 1);
 }
 d -= s.addedCount;
@@ -1916,6 +1947,7 @@ insertBefore(container, n, next);
 composed.splice(j, 0, n);
 }
 }
+ensureComposedParent(container, children);
 },
 _matchesContentSelect: function (node, contentElement) {
 var select = contentElement.getAttribute('select');
@@ -1945,6 +1977,7 @@ var getLightChildren = Polymer.DomApi.getLightChildren;
 var matchesSelector = Polymer.DomApi.matchesSelector;
 var hasInsertionPoint = Polymer.DomApi.hasInsertionPoint;
 var getComposedChildren = Polymer.DomApi.getComposedChildren;
+var getComposedParent = Polymer.DomApi.getComposedParent;
 var removeFromComposedParent = Polymer.DomApi.removeFromComposedParent;
 function distributeNodeInto(child, insertionPoint) {
 insertionPoint._distributedNodes.push(child);
@@ -1998,8 +2031,10 @@ node._composedParent = null;
 nativeRemoveChild.call(parentNode, node);
 }
 }
-function getComposedParent(node) {
-return node.__patched ? node._composedParent : node.parentNode;
+function ensureComposedParent(parent, children) {
+for (var i = 0, n; i < children.length; i++) {
+children[i]._composedParent = parent;
+}
 }
 function getTopDistributingHost(host) {
 while (host && hostNeedsRedistribution(host)) {
@@ -2291,7 +2326,11 @@ if (!this._template) {
 this._notes = [];
 } else {
 Polymer.Annotations.prepElement = this._prepElement.bind(this);
+if (this._template._content && this._template._content._notes) {
+this._notes = this._template._content._notes;
+} else {
 this._notes = Polymer.Annotations.parseAnnotations(this._template);
+}
 this._processAnnotations(this._notes);
 Polymer.Annotations.prepElement = null;
 }
@@ -2738,9 +2777,9 @@ gd = gobj[dep];
 if (gd && gd[name]) {
 gd[name] = (gd[name] || 1) - 1;
 gd._count = (gd._count || 1) - 1;
-}
 if (gd._count === 0) {
 node.removeEventListener(dep, this.handleNative);
+}
 }
 }
 }
@@ -3711,6 +3750,9 @@ name: arg,
 model: this._modelForPath(arg)
 };
 var fc = arg[0];
+if (fc === '-') {
+fc = arg[1];
+}
 if (fc >= '0' && fc <= '9') {
 fc = '#';
 }
@@ -4285,6 +4327,9 @@ clearStyleRules: function (style) {
 style.__cssRules = null;
 },
 forEachStyleRule: function (node, callback) {
+if (!node) {
+return;
+}
 var s = node.parsedSelector;
 var skipRules = false;
 if (node.type === this.ruleTypes.STYLE_RULE) {
@@ -4313,47 +4358,44 @@ afterNode = n$[n$.length - 1];
 target.insertBefore(style, afterNode && afterNode.nextSibling || target.firstChild);
 return style;
 },
-cssFromModules: function (moduleIds) {
+cssFromModules: function (moduleIds, warnIfNotFound) {
 var modules = moduleIds.trim().split(' ');
 var cssText = '';
 for (var i = 0; i < modules.length; i++) {
-cssText += this.cssFromModule(modules[i]);
+cssText += this.cssFromModule(modules[i], warnIfNotFound);
 }
 return cssText;
 },
-cssFromModule: function (moduleId) {
+cssFromModule: function (moduleId, warnIfNotFound) {
 var m = Polymer.DomModule.import(moduleId);
 if (m && !m._cssText) {
 m._cssText = this._cssFromElement(m);
+}
+if (!m && warnIfNotFound) {
+console.warn('Could not find style data in module named', moduleId);
 }
 return m && m._cssText || '';
 },
 _cssFromElement: function (element) {
 var cssText = '';
 var content = element.content || element;
-var sourceDoc = element.ownerDocument;
 var e$ = Array.prototype.slice.call(content.querySelectorAll(this.MODULE_STYLES_SELECTOR));
-for (var i = 0, e, resolveDoc, addModule; i < e$.length; i++) {
+for (var i = 0, e; i < e$.length; i++) {
 e = e$[i];
-resolveDoc = sourceDoc;
-addModule = null;
 if (e.localName === 'template') {
 cssText += this._cssFromElement(e);
 } else {
 if (e.localName === 'style') {
-addModule = e.getAttribute(this.INCLUDE_ATTR);
+var include = e.getAttribute(this.INCLUDE_ATTR);
+if (include) {
+cssText += this.cssFromModules(include, true);
+}
 e = e.__appliedElement || e;
 e.parentNode.removeChild(e);
-} else {
-e = e.import && e.import.body;
-resolveDoc = e.ownerDocument;
+cssText += this.resolveCss(e.textContent, element.ownerDocument);
+} else if (e.import && e.import.body) {
+cssText += this.resolveCss(e.import.body.textContent, e.import);
 }
-if (e) {
-cssText += this.resolveCss(e.textContent, resolveDoc);
-}
-}
-if (addModule) {
-cssText += this.cssFromModules(addModule);
 }
 }
 return cssText;
@@ -5287,18 +5329,25 @@ observer.observe(e, { childList: true });
 _apply: function () {
 var e = this.__appliedElement || this;
 if (this.include) {
-e.textContent += styleUtil.cssFromModules(this.include);
+e.textContent = styleUtil.cssFromModules(this.include, true) + e.textContent;
 }
+if (e.textContent) {
+styleUtil.forEachStyleRule(styleUtil.rulesForStyle(e), function (rule) {
+styleTransformer.documentRule(rule);
+});
+this._applyCustomProperties(e);
+}
+},
+_applyCustomProperties: function (element) {
 this._computeStyleProperties();
 var props = this._styleProperties;
-var self = this;
-e.textContent = styleUtil.toCssText(styleUtil.rulesForStyle(e), function (rule) {
+var rules = styleUtil.rulesForStyle(element);
+element.textContent = styleUtil.toCssText(rules, function (rule) {
 var css = rule.cssText = rule.parsedCssText;
 if (rule.propertyInfo && rule.propertyInfo.cssText) {
 css = cssParse.removeCustomPropAssignment(css);
 rule.cssText = propertyUtils.valueForProperties(css, props);
 }
-styleTransformer.documentRule(rule);
 });
 }
 });
@@ -5854,6 +5903,9 @@ this._instances.splice(keys.length, this._instances.length - keys.length);
 _keySort: function (a, b) {
 return this.collection.getKey(a) - this.collection.getKey(b);
 },
+_numericSort: function (a, b) {
+return a - b;
+},
 _applySplicesUserSort: function (splices) {
 var c = this.collection;
 var instances = this._instances;
@@ -5881,7 +5933,7 @@ addedKeys.push(key);
 }
 }
 if (removedIdxs.length) {
-removedIdxs.sort();
+removedIdxs.sort(this._numericSort);
 for (var i = removedIdxs.length - 1; i >= 0; i--) {
 var idx = removedIdxs[i];
 if (idx !== undefined) {
@@ -6064,6 +6116,10 @@ selected: {
 type: Object,
 notify: true
 },
+selectedItem: {
+type: Object,
+notify: true
+},
 toggle: {
 type: Boolean,
 value: false
@@ -6086,6 +6142,7 @@ this._selectedColl = Polymer.Collection.get(this.selected);
 this.selected = null;
 this._selectedColl = null;
 }
+this.selectedItem = null;
 },
 isSelected: function (item) {
 if (this.multi) {
@@ -6103,7 +6160,9 @@ this.unlinkPaths('selected.' + skey);
 }
 } else {
 this.selected = null;
+this.selectedItem = null;
 this.unlinkPaths('selected');
+this.unlinkPaths('selectedItem');
 }
 },
 select: function (item) {
@@ -6123,8 +6182,10 @@ this.linkPaths('selected.' + skey, 'items.' + key);
 if (this.toggle && item == this.selected) {
 this.deselect();
 } else {
-this.linkPaths('selected', 'items.' + key);
 this.selected = item;
+this.selectedItem = item;
+this.linkPaths('selected', 'items.' + key);
+this.linkPaths('selectedItem', 'items.' + key);
 }
 }
 }
@@ -7226,6 +7287,27 @@ Example:
   /** @polymerBehavior */
   Polymer.IronSelectableBehavior = {
 
+      /**
+       *  Fired when iron-selector is activated (selected or deselected).
+       *  It is fired before the selected items are changed.
+       *  Cancel the event to abort selection.
+       *
+       * @event iron-activate
+       *
+       **/
+      /**
+       *  Fired when an item is selected
+       *
+       * @event iron-select
+       *
+       **/
+      /**
+       *  Fired when an item is deselected
+       *
+       * @event iron-deselect
+       *
+       **/
+
     properties: {
 
       /**
@@ -7279,7 +7361,7 @@ Example:
       },
 
       /**
-       * This is a CSS selector sting.  If this is set, only items that matches the CSS selector
+       * This is a CSS selector string.  If this is set, only items that match the CSS selector
        * are selectable.
        *
        * @attribute selectable
@@ -7307,17 +7389,29 @@ Example:
       selectedAttribute: {
         type: String,
         value: null
-      }
+      },
 
+      /**
+       * The set of excluded elements where the key is the `localName` 
+       * of the element that will be ignored from the item list.
+       *
+       * @type {object}
+       * @default {template: 1}
+       */
+
+      excludedLocalNames: {
+        type: Object,
+        value: function() {
+          return {
+            'template': 1
+          };
+        }
+      }
     },
 
     observers: [
       '_updateSelected(attrForSelected, selected)'
     ],
-
-    excludedLocalNames: {
-      'template': 1
-    },
 
     created: function() {
       this._bindFilterItem = this._filterItem.bind(this);
@@ -7397,9 +7491,7 @@ Example:
     },
 
     _removeListener: function(eventName) {
-      // There is no unlisten yet...
-      // https://github.com/Polymer/polymer/issues/1639
-      //this.removeEventListener(eventName, this._bindActivateHandler);
+      this.unlisten(this, eventName, '_activateHandler');
     },
 
     _activateEventChanged: function(eventName, old) {
@@ -7488,11 +7580,6 @@ Example:
     },
 
     _activateHandler: function(e) {
-      // TODO: remove this when https://github.com/Polymer/polymer/issues/1639 is fixed so we
-      // can just remove the old event listener.
-      if (e.type !== this.activateEvent) {
-        return;
-      }
       var t = e.target;
       var items = this.items;
       while (t && t != this) {
@@ -10379,8 +10466,13 @@ To change the panel container in different modes:
     },
 
     _focusBlurHandler: function(event) {
-      var target = event.path ? event.path[0] : event.target;
-      if (target === this) {
+      // NOTE(cdata):  if we are in ShadowDOM land, `event.target` will
+      // eventually become `this` due to retargeting; if we are not in
+      // ShadowDOM land, `event.target` will eventually become `this` due
+      // to the second conditional which fires a synthetic event (that is also
+      // handled). In either case, we can disregard `event.path`.
+
+      if (event.target === this) {
         var focused = event.type === 'focus';
         this._setFocused(focused);
       } else if (!this.shadowRoot) {
@@ -11095,7 +11187,11 @@ CSS properties               | Action
     }
 
     function currentOverlay() {
-      return overlays[overlays.length-1];
+      var i = overlays.length - 1;
+      while (overlays[i] && !overlays[i].opened) {
+        --i;
+      }
+      return overlays[i];
     }
 
     function currentOverlayZ() {
@@ -11294,17 +11390,6 @@ context. You should place this element as a child of `<body>` whenever possible.
       }
 
     },
-
-/**
- * Fired after the `iron-overlay` opens.
- * @event iron-overlay-opened
- */
-
-/**
- * Fired after the `iron-overlay` closes.
- * @event iron-overlay-closed
- * @param {{canceled: (boolean|undefined)}} set to the `closingReason` attribute
- */
 
     listeners: {
       'click': '_onClick',
@@ -11582,6 +11667,16 @@ context. You should place this element as a child of `<body>` whenever possible.
       }
     }
 
+/**
+ * Fired after the `iron-overlay` opens.
+ * @event iron-overlay-opened
+ */
+
+/**
+ * Fired after the `iron-overlay` closes.
+ * @event iron-overlay-closed
+ * @param {{canceled: (boolean|undefined)}} set to the `closingReason` attribute
+ */
   };
 
   /** @polymerBehavior */
@@ -12673,37 +12768,6 @@ styles. All other styles should exist as single lines."
 }
 
 </style>
-<!--
-
-`paper-checkbox` is a button that can be either checked or unchecked.  User
-can tap the checkbox to check or uncheck it.  Usually you use checkboxes
-to allow user to select multiple options from a set.  If you have a single
-ON/OFF option, avoid using a single checkbox and use `paper-toggle-button`
-instead.
-
-Example:
-
-    <paper-checkbox>label</paper-checkbox>
-
-    <paper-checkbox checked> label</paper-checkbox>
-
-### Styling
-
-The following custom properties and mixins are available for styling:
-
-Custom property | Description | Default
-----------------|-------------|----------
-`--paper-checkbox-unchecked-background-color` | Checkbox background color when the input is not checked | `transparent`
-`--paper-checkbox-unchecked-color` | Checkbox border color when the input is not checked | `--primary-text-color`
-`--paper-checkbox-unchecked-ink-color` | Selected/focus ripple color when the input is not checked | `--primary-text-color`
-`--paper-checkbox-checked-color` | Checkbox color when the input is checked | `--default-primary-color`
-`--paper-checkbox-checked-ink-color` | Selected/focus ripple color when the input is checked | `--default-primary-color`
-`--paper-checkbox-checkmark-color` | Checkmark color | `white`
-`--paper-checkbox-label-color` | Label color | `--primary-text-color`
-
-@demo demo/index.html
--->
-
 <style is="custom-style">
 
   :root {
@@ -13025,6 +13089,312 @@ Custom property | Description | Default
   }
 
 </style>
+<script>
+
+  /**
+   * Use `Polymer.IronValidatableBehavior` to implement an element that validates user input.
+   *
+   * ### Accessibility
+   *
+   * Changing the `invalid` property, either manually or by calling `validate()` will update the
+   * `aria-invalid` attribute.
+   *
+   * @demo demo/index.html
+   * @polymerBehavior
+   */
+  Polymer.IronValidatableBehavior = {
+
+    properties: {
+
+      /**
+       * Namespace for this validator.
+       */
+      validatorType: {
+        type: String,
+        value: 'validator'
+      },
+
+      /**
+       * Name of the validator to use.
+       */
+      validator: {
+        type: String
+      },
+
+      /**
+       * True if the last call to `validate` is invalid.
+       */
+      invalid: {
+        notify: true,
+        reflectToAttribute: true,
+        type: Boolean,
+        value: false
+      },
+
+      _validatorMeta: {
+        type: Object
+      }
+
+    },
+
+    observers: [
+      '_invalidChanged(invalid)'
+    ],
+
+    get _validator() {
+      return this._validatorMeta && this._validatorMeta.byKey(this.validator);
+    },
+
+    ready: function() {
+      this._validatorMeta = new Polymer.IronMeta({type: this.validatorType});
+    },
+
+    _invalidChanged: function() {
+      if (this.invalid) {
+        this.setAttribute('aria-invalid', 'true');
+      } else {
+        this.removeAttribute('aria-invalid');
+      }
+    },
+
+    /**
+     * @return {boolean} True if the validator `validator` exists.
+     */
+    hasValidator: function() {
+      return this._validator != null;
+    },
+
+    /**
+     * Returns true if the `value` is valid, and updates `invalid`. If you want
+     * your element to have custom validation logic, do not override this method;
+     * override `_getValidity(value)` instead.
+
+     * @param {Object} value The value to be validated. By default, it is passed
+     * to the validator's `validate()` function, if a validator is set.
+     * @return {boolean} True if `value` is valid.
+     */
+    validate: function(value) {
+      this.invalid = !this._getValidity(value);
+      return !this.invalid;
+    },
+
+    /**
+     * Returns true if `value` is valid.  By default, it is passed
+     * to the validator's `validate()` function, if a validator is set. You
+     * should override this method if you want to implement custom validity
+     * logic for your element.
+     *
+     * @param {Object} value The value to be validated.
+     * @return {boolean} True if `value` is valid.
+     */
+
+    _getValidity: function(value) {
+      if (this.hasValidator()) {
+        return this._validator.validate(value);
+      }
+      return true;
+    }
+  };
+
+</script>
+<script>
+  /**
+  Polymer.IronFormElementBehavior enables a custom element to be included
+  in an `iron-form`.
+
+  @demo demo/index.html
+  @polymerBehavior
+  */
+  Polymer.IronFormElementBehavior = {
+
+    properties: {
+      /**
+       * Fired when the element is added to an `iron-form`.
+       *
+       * @event iron-form-element-register
+       */
+
+      /**
+       * Fired when the element is removed from an `iron-form`.
+       *
+       * @event iron-form-element-unregister
+       */
+
+      /**
+       * The name of this element.
+       */
+      name: {
+        type: String
+      },
+
+      /**
+       * The value for this element.
+       */
+      value: {
+        notify: true,
+        type: String
+      },
+
+      /**
+       * Set to true to mark the input as required. If used in a form, a
+       * custom element that uses this behavior should also use
+       * Polymer.IronValidatableBehavior and define a custom validation method.
+       * Otherwise, a `required` element will always be considered valid.
+       * It's also strongly recomended to provide a visual style for the element
+       * when it's value is invalid.
+       */
+      required: {
+        type: Boolean,
+        value: false
+      },
+
+      /**
+       * The form that the element is registered to.
+       */
+      _parentForm: {
+        type: Object
+      }
+    },
+
+    attached: function() {
+      // Note: the iron-form that this element belongs to will set this
+      // element's _parentForm property when handling this event.
+      this.fire('iron-form-element-register');
+    },
+
+    detached: function() {
+      if (this._parentForm) {
+        this._parentForm.fire('iron-form-element-unregister', {target: this});
+      }
+    }
+
+  };
+
+</script>
+<script>
+
+  /**
+   * Use `Polymer.IronCheckedElementBehavior` to implement a custom element
+   * that has a `checked` property, which can be used for validation if the
+   * element is also `required`. Element instances implementing this behavior
+   * will also be registered for use in an `iron-form` element.
+   *
+   * @demo demo/index.html
+   * @polymerBehavior Polymer.IronCheckedElementBehavior
+   */
+  Polymer.IronCheckedElementBehaviorImpl = {
+
+    properties: {
+      /**
+       * Fired when the checked state changes.
+       *
+       * @event iron-change
+       */
+
+      /**
+       * Gets or sets the state, `true` is checked and `false` is unchecked.
+       */
+      checked: {
+        type: Boolean,
+        value: false,
+        reflectToAttribute: true,
+        notify: true,
+        observer: '_checkedChanged'
+      },
+
+      /**
+       * If true, the button toggles the active state with each tap or press
+       * of the spacebar.
+       */
+      toggles: {
+        type: Boolean,
+        value: true,
+        reflectToAttribute: true
+      },
+
+      /* Overriden from Polymer.IronFormElementBehavior */
+      value: {
+        type: String,
+        value: ''
+      }
+    },
+
+    observers: [
+      '_requiredChanged(required)'
+    ],
+
+    /**
+     * Returns false if the element is required and not checked, and true otherwise.
+     * @return {boolean} true if `required` is false, or if `required` and `checked` are both true.
+     */
+    _getValidity: function(_value) {
+      return this.disabled || !this.required || (this.required && this.checked);
+    },
+
+    /**
+     * Update the aria-required label when `required` is changed.
+     */
+    _requiredChanged: function() {
+      if (this.required) {
+        this.setAttribute('aria-required', 'true');
+      } else {
+        this.removeAttribute('aria-required');
+      }
+    },
+
+    /**
+     * Update the element's value when checked.
+     */
+    _checkedChanged: function() {
+      this.active = this.checked;
+      // Unless the user has specified a value, a checked element has the
+      // default value "on" when checked.
+      if (this.value === '')
+        this.value = this.checked ? 'on' : '';
+      this.fire('iron-change');
+    }
+  };
+
+  /** @polymerBehavior Polymer.IronCheckedElementBehavior */
+  Polymer.IronCheckedElementBehavior = [
+    Polymer.IronFormElementBehavior,
+    Polymer.IronValidatableBehavior,
+    Polymer.IronCheckedElementBehaviorImpl
+  ];
+
+</script>
+<!--
+
+`paper-checkbox` is a button that can be either checked or unchecked.  User
+can tap the checkbox to check or uncheck it.  Usually you use checkboxes
+to allow user to select multiple options from a set.  If you have a single
+ON/OFF option, avoid using a single checkbox and use `paper-toggle-button`
+instead.
+
+Example:
+
+    <paper-checkbox>label</paper-checkbox>
+
+    <paper-checkbox checked> label</paper-checkbox>
+
+### Styling
+
+The following custom properties and mixins are available for styling:
+
+Custom property | Description | Default
+----------------|-------------|----------
+`--paper-checkbox-unchecked-background-color` | Checkbox background color when the input is not checked | `transparent`
+`--paper-checkbox-unchecked-color` | Checkbox border color when the input is not checked | `--primary-text-color`
+`--paper-checkbox-unchecked-ink-color` | Selected/focus ripple color when the input is not checked | `--primary-text-color`
+`--paper-checkbox-checked-color` | Checkbox color when the input is checked | `--default-primary-color`
+`--paper-checkbox-checked-ink-color` | Selected/focus ripple color when the input is checked | `--default-primary-color`
+`--paper-checkbox-checkmark-color` | Checkmark color | `white`
+`--paper-checkbox-label-color` | Label color | `--primary-text-color`
+`--paper-checkbox-error-color` | Checkbox color when invalid | `--google-red-500`
+
+@demo demo/index.html
+-->
+
 <style is="custom-style">
 
   :root {
@@ -13697,114 +14067,6 @@ Note: announcements are only audible if you have a screen reader enabled.
 -->
 <script>
 
-  /**
-   * Use `Polymer.IronValidatableBehavior` to implement an element that validates user input.
-   *
-   * ### Accessibility
-   *
-   * Changing the `invalid` property, either manually or by calling `validate()` will update the
-   * `aria-invalid` attribute.
-   *
-   * @demo demo/index.html
-   * @polymerBehavior
-   */
-  Polymer.IronValidatableBehavior = {
-
-    properties: {
-
-      /**
-       * Namespace for this validator.
-       */
-      validatorType: {
-        type: String,
-        value: 'validator'
-      },
-
-      /**
-       * Name of the validator to use.
-       */
-      validator: {
-        type: String
-      },
-
-      /**
-       * True if the last call to `validate` is invalid.
-       */
-      invalid: {
-        notify: true,
-        reflectToAttribute: true,
-        type: Boolean,
-        value: false
-      },
-
-      _validatorMeta: {
-        type: Object
-      }
-
-    },
-
-    observers: [
-      '_invalidChanged(invalid)'
-    ],
-
-    get _validator() {
-      return this._validatorMeta && this._validatorMeta.byKey(this.validator);
-    },
-
-    ready: function() {
-      this._validatorMeta = new Polymer.IronMeta({type: this.validatorType});
-    },
-
-    _invalidChanged: function() {
-      if (this.invalid) {
-        this.setAttribute('aria-invalid', 'true');
-      } else {
-        this.removeAttribute('aria-invalid');
-      }
-    },
-
-    /**
-     * @return {boolean} True if the validator `validator` exists.
-     */
-    hasValidator: function() {
-      return this._validator != null;
-    },
-
-    /**
-     * Returns true if the `value` is valid, and updates `invalid`. If you want
-     * your element to have custom validation logic, do not override this method;
-     * override `_getValidity(value)` instead.
-
-     * @param {Object} value The value to be validated. By default, it is passed
-     * to the validator's `validate()` function, if a validator is set.
-     * @return {boolean} True if `value` is valid.
-     */
-    validate: function(value) {
-      this.invalid = !this._getValidity(value);
-      return !this.invalid;
-    },
-
-    /**
-     * Returns true if `value` is valid.  By default, it is passed
-     * to the validator's `validate()` function, if a validator is set. You
-     * should override this method if you want to implement custom validity
-     * logic for your element.
-     *
-     * @param {Object} value The value to be validated.
-     * @return {boolean} True if `value` is valid.
-     */
-
-    _getValidity: function(value) {
-      if (this.hasValidator()) {
-        return this._validator.validate(value);
-      }
-      return true;
-    }
-  };
-
-</script>
-<script>
-
 /*
 `<iron-input>` adds two-way binding and custom validators using `Polymer.IronValidatorBehavior`
 to `<input>`.
@@ -13912,6 +14174,9 @@ is separate from validation, and `allowed-pattern` does not affect how the input
       this.bindValue = this.value;
     },
 
+    /**
+     * @suppress {checkTypes}
+     */
     _bindValueChanged: function() {
       if (this.value !== this.bindValue) {
         this.value = !(this.bindValue || this.bindValue === 0) ? '' : this.bindValue;
@@ -14034,80 +14299,6 @@ is separate from validation, and `allowed-pattern` does not affect how the input
 
 </script>
 <script>
-  /**
-  Polymer.IronFormElementBehavior enables a custom element to be included
-  in an `iron-form`.
-
-  @demo demo/index.html
-  @polymerBehavior
-  */
-  Polymer.IronFormElementBehavior = {
-
-    properties: {
-      /**
-       * Fired when the element is added to an `iron-form`.
-       *
-       * @event iron-form-element-register
-       */
-
-      /**
-       * Fired when the element is removed from an `iron-form`.
-       *
-       * @event iron-form-element-unregister
-       */
-
-      /**
-       * The name of this element.
-       */
-      name: {
-        type: String
-      },
-
-      /**
-       * The value for this element.
-       */
-      value: {
-        notify: true,
-        type: String
-      },
-
-      /**
-       * Set to true to mark the input as required. If used in a form, a
-       * custom element that uses this behavior should also use
-       * Polymer.IronValidatableBehavior and define a custom validation method.
-       * Otherwise, a `required` element will always be considered valid.
-       * It's also strongly recomended to provide a visual style for the element
-       * when it's value is invalid.
-       */
-      required: {
-        type: Boolean,
-        value: false
-      },
-
-      /**
-       * The form that the element is registered to.
-       */
-      _parentForm: {
-        type: Object
-      }
-    },
-
-    attached: function() {
-      // Note: the iron-form that this element belongs to will set this
-      // element's _parentForm property when handling this event.
-      this.fire('iron-form-element-register');
-    },
-
-    detached: function() {
-      if (this._parentForm) {
-        this._parentForm.fire('iron-form-element-unregister', {target: this});
-      }
-    }
-
-  };
-
-</script>
-<script>
 
   /**
    * Use `Polymer.PaperInputBehavior` to implement inputs with `<paper-input-container>`. This
@@ -14122,6 +14313,11 @@ is separate from validation, and `allowed-pattern` does not affect how the input
   Polymer.PaperInputBehaviorImpl = {
 
     properties: {
+      /**
+       * Fired when the input changes due to user interaction.
+       *
+       * @event change
+       */
 
       /**
        * The label for this input. Bind this to `<paper-input-container>`'s `label` property.
@@ -14154,7 +14350,8 @@ is separate from validation, and `allowed-pattern` does not affect how the input
        */
       invalid: {
         type: Boolean,
-        value: false
+        value: false,
+        notify: true
       },
 
       /**
@@ -14418,10 +14615,20 @@ is separate from validation, and `allowed-pattern` does not affect how the input
 
     /**
      * Validates the input element and sets an error style if needed.
+     *
+     * @return {boolean}
      */
-     validate: function() {
-       return this.inputElement.validate();
-     },
+    validate: function() {
+      return this.inputElement.validate();
+    },
+
+    /**
+     * If `autoValidate` is true, then validates the element.
+     */
+    _handleAutoValidate: function() {
+      if (this.autoValidate)
+        this.validate();
+    },
 
     /**
      * Restores the cursor to its original position after updating the value.
@@ -14481,6 +14688,19 @@ is separate from validation, and `allowed-pattern` does not affect how the input
         label.id = labelledBy;
       }
       this._ariaLabelledBy = labelledBy;
+    },
+
+    _onChange:function(event) {
+      // In the Shadow DOM, the `change` event is not leaked into the
+      // ancestor tree, so we must do this manually.
+      // See https://w3c.github.io/webcomponents/spec/shadow/#events-that-are-not-leaked-into-ancestor-trees.
+      if (this.shadowRoot) {
+        this.fire(event.type, {sourceEvent: event}, {
+          node: this,
+          bubbles: event.bubbles,
+          cancelable: event.cancelable
+        });
+      }
     }
 
   };
@@ -14725,9 +14945,7 @@ This element has `role="listitem"` by default. Depending on usage, it may be mor
 
       /**
        * Returns the currently focused item.
-       *
-       * @attribute focusedItem
-       * @type Object
+       * @type {?Object}
        */
       focusedItem: {
         observer: '_focusedItemChanged',
@@ -14739,9 +14957,6 @@ This element has `role="listitem"` by default. Depending on usage, it may be mor
        * The attribute to use on menu items to look up the item title. Typing the first
        * letter of an item when the menu is open focuses that item. If unset, `textContent`
        * will be used.
-       *
-       * @attribute attrForItemTitle
-       * @type String
        */
       attrForItemTitle: {
         type: String
@@ -14818,6 +15033,7 @@ This element has `role="listitem"` by default. Depending on usage, it may be mor
         this._defaultFocusAsync = null;
       }
       var item = this._valueToItem(value);
+      if (item && item.hasAttribute('disabled')) return;
       this._setFocusedItem(item);
       Polymer.IronMultiSelectableBehaviorImpl.select.apply(this, arguments);
     },
@@ -15102,7 +15318,7 @@ Custom property | Description | Default
 -->
 
 <!--
-Material Design: <a href="http://www.google.com/design/spec/components/card.html">Cards</a>
+Material Design: <a href="http://www.google.com/design/spec/components/cards.html">Cards</a>
 
 `paper-card` is a container with a drop shadow.
 
@@ -15127,6 +15343,9 @@ Custom property | Description | Default
 ----------------|-------------|----------
 `--paper-card-header-color` | The color of the header text | `#000`
 `--paper-card-header` | Mixin applied to the card header section | `{}`
+`--paper-card-header-text` | Mixin applied to the title in the card header section | `{}`
+`--paper-card-header-image` | Mixin applied to the image in the card header section | `{}`
+`--paper-card-header-image-text` | Mixin applied to the text overlapping the image in the card header section | `{}`
 `--paper-card-content` | Mixin applied to the card content section| `{}`
 `--paper-card-actions` | Mixin applied to the card action section | `{}`
 `--paper-card` | Mixin applied to the card | `{}`
@@ -15488,12 +15707,12 @@ Any number of components can use `<google-maps-api>` elements, and the library w
       },
 
       /**
-       * The libraries to load with this map. Defaults to "places". For more information
+       * The libraries to load with this map. For more information
        * see https://developers.google.com/maps/documentation/javascript/libraries.
        */
       libraries: {
         type: String,
-        value: 'places'
+        value: ''
       },
 
       /**
@@ -15545,7 +15764,10 @@ Any number of components can use `<google-maps-api>` elements, and the library w
 
     _computeUrl: function(mapsUrl, version, libraries, apiKey, clientId, language, signedIn) {
       var url = mapsUrl + '&v=' + version;
-      url += "&libraries=" + libraries;
+
+      if (libraries) {
+        url += "&libraries=" + libraries;
+      }
 
       if (apiKey && !clientId) {
         url += '&key=' + apiKey;
@@ -19775,7 +19997,6 @@ module.exports = Array.isArray || function (arr) {
   </style>
 
   <template>
-    <iron-meta id="meta" type="iconset"></iron-meta>
   </template>
 
   <script>
@@ -19812,7 +20033,12 @@ module.exports = Array.isArray || function (arr) {
         src: {
           type: String,
           observer: '_srcChanged'
+        },
+        
+        _meta: {
+          value: Polymer.Base.create('iron-meta', {type: 'iconset'})
         }
+        
       },
 
       _DEFAULT_ICONSET: 'icons',
@@ -19836,7 +20062,7 @@ module.exports = Array.isArray || function (arr) {
       _updateIcon: function() {
         if (this._usesIconset()) {
           if (this._iconsetName) {
-            this._iconset = this.$.meta.byKey(this._iconsetName);
+            this._iconset = this._meta.byKey(this._iconsetName);
             if (this._iconset) {
               this._iconset.applyIcon(this, this._iconName, this.theme);
             } else {
@@ -22946,28 +23172,21 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 #dropShadow {
   @apply(--paper-header-panel-shadow);
 
-  -webkit-transition: opacity 0.5s, -webkit-transform 0.5s;
-  transition: opacity 0.5s, transform 0.5s;
-
-  -webkit-transform: scale3d(1, 0, 1);
-  transform: scale3d(1, 0, 1);
-
-  -webkit-transform-origin: left top;
-  transform-origin: left top;
-
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
   height: 6px;
+  pointer-events: none;
+
+  -webkit-transition: opacity 0.5s;
+  transition: opacity 0.5s;
+
   opacity: 0;
 }
 
 #dropShadow.has-shadow {
   opacity: 1;
-
-  -webkit-transform: scale3d(1, 1, 1);
-  transform: scale3d(1, 1, 1);
 }
 
 </style>
@@ -23021,7 +23240,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
        * the scrollable element which you can use to access scroll info such as
        * `scrollTop`.
        *
-       *     <paper-header-panel on-content-scroll="{{scrollHandler}}">
+       *     <paper-header-panel on-content-scroll="scrollHandler">
        *       ...
        *     </paper-header-panel>
        *
@@ -23246,73 +23465,73 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
   @param {Object} detail
   @param {Object} detail.node The animated node
   -->
-
-  <style>
-    :host {
-      display: block;
-      position: absolute;
-      border-radius: inherit;
-      overflow: hidden;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-    }
-
-    :host([animating]) {
-      /* This resolves a rendering issue in Chrome (as of 40) where the
-         ripple is not properly clipped by its parent (which may have
-         rounded corners). See: http://jsbin.com/temexa/4
-
-         Note: We only apply this style conditionally. Otherwise, the browser
-         will create a new compositing layer for every ripple element on the
-         page, and that would be bad. */
-      -webkit-transform: translate(0, 0);
-      transform: translate3d(0, 0, 0);
-    }
-
-    :host([noink]) {
-      pointer-events: none;
-    }
-
-    #background,
-    #waves,
-    .wave-container,
-    .wave {
-      pointer-events: none;
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-    }
-
-    #background,
-    .wave {
-      opacity: 0;
-    }
-
-    #waves,
-    .wave {
-      overflow: hidden;
-    }
-
-    .wave-container,
-    .wave {
-      border-radius: 50%;
-    }
-
-    :host(.circle) #background,
-    :host(.circle) #waves {
-      border-radius: 50%;
-    }
-
-    :host(.circle) .wave-container {
-      overflow: hidden;
-    }
-
-  </style>
+  
   <template>
+    <style>
+      :host {
+        display: block;
+        position: absolute;
+        border-radius: inherit;
+        overflow: hidden;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+      }
+  
+      :host([animating]) {
+        /* This resolves a rendering issue in Chrome (as of 40) where the
+           ripple is not properly clipped by its parent (which may have
+           rounded corners). See: http://jsbin.com/temexa/4
+  
+           Note: We only apply this style conditionally. Otherwise, the browser
+           will create a new compositing layer for every ripple element on the
+           page, and that would be bad. */
+        -webkit-transform: translate(0, 0);
+        transform: translate3d(0, 0, 0);
+      }
+  
+      :host([noink]) {
+        pointer-events: none;
+      }
+  
+      #background,
+      #waves,
+      .wave-container,
+      .wave {
+        pointer-events: none;
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+      }
+  
+      #background,
+      .wave {
+        opacity: 0;
+      }
+  
+      #waves,
+      .wave {
+        overflow: hidden;
+      }
+  
+      .wave-container,
+      .wave {
+        border-radius: 50%;
+      }
+  
+      :host(.circle) #background,
+      :host(.circle) #waves {
+        border-radius: 50%;
+      }
+  
+      :host(.circle) .wave-container {
+        overflow: hidden;
+      }
+    </style>
+    
     <div id="background"></div>
     <div id="waves"></div>
   </template>
@@ -23320,20 +23539,6 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 <script>
   (function() {
     var Utility = {
-      cssColorWithAlpha: function(cssColor, alpha) {
-        var parts = cssColor.match(/^rgb\((\d+),\s*(\d+),\s*(\d+)\)$/);
-
-        if (typeof alpha == 'undefined') {
-          alpha = 1;
-        }
-
-        if (!parts) {
-          return 'rgba(255, 255, 255, ' + alpha + ')';
-        }
-
-        return 'rgba(' + parts[1] + ', ' + parts[2] + ', ' + parts[3] + ', ' + alpha + ')';
-      },
-
       distance: function(x1, y1, x2, y2) {
         var xDelta = (x1 - x2);
         var yDelta = (y1 - y2);
@@ -23341,13 +23546,8 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
         return Math.sqrt(xDelta * xDelta + yDelta * yDelta);
       },
 
-      now: (function() {
-        if (window.performance && window.performance.now) {
-          return window.performance.now.bind(window.performance);
-        }
-
-        return Date.now;
-      })()
+      now: window.performance && window.performance.now ?
+          window.performance.now.bind(window.performance) : Date.now
     };
 
     /**
@@ -24176,6 +24376,14 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
           },
 
           /**
+           * If provided, this will be the element that will be focused when
+           * the dropdown opens.
+           */
+          focusTarget: {
+            type: Object
+          },
+
+          /**
            * Set to true to disable animations when opening and closing the
            * dropdown.
            */
@@ -24215,6 +24423,17 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
           return Polymer.dom(this.$.content).getDistributedNodes()[0];
         },
 
+        /**
+         * The element that should be focused when the dropdown opens.
+         */
+        get _focusTarget() {
+          return this.focusTarget || this.containedElement;
+        },
+
+        /**
+         * The element that should be used to position the dropdown when
+         * it opens, if no position target is configured.
+         */
         get _defaultPositionTarget() {
           var parent = Polymer.dom(this).parentNode;
 
@@ -24225,6 +24444,9 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
           return parent;
         },
 
+        /**
+         * The bounding rect of the position target.
+         */
         get _positionRect() {
           if (!this._positionRectMemo && this.positionTarget) {
             this._positionRectMemo = this.positionTarget.getBoundingClientRect();
@@ -24233,6 +24455,9 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
           return this._positionRectMemo;
         },
 
+        /**
+         * The horizontal offset value used to position the dropdown.
+         */
         get _horizontalAlignTargetValue() {
           var target;
 
@@ -24247,6 +24472,9 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
           return Math.max(target, 0);
         },
 
+        /**
+         * The vertical offset value used to position the dropdown.
+         */
         get _verticalAlignTargetValue() {
           var target;
 
@@ -24261,27 +24489,41 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
           return Math.max(target, 0);
         },
 
+        /**
+         * Called when the value of `opened` changes.
+         *
+         * @param {boolean} opened True if the dropdown is opened.
+         */
         _openedChanged: function(opened) {
           if (opened && this.disabled) {
             this.cancel();
           } else {
-            this._cancelAnimations();
+            this.cancelAnimation();
             this._prepareDropdown();
             Polymer.IronOverlayBehaviorImpl._openedChanged.apply(this, arguments);
           }
+
+          if (this.opened) {
+            this._focusContent();
+          }
         },
 
+        /**
+         * Overridden from `IronOverlayBehavior`.
+         */
         _renderOpened: function() {
           Polymer.IronDropdownScrollManager.pushScrollLock(this);
           if (!this.noAnimations && this.animationConfig && this.animationConfig.open) {
             this.$.contentWrapper.classList.add('animating');
             this.playAnimation('open');
           } else {
-            this._focusContent();
             Polymer.IronOverlayBehaviorImpl._renderOpened.apply(this, arguments);
           }
         },
 
+        /**
+         * Overridden from `IronOverlayBehavior`.
+         */
         _renderClosed: function() {
           Polymer.IronDropdownScrollManager.removeScrollLock(this);
           if (!this.noAnimations && this.animationConfig && this.animationConfig.close) {
@@ -24292,6 +24534,12 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
           }
         },
 
+        /**
+         * Called when animation finishes on the dropdown (when opening or
+         * closing). Responsible for "completing" the process of opening or
+         * closing the dropdown by positioning it or setting its display to
+         * none.
+         */
         _onNeonAnimationFinish: function() {
           this.$.contentWrapper.classList.remove('animating');
           if (this.opened) {
@@ -24301,6 +24549,9 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
           }
         },
 
+        /**
+         * Called when an `iron-resize` event fires.
+         */
         _onIronResize: function() {
           var containedElement = this.containedElement;
           var scrollTop;
@@ -24323,14 +24574,17 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
           }
         },
 
+        /**
+         * Called when the `positionTarget` property changes.
+         */
         _positionTargetChanged: function() {
           this._updateOverlayPosition();
         },
 
-        _cancelAnimations: function() {
-          this.cancelAnimation();
-        },
-
+        /**
+         * Constructs the final animation config from different properties used
+         * to configure specific parts of the opening and closing animations.
+         */
         _updateAnimationConfig: function() {
           var animationConfig = {};
           var animations = [];
@@ -24358,12 +24612,21 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
           this.animationConfig = animationConfig;
         },
 
+        /**
+         * Prepares the dropdown for opening by updating measured layout
+         * values.
+         */
         _prepareDropdown: function() {
           this.sizingTarget = this.containedElement || this.sizingTarget;
           this._updateAnimationConfig();
           this._updateOverlayPosition();
         },
 
+        /**
+         * Updates the overlay position based on configured horizontal
+         * and vertical alignment, and re-memoizes these values for the sake
+         * of behavior in `IronFitBehavior`.
+         */
         _updateOverlayPosition: function() {
           this._positionRectMemo = null;
 
@@ -24389,10 +24652,17 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
           }
         },
 
+        /**
+         * Focuses the configured focus target.
+         */
         _focusContent: function() {
-          if (this.containedElement) {
-            this.containedElement.focus();
-          }
+          // NOTE(cdata): This is async so that it can attempt the focus after
+          // `display: none` is removed from the element.
+          this.async(function() {
+            if (this._focusTarget) {
+              this._focusTarget.focus();
+            }
+          });
         }
       });
     })();
@@ -24404,6 +24674,9 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
     :host {
       display: block;
       position: relative;
+    }
+
+    :host([animated]) {
       @apply(--shadow-transition);
     }
 
@@ -24509,9 +24782,9 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
     <div id="trigger" on-tap="open">
       <content select=".dropdown-trigger"></content>
     </div>
-    <iron-dropdown id="dropdown" opened="{{opened}}" horizontal-align="[[horizontalAlign]]" vertical-align="[[verticalAlign]]" horizontal-offset="[[horizontalOffset]]" vertical-offset="[[verticalOffset]]" open-animation-config="[[openAnimationConfig]]" close-animation-config="[[closeAnimationConfig]]" no-animations="[[noAnimations]]">
+    <iron-dropdown id="dropdown" opened="{{opened}}" horizontal-align="[[horizontalAlign]]" vertical-align="[[verticalAlign]]" horizontal-offset="[[horizontalOffset]]" vertical-offset="[[verticalOffset]]" open-animation-config="[[openAnimationConfig]]" close-animation-config="[[closeAnimationConfig]]" no-animations="[[noAnimations]]" focus-target="[[_dropdownContent]]">
       <paper-material class="dropdown-content">
-        <content select=".dropdown-content"></content>
+        <content id="content" select=".dropdown-content"></content>
       </paper-material>
     </iron-dropdown>
   </template>
@@ -24548,7 +24821,8 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
         opened: {
           type: Boolean,
           value: false,
-          notify: true
+          notify: true,
+          observer: '_openedChanged'
         },
 
         /**
@@ -24606,7 +24880,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
          * Set to true to disable automatically closing the dropdown after
          * a selection has been made.
          */
-        ignoreActivate: {
+        ignoreSelect: {
           type: Boolean,
           value: false
         },
@@ -24669,6 +24943,14 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
               }
             }];
           }
+        },
+
+        /**
+         * This is the element intended to be bound as the focus target
+         * for the `iron-dropdown` contained by `paper-menu-button`.
+         */
+        _dropdownContent: {
+          type: Object
         }
       },
 
@@ -24678,7 +24960,14 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
       },
 
       listeners: {
-        'iron-activate': '_onIronActivate'
+        'iron-select': '_onIronSelect'
+      },
+
+      /**
+       * The content element that is contained by the menu button, if any.
+       */
+      get contentElement() {
+        return Polymer.dom(this.$.content).getDistributedNodes()[0];
       },
 
       /**
@@ -24701,14 +24990,14 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
       },
 
       /**
-       * When an `iron-activate` event is received, the dropdown should
+       * When an `iron-select` event is received, the dropdown should
        * automatically close on the assumption that a value has been chosen.
        *
        * @param {CustomEvent} event A CustomEvent instance with type
-       * set to `"iron-activate"`.
+       * set to `"iron-select"`.
        */
-      _onIronActivate: function(event) {
-        if (!this.ignoreActivate) {
+      _onIronSelect: function(event) {
+        if (!this.ignoreSelect) {
           this.close();
         }
       },
@@ -24722,6 +25011,12 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
        */
       _openedChanged: function(opened, oldOpened) {
         if (opened) {
+          // TODO(cdata): Update this when we can measure changes in distributed
+          // children in an idiomatic way.
+          // We poke this property in case the element has changed. This will
+          // cause the focus target for the `iron-dropdown` to be updated as
+          // necessary:
+          this._dropdownContent = this.contentElement;
           this.fire('paper-dropdown-open');
         } else if (oldOpened != null) {
           this.fire('paper-dropdown-close');
@@ -24749,173 +25044,165 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
   })();
 </script>
 <dom-module id="paper-checkbox" assetpath="../bower_components/paper-checkbox/">
-  <style>
-/**
-@license
-Copyright (c) 2015 The Polymer Project Authors. All rights reserved.
-This code may only be used under the BSD style license found at http://polymer.github.io/LICENSE.txt
-The complete set of authors may be found at http://polymer.github.io/AUTHORS.txt
-The complete set of contributors may be found at http://polymer.github.io/CONTRIBUTORS.txt
-Code distributed by Google as part of the polymer project is also
-subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
-*/
-
-:host {
-  display: inline-block;
-  white-space: nowrap;
-}
-
-:host(:focus) {
-  outline: none;
-}
-
-.hidden {
-  display: none;
-}
-
-#checkboxContainer {
-  display: inline-block;
-  position: relative;
-  width: 18px;
-  height: 18px;
-  cursor: pointer;
-  -webkit-transform: translateZ(0);
-  transform: translateZ(0);
-  vertical-align: middle;
-  background-color: var(--paper-checkbox-unchecked-background-color, transparent);
-}
-
-:host #ink {
-  position: absolute;
-  top: -15px;
-  left: -15px;
-  width: 48px;
-  height: 48px;
-  color: var(--paper-checkbox-unchecked-ink-color, --primary-text-color);
-  opacity: 0.6;
-  pointer-events: none;
-}
-
-:host #ink[checked] {
-  color: var(--paper-checkbox-checked-ink-color, --default-primary-color);
-}
-
-:host #checkbox {
-  position: relative;
-  box-sizing: border-box;
-  height: 100%;
-  border: solid 2px;
-  border-color: var(--paper-checkbox-unchecked-color, --primary-text-color);
-  border-radius: 2px;
-  pointer-events: none;
-  -webkit-transition: background-color 140ms, border-color 140ms;
-  transition: background-color 140ms, border-color 140ms;
-}
-
-/* checkbox checked animations */
-#checkbox.checked #checkmark {
-  -webkit-animation: checkmark-expand 140ms ease-out forwards;
-  animation: checkmark-expand 140ms ease-out forwards;
-}
-
-@-webkit-keyframes checkmark-expand {
-  0% {
-    top: 9px;
-    left: 6px;
-    width: 0px;
-    height: 0px;
-  }
-  100% {
-    top: -1px;
-    left: 4px;
-    width: 5px;
-    height: 10px;
-  }
-}
-
-@keyframes checkmark-expand {
-  0% {
-    top: 9px;
-    left: 6px;
-    width: 0px;
-    height: 0px;
-  }
-  100% {
-    top: -1px;
-    left: 4px;
-    width: 5px;
-    height: 10px;
-  }
-}
-
-:host #checkbox.checked {
-  background-color: var(--paper-checkbox-checked-color, --default-primary-color);
-  border-color: var(--paper-checkbox-checked-color, --default-primary-color);
-}
-
-:host #checkmark {
-  -webkit-transform: rotate(45deg);
-  transform: rotate(45deg);
-  position: absolute;
-  top: -1px;
-  left: 4px;
-  width: 5px;
-  height: 10px;
-  border-style: solid;
-  border-top: none;
-  border-left: none;
-  border-right-width: 2px;
-  border-bottom-width: 2px;
-  border-color: var(--paper-checkbox-checkmark-color, white);
-}
-
-/* label */
-#checkboxLabel {
-  position: relative;
-  display: inline-block;
-  vertical-align: middle;
-  padding-left: 8px;
-  white-space: normal;
-  pointer-events: none;
-  color: var(--paper-checkbox-label-color, --primary-text-color);
-}
-
-#checkboxLabel[hidden] {
-  display: none;
-}
-
-/* disabled state */
-:host([disabled]) {
-  pointer-events: none;
-}
-
-:host([disabled]) #checkbox {
-  opacity: 0.5;
-  border-color: var(--paper-checkbox-unchecked-color, --primary-text-color);
-}
-
-:host([disabled][checked]) #checkbox {
-  background-color: var(--paper-checkbox-unchecked-color, --primary-text-color);
-  opacity: 0.5;
-}
-
-:host([disabled]) #checkboxLabel  {
-  opacity: 0.65;
-}
-
-</style>
-
   <template>
+    <style>
+      :host {
+        display: inline-block;
+        white-space: nowrap;
+      }
+
+      :host(:focus) {
+        outline: none;
+      }
+
+      .hidden {
+        display: none;
+      }
+
+      #checkboxContainer {
+        display: inline-block;
+        position: relative;
+        width: 18px;
+        height: 18px;
+        cursor: pointer;
+        -webkit-transform: translateZ(0);
+        transform: translateZ(0);
+        vertical-align: middle;
+        background-color: var(--paper-checkbox-unchecked-background-color, transparent);
+      }
+
+      :host #ink {
+        position: absolute;
+        top: -15px;
+        left: -15px;
+        width: 48px;
+        height: 48px;
+        color: var(--paper-checkbox-unchecked-ink-color, --primary-text-color);
+        opacity: 0.6;
+        pointer-events: none;
+      }
+
+      :host #ink[checked] {
+        color: var(--paper-checkbox-checked-ink-color, --default-primary-color);
+      }
+
+      :host #checkbox {
+        position: relative;
+        box-sizing: border-box;
+        height: 100%;
+        border: solid 2px;
+        border-color: var(--paper-checkbox-unchecked-color, --primary-text-color);
+        border-radius: 2px;
+        pointer-events: none;
+        -webkit-transition: background-color 140ms, border-color 140ms;
+        transition: background-color 140ms, border-color 140ms;
+      }
+
+      /* checkbox checked animations */
+      #checkbox.checked #checkmark {
+        -webkit-animation: checkmark-expand 140ms ease-out forwards;
+        animation: checkmark-expand 140ms ease-out forwards;
+      }
+
+      @-webkit-keyframes checkmark-expand {
+        0% {
+          top: 9px;
+          left: 6px;
+          width: 0px;
+          height: 0px;
+        }
+        100% {
+          top: -1px;
+          left: 4px;
+          width: 5px;
+          height: 10px;
+        }
+      }
+
+      @keyframes checkmark-expand {
+        0% {
+          top: 9px;
+          left: 6px;
+          width: 0px;
+          height: 0px;
+        }
+        100% {
+          top: -1px;
+          left: 4px;
+          width: 5px;
+          height: 10px;
+        }
+      }
+
+      :host #checkbox.checked {
+        background-color: var(--paper-checkbox-checked-color, --default-primary-color);
+        border-color: var(--paper-checkbox-checked-color, --default-primary-color);
+      }
+
+      :host #checkmark {
+        -webkit-transform: rotate(45deg);
+        transform: rotate(45deg);
+        position: absolute;
+        top: -1px;
+        left: 4px;
+        width: 5px;
+        height: 10px;
+        border-style: solid;
+        border-top: none;
+        border-left: none;
+        border-right-width: 2px;
+        border-bottom-width: 2px;
+        border-color: var(--paper-checkbox-checkmark-color, white);
+      }
+
+      /* label */
+      #checkboxLabel {
+        position: relative;
+        display: inline-block;
+        vertical-align: middle;
+        padding-left: 8px;
+        white-space: normal;
+        pointer-events: none;
+        color: var(--paper-checkbox-label-color, --primary-text-color);
+      }
+
+      #checkboxLabel[hidden] {
+        display: none;
+      }
+
+      /* disabled state */
+      :host([disabled]) {
+        pointer-events: none;
+      }
+
+      :host([disabled]) #checkbox {
+        opacity: 0.5;
+        border-color: var(--paper-checkbox-unchecked-color, --primary-text-color);
+      }
+
+      :host([disabled][checked]) #checkbox {
+        background-color: var(--paper-checkbox-unchecked-color, --primary-text-color);
+        opacity: 0.5;
+      }
+
+      :host([disabled]) #checkboxLabel  {
+        opacity: 0.65;
+      }
+
+      /* invalid state */
+      #checkbox.invalid:not(.checked) {
+        border-color: var(--paper-checkbox-error-color, --google-red-500);
+      }
+    </style>
 
     <div id="checkboxContainer">
       <paper-ripple id="ink" class="circle" center="" checked$="[[checked]]"></paper-ripple>
-      <div id="checkbox" class$="[[_computeCheckboxClass(checked)]]">
+      <div id="checkbox" class$="[[_computeCheckboxClass(checked, invalid)]]">
         <div id="checkmark" class$="[[_computeCheckmarkClass(checked)]]"></div>
       </div>
     </div>
 
-    <div id="checkboxLabel" aria-hidden="true"><content></content></div>
-
+    <div id="checkboxLabel"><content></content></div>
   </template>
 
   <script>
@@ -24923,7 +25210,8 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
       is: 'paper-checkbox',
 
       behaviors: [
-        Polymer.PaperInkyFocusBehavior
+        Polymer.PaperInkyFocusBehavior,
+        Polymer.IronCheckedElementBehavior
       ],
 
       hostAttributes: {
@@ -24944,39 +25232,31 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
          *
          * @event iron-change
          */
-
-        /**
-         * Gets or sets the state, `true` is checked and `false` is unchecked.
-         */
-        checked: {
-          type: Boolean,
-          value: false,
-          reflectToAttribute: true,
-          notify: true,
-          observer: '_checkedChanged'
-        },
-
-        /**
-         * If true, the button toggles the active state with each tap or press
-         * of the spacebar.
-         */
-        toggles: {
-          type: Boolean,
-          value: true,
-          reflectToAttribute: true
+        ariaActiveAttribute: {
+          type: String,
+          value: 'aria-checked'
         }
       },
 
       attached: function() {
-        var trimmedText = Polymer.dom(this).textContent.trim();
-        if (trimmedText === '') {
-          this.$.checkboxLabel.hidden = true;
-        }
-        // Don't stomp over a user-set aria-label.
-        if (trimmedText !== '' && !this.getAttribute('aria-label')) {
-          this.setAttribute('aria-label', trimmedText);
-        }
         this._isReady = true;
+
+        // Don't stomp over a user-set aria-label.
+        if (!this.getAttribute('aria-label')) {
+          this.updateAriaLabel();
+        }
+      },
+
+      /**
+       * Update the checkbox aria-label. This is a temporary workaround not
+       * being able to observe changes in <content>
+       * (see: https://github.com/Polymer/polymer/issues/1773)
+       *
+       * Call this if you manually change the contents of the checkbox
+       * and want the aria-label to match the new contents.
+       */
+      updateAriaLabel: function() {
+        this.setAttribute('aria-label', Polymer.dom(this).textContent.trim());
       },
 
       // button-behavior hook
@@ -24989,28 +25269,22 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
         }
       },
 
-      _checkedChanged: function(checked) {
-        this.setAttribute('aria-checked', this.checked ? 'true' : 'false');
-        this.active = this.checked;
-        this.fire('iron-change');
-      },
-
-      _computeCheckboxClass: function(checked) {
+      _computeCheckboxClass: function(checked, invalid) {
+        var className = '';
         if (checked) {
-          return 'checked';
+          className += 'checked ';
         }
-        return '';
+        if (invalid) {
+          className += 'invalid';
+        }
+        return className;
       },
 
       _computeCheckmarkClass: function(checked) {
-        if (!checked) {
-          return 'hidden';
-        }
-        return '';
+        return checked ? '' : 'hidden';
       }
-    })
+    });
   </script>
-
 </dom-module>
 <dom-module id="paper-toolbar" assetpath="../bower_components/paper-toolbar/">
 
@@ -25434,62 +25708,60 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 
 </script>
 <dom-module id="paper-button" assetpath="../bower_components/paper-button/">
-
-  <style>
-
-    :host {
-      display: inline-block;
-      position: relative;
-      box-sizing: border-box;
-      min-width: 5.14em;
-      margin: 0 0.29em;
-      background: transparent;
-      text-align: center;
-      font: inherit;
-      text-transform: uppercase;
-      outline: none;
-      border-radius: 3px;
-      -moz-user-select: none;
-      -ms-user-select: none;
-      -webkit-user-select: none;
-      user-select: none;
-      cursor: pointer;
-      z-index: 0;
-
-      @apply(--paper-button);
-    }
-
-    .keyboard-focus {
-      font-weight: bold;
-    }
-
-    :host([disabled]) {
-      background: #eaeaea;
-      color: #a8a8a8;
-      cursor: auto;
-      pointer-events: none;
-
-      @apply(--paper-button-disabled);
-    }
-
-    :host([noink]) paper-ripple {
-      display: none;
-    }
-
-    paper-material {
-      border-radius: inherit;
-    }
-
-    .content > ::content * {
-      text-transform: inherit;
-    }
-
-    .content {
-      padding: 0.7em 0.57em
-    }
-  </style>
-
   <template>
+
+    <style>
+      :host {
+        display: inline-block;
+        position: relative;
+        box-sizing: border-box;
+        min-width: 5.14em;
+        margin: 0 0.29em;
+        background: transparent;
+        text-align: center;
+        font: inherit;
+        text-transform: uppercase;
+        outline-width: 0;
+        border-radius: 3px;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        -webkit-user-select: none;
+        user-select: none;
+        cursor: pointer;
+        z-index: 0;
+
+        @apply(--paper-button);
+      }
+
+      .keyboard-focus {
+        font-weight: bold;
+      }
+
+      :host([disabled]) {
+        background: #eaeaea;
+        color: #a8a8a8;
+        cursor: auto;
+        pointer-events: none;
+
+        @apply(--paper-button-disabled);
+      }
+
+      :host([noink]) paper-ripple {
+        display: none;
+      }
+
+      paper-material {
+        border-radius: inherit;
+      }
+
+      .content > ::content * {
+        text-transform: inherit;
+      }
+
+      .content {
+        padding: 0.7em 0.57em
+      }
+    </style>
 
     <paper-ripple></paper-ripple>
 
@@ -25498,13 +25770,10 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
     </paper-material>
 
   </template>
-
 </dom-module>
 
 <script>
-
   Polymer({
-
     is: 'paper-button',
 
     behaviors: [
@@ -25512,7 +25781,6 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
     ],
 
     properties: {
-
       /**
        * If true, the button should be styled with a shadow.
        */
@@ -25540,7 +25808,6 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
       return className;
     }
   });
-
 </script>
 <dom-module id="iron-a11y-announcer" assetpath="../bower_components/iron-a11y-announcer/">
   <style>
@@ -25764,183 +26031,180 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 })();
 </script>
 <dom-module id="paper-input-container" assetpath="../bower_components/paper-input/">
-
-  <style>
-
-    :host {
-      display: block;
-      padding: 8px 0;
-
-      @apply(--paper-input-container);
-    }
-
-    :host[inline] {
-      display: inline-block;
-    }
-
-    :host([disabled]) {
-      pointer-events: none;
-      opacity: 0.33;
-
-      @apply(--paper-input-container-disabled);
-    }
-
-    .floated-label-placeholder {
-      @apply(--paper-font-caption);
-    }
-
-    .underline {
-      position: relative;
-    }
-
-    .focused-line {
-      height: 2px;
-
-      -webkit-transform-origin: center center;
-      transform-origin: center center;
-      -webkit-transform: scale3d(0,1,1);
-      transform: scale3d(0,1,1);
-
-      background: var(--paper-input-container-focus-color, --default-primary-color);
-
-      @apply(--paper-input-container-underline-focus);
-    }
-
-    .underline.is-highlighted .focused-line {
-      -webkit-transform: none;
-      transform: none;
-      -webkit-transition: -webkit-transform 0.25s;
-      transition: transform 0.25s;
-
-      @apply(--paper-transition-easing);
-    }
-
-    .underline.is-invalid .focused-line {
-      background: var(--paper-input-container-invalid-color, --google-red-500);
-
-      -webkit-transform: none;
-      transform: none;
-      -webkit-transition: -webkit-transform 0.25s;
-      transition: transform 0.25s;
-
-      @apply(--paper-transition-easing);
-    }
-
-    .unfocused-line {
-      height: 1px;
-      background: var(--paper-input-container-color, --secondary-text-color);
-
-      @apply(--paper-input-container-underline);
-    }
-
-    :host([disabled]) .unfocused-line {
-      border-bottom: 1px dashed;
-      border-color: var(--paper-input-container-color, --secondary-text-color);
-      background: transparent;
-
-      @apply(--paper-input-container-underline-disabled);
-    }
-
-    .label-and-input-container {
-      @apply(--layout-flex);
-      @apply(--layout-relative);
-    }
-
-    .input-content {
-      position: relative;
-      @apply(--layout-horizontal);
-      @apply(--layout-end);
-    }
-
-    .input-content ::content label,
-    .input-content ::content .paper-input-label {
-      position: absolute;
-      top: 0;
-      right: 0;
-      left: 0;
-      font: inherit;
-      color: var(--paper-input-container-color, --secondary-text-color);
-
-      @apply(--paper-font-subhead);
-      @apply(--paper-input-container-label);
-    }
-
-    .input-content.label-is-floating ::content label,
-    .input-content.label-is-floating ::content .paper-input-label {
-      -webkit-transform: translate3d(0, -75%, 0) scale(0.75);
-      transform: translate3d(0, -75%, 0) scale(0.75);
-      -webkit-transform-origin: left top;
-      transform-origin: left top;
-      -webkit-transition: -webkit-transform 0.25s;
-      transition: transform 0.25s;
-
-      @apply(--paper-transition-easing);
-    }
-
-    .input-content.label-is-highlighted ::content label,
-    .input-content.label-is-highlighted ::content .paper-input-label {
-      color: var(--paper-input-container-focus-color, --default-primary-color);
-
-      @apply(--paper-input-container-label-focus);
-    }
-
-    .input-content.is-invalid ::content label,
-    .input-content.is-invalid ::content .paper-input-label {
-      color: var(--paper-input-container-invalid-color, --google-red-500);
-    }
-
-    .input-content.label-is-hidden ::content label,
-    .input-content.label-is-hidden ::content .paper-input-label {
-      visibility: hidden;
-    }
-
-    .input-content ::content input,
-    .input-content ::content textarea,
-    .input-content ::content iron-autogrow-textarea,
-    .input-content ::content .paper-input-input {
-      position: relative; /* to make a stacking context */
-      outline: none;
-      box-shadow: none;
-      padding: 0;
-      width: 100%;
-      background: transparent;
-      border: none;
-      color: var(--paper-input-container-input-color, --primary-text-color);
-
-      @apply(--paper-font-subhead);
-      @apply(--paper-input-container-input);
-    }
-
-    ::content [prefix] {
-      @apply(--paper-font-subhead);
-      @apply(--paper-input-prefix);
-    }
-
-    ::content [suffix] {
-      @apply(--paper-font-subhead);
-      @apply(--paper-input-suffix);
-    }
-
-    /* Firefox sets a min-width on the input, which can cause layout issues */
-    .input-content ::content input {
-      min-width: 0;
-    }
-
-    .input-content ::content textarea {
-      resize: none;
-    }
-
-    .add-on-content.is-invalid ::content * {
-      color: var(--paper-input-container-invalid-color, --google-red-500);
-    }
-
-    .add-on-content.is-highlighted ::content * {
-      color: var(--paper-input-container-focus-color, --default-primary-color);
-    }
-
-  </style>
-
   <template>
+
+    <style>
+      :host {
+        display: block;
+        padding: 8px 0;
+
+        @apply(--paper-input-container);
+      }
+
+      :host[inline] {
+        display: inline-block;
+      }
+
+      :host([disabled]) {
+        pointer-events: none;
+        opacity: 0.33;
+
+        @apply(--paper-input-container-disabled);
+      }
+
+      .floated-label-placeholder {
+        @apply(--paper-font-caption);
+      }
+
+      .underline {
+        position: relative;
+      }
+
+      .focused-line {
+        height: 2px;
+
+        -webkit-transform-origin: center center;
+        transform-origin: center center;
+        -webkit-transform: scale3d(0,1,1);
+        transform: scale3d(0,1,1);
+
+        background: var(--paper-input-container-focus-color, --default-primary-color);
+
+        @apply(--paper-input-container-underline-focus);
+      }
+
+      .underline.is-highlighted .focused-line {
+        -webkit-transform: none;
+        transform: none;
+        -webkit-transition: -webkit-transform 0.25s;
+        transition: transform 0.25s;
+
+        @apply(--paper-transition-easing);
+      }
+
+      .underline.is-invalid .focused-line {
+        background: var(--paper-input-container-invalid-color, --google-red-500);
+
+        -webkit-transform: none;
+        transform: none;
+        -webkit-transition: -webkit-transform 0.25s;
+        transition: transform 0.25s;
+
+        @apply(--paper-transition-easing);
+      }
+
+      .unfocused-line {
+        height: 1px;
+        background: var(--paper-input-container-color, --secondary-text-color);
+
+        @apply(--paper-input-container-underline);
+      }
+
+      :host([disabled]) .unfocused-line {
+        border-bottom: 1px dashed;
+        border-color: var(--paper-input-container-color, --secondary-text-color);
+        background: transparent;
+
+        @apply(--paper-input-container-underline-disabled);
+      }
+
+      .label-and-input-container {
+        @apply(--layout-flex);
+        @apply(--layout-relative);
+      }
+
+      .input-content {
+        position: relative;
+        @apply(--layout-horizontal);
+        @apply(--layout-end);
+      }
+
+      .input-content ::content label,
+      .input-content ::content .paper-input-label {
+        position: absolute;
+        top: 0;
+        right: 0;
+        left: 0;
+        font: inherit;
+        color: var(--paper-input-container-color, --secondary-text-color);
+
+        @apply(--paper-font-subhead);
+        @apply(--paper-input-container-label);
+      }
+
+      .input-content.label-is-floating ::content label,
+      .input-content.label-is-floating ::content .paper-input-label {
+        -webkit-transform: translate3d(0, -75%, 0) scale(0.75);
+        transform: translate3d(0, -75%, 0) scale(0.75);
+        -webkit-transform-origin: left top;
+        transform-origin: left top;
+        -webkit-transition: -webkit-transform 0.25s;
+        transition: transform 0.25s;
+
+        @apply(--paper-transition-easing);
+      }
+
+      .input-content.label-is-highlighted ::content label,
+      .input-content.label-is-highlighted ::content .paper-input-label {
+        color: var(--paper-input-container-focus-color, --default-primary-color);
+
+        @apply(--paper-input-container-label-focus);
+      }
+
+      .input-content.is-invalid ::content label,
+      .input-content.is-invalid ::content .paper-input-label {
+        color: var(--paper-input-container-invalid-color, --google-red-500);
+      }
+
+      .input-content.label-is-hidden ::content label,
+      .input-content.label-is-hidden ::content .paper-input-label {
+        visibility: hidden;
+      }
+
+      .input-content ::content input,
+      .input-content ::content textarea,
+      .input-content ::content iron-autogrow-textarea,
+      .input-content ::content .paper-input-input {
+        position: relative; /* to make a stacking context */
+        outline: none;
+        box-shadow: none;
+        padding: 0;
+        width: 100%;
+        background: transparent;
+        border: none;
+        color: var(--paper-input-container-input-color, --primary-text-color);
+
+        @apply(--paper-font-subhead);
+        @apply(--paper-input-container-input);
+      }
+
+      ::content [prefix] {
+        @apply(--paper-font-subhead);
+        @apply(--paper-input-prefix);
+      }
+
+      ::content [suffix] {
+        @apply(--paper-font-subhead);
+        @apply(--paper-input-suffix);
+      }
+
+      /* Firefox sets a min-width on the input, which can cause layout issues */
+      .input-content ::content input {
+        min-width: 0;
+      }
+
+      .input-content ::content textarea {
+        resize: none;
+      }
+
+      .add-on-content.is-invalid ::content * {
+        color: var(--paper-input-container-invalid-color, --google-red-500);
+      }
+
+      .add-on-content.is-highlighted ::content * {
+        color: var(--paper-input-container-focus-color, --default-primary-color);
+      }
+    </style>
 
     <template is="dom-if" if="[[!noLabelFloat]]">
       <div class="floated-label-placeholder">&nbsp;</div>
@@ -25964,18 +26228,13 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
     </div>
 
   </template>
-
 </dom-module>
 
 <script>
-(function() {
-
   Polymer({
-
     is: 'paper-input-container',
 
     properties: {
-
       /**
        * Set to true to disable the floating label. The label disappears when the input value is
        * not null.
@@ -26025,7 +26284,8 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
       focused: {
         readOnly: true,
         type: Boolean,
-        value: false
+        value: false,
+        notify: true
       },
 
       _addons: {
@@ -26072,7 +26332,6 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
           return this._onValueChanged.bind(this);
         }
       }
-
     },
 
     listeners: {
@@ -26092,6 +26351,10 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
       return Polymer.dom(this).querySelector(this._inputSelector);
     },
 
+    get _inputElementValue() {
+      return this._inputElement[this._propertyForValue] || this._inputElement.value;
+    },
+
     ready: function() {
       if (!this._addons) {
         this._addons = [];
@@ -26106,7 +26369,12 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
     },
 
     attached: function() {
-      this._handleValue(this._inputElement);
+      // Only validate when attached if the input already has a value.
+      if (this._inputElementValue != '') {
+        this._handleValueAndAutoValidate(this._inputElement);
+      } else {
+        this._handleValue(this._inputElement);
+      }
     },
 
     _onAddonAttached: function(event) {
@@ -26128,28 +26396,19 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 
     _onBlur: function() {
       this._setFocused(false);
+      this._handleValueAndAutoValidate(this._inputElement);
     },
 
     _onInput: function(event) {
-      this._handleValue(event.target);
+      this._handleValueAndAutoValidate(event.target);
     },
 
     _onValueChanged: function(event) {
-      this._handleValue(event.target);
+      this._handleValueAndAutoValidate(event.target);
     },
 
     _handleValue: function(inputElement) {
-      var value = inputElement[this._propertyForValue] || inputElement.value;
-
-      if (this.autoValidate) {
-        var valid;
-        if (inputElement.validate) {
-          valid = inputElement.validate(value);
-        } else {
-          valid = inputElement.checkValidity();
-        }
-        this.invalid = !valid;
-      }
+      var value = this._inputElementValue;
 
       // type="number" hack needed because this.value is empty until it's valid
       if (value || value === 0 || (inputElement.type === 'number' && !inputElement.checkValidity())) {
@@ -26163,6 +26422,21 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
         value: value,
         invalid: this.invalid
       });
+    },
+
+    _handleValueAndAutoValidate: function(inputElement) {
+      if (this.autoValidate) {
+        var valid;
+        if (inputElement.validate) {
+          valid = inputElement.validate(this._inputElementValue);
+        } else {
+          valid = inputElement.checkValidity();
+        }
+        this.invalid = !valid;
+      }
+
+      // Call this last to notify the add-ons.
+      this._handleValue(inputElement);
     },
 
     _onIronInputValidate: function(event) {
@@ -26236,46 +26510,35 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
       }
       return cls;
     }
-
   });
-
-})();
 </script>
 <dom-module id="paper-input-error" assetpath="../bower_components/paper-input/">
-
-  <style>
-
-    :host {
-      display: inline-block;
-      visibility: hidden;
-      float: left;
-
-      color: var(--paper-input-container-invalid-color, --google-red-500);
-
-      @apply(--paper-font-caption);
-      @apply(--paper-input-error);
-    }
-
-    :host([invalid]) {
-      visibility: visible;
-    };
-
-  </style>
-
   <template>
+
+    <style>
+      :host {
+        display: inline-block;
+        visibility: hidden;
+        float: left;
+
+        color: var(--paper-input-container-invalid-color, --google-red-500);
+
+        @apply(--paper-font-caption);
+        @apply(--paper-input-error);
+      }
+
+      :host([invalid]) {
+        visibility: visible;
+      };
+    </style>
 
     <content></content>
 
   </template>
-
 </dom-module>
 
 <script>
-
-(function() {
-
   Polymer({
-
     is: 'paper-input-error',
 
     behaviors: [
@@ -26283,7 +26546,6 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
     ],
 
     properties: {
-
       /**
        * True if the error is showing.
        */
@@ -26292,46 +26554,33 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
         reflectToAttribute: true,
         type: Boolean
       }
-
     },
 
     update: function(state) {
       this._setInvalid(state.invalid);
     }
-
-  })
-
-})();
-
+  });
 </script>
 <dom-module id="paper-input-char-counter" assetpath="../bower_components/paper-input/">
-
-  <style>
-
-    :host {
-      display: inline-block;
-      float: right;
-
-      @apply(--paper-font-caption);
-      @apply(--paper-input-char-counter);
-    }
-
-  </style>
-
   <template>
+
+    <style>
+      :host {
+        display: inline-block;
+        float: right;
+
+        @apply(--paper-font-caption);
+        @apply(--paper-input-char-counter);
+      }
+    </style>
 
     <span>[[_charCounterStr]]</span>
 
   </template>
-
 </dom-module>
 
 <script>
-
-(function() {
-
   Polymer({
-
     is: 'paper-input-char-counter',
 
     behaviors: [
@@ -26339,12 +26588,10 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
     ],
 
     properties: {
-
       _charCounterStr: {
         type: String,
         value: '0'
       }
-
     },
 
     update: function(state) {
@@ -26362,39 +26609,32 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
       }
       this._charCounterStr = str;
     }
-
   });
-
-})();
-
 </script>
 <dom-module id="paper-input" assetpath="../bower_components/paper-input/">
-
-  <style>
-
-    :host {
-      display: block;
-    }
-
-    input::-webkit-input-placeholder {
-      color: var(--paper-input-container-color, --secondary-text-color);
-    }
-
-    input:-moz-placeholder {
-      color: var(--paper-input-container-color, --secondary-text-color);
-    }
-
-    input::-moz-placeholder {
-      color: var(--paper-input-container-color, --secondary-text-color);
-    }
-
-    input:-ms-input-placeholder {
-      color: var(--paper-input-container-color, --secondary-text-color);
-    }
-
-  </style>
-
   <template>
+
+    <style>
+      :host {
+        display: block;
+      }
+
+      input::-webkit-input-placeholder {
+        color: var(--paper-input-container-color, --secondary-text-color);
+      }
+
+      input:-moz-placeholder {
+        color: var(--paper-input-container-color, --secondary-text-color);
+      }
+
+      input::-moz-placeholder {
+        color: var(--paper-input-container-color, --secondary-text-color);
+      }
+
+      input:-ms-input-placeholder {
+        color: var(--paper-input-container-color, --secondary-text-color);
+      }
+    </style>
 
     <paper-input-container no-label-float="[[noLabelFloat]]" always-float-label="[[_computeAlwaysFloatLabel(alwaysFloatLabel,placeholder)]]" auto-validate$="[[autoValidate]]" disabled$="[[disabled]]" invalid="[[invalid]]">
 
@@ -26402,7 +26642,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 
       <label hidden$="[[!label]]">[[label]]</label>
 
-      <input is="iron-input" id="input" aria-labelledby$="[[_ariaLabelledBy]]" aria-describedby$="[[_ariaDescribedBy]]" disabled$="[[disabled]]" bind-value="{{value}}" invalid="{{invalid}}" prevent-invalid-input="[[preventInvalidInput]]" allowed-pattern="[[allowedPattern]]" validator="[[validator]]" type$="[[type]]" pattern$="[[pattern]]" required$="[[required]]" autocomplete$="[[autocomplete]]" autofocus$="[[autofocus]]" inputmode$="[[inputmode]]" minlength$="[[minlength]]" maxlength$="[[maxlength]]" min$="[[min]]" max$="[[max]]" step$="[[step]]" name$="[[name]]" placeholder$="[[placeholder]]" readonly$="[[readonly]]" list$="[[list]]" size$="[[size]]" autocapitalize$="[[autocapitalize]]" autocorrect$="[[autocorrect]]">
+      <input is="iron-input" id="input" aria-labelledby$="[[_ariaLabelledBy]]" aria-describedby$="[[_ariaDescribedBy]]" disabled$="[[disabled]]" bind-value="{{value}}" invalid="{{invalid}}" prevent-invalid-input="[[preventInvalidInput]]" allowed-pattern="[[allowedPattern]]" validator="[[validator]]" type$="[[type]]" pattern$="[[pattern]]" required$="[[required]]" autocomplete$="[[autocomplete]]" autofocus$="[[autofocus]]" inputmode$="[[inputmode]]" minlength$="[[minlength]]" maxlength$="[[maxlength]]" min$="[[min]]" max$="[[max]]" step$="[[step]]" name$="[[name]]" placeholder$="[[placeholder]]" readonly$="[[readonly]]" list$="[[list]]" size$="[[size]]" autocapitalize$="[[autocapitalize]]" autocorrect$="[[autocorrect]]" on-change="_onChange">
 
       <content select="[suffix]"></content>
 
@@ -26417,15 +26657,10 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
     </paper-input-container>
 
   </template>
-
 </dom-module>
 
 <script>
-
-(function() {
-
   Polymer({
-
     is: 'paper-input',
 
     behaviors: [
@@ -26433,11 +26668,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
       Polymer.PaperInputBehavior,
       Polymer.IronControlState
     ]
-
-  })
-
-})();
-
+  });
 </script>
 <dom-module id="paper-item" assetpath="../bower_components/paper-item/">
 
@@ -26670,7 +26901,8 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
     is: 'paper-tab',
 
     behaviors: [
-      Polymer.IronControlState
+      Polymer.IronControlState,
+      Polymer.IronButtonState
     ],
 
     properties: {
@@ -26692,7 +26924,11 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
     },
 
     listeners: {
-      down: '_onDown'
+      down: '_updateNoink'
+    },
+
+    attached: function() {
+      this._updateNoink();
     },
 
     get _parentNoink () {
@@ -26700,7 +26936,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
       return !!parent && !!parent.noink;
     },
 
-    _onDown: function(e) {
+    _updateNoink: function() {
       this.noink = !!this.noink || !!this._parentNoink;
     }
   });
@@ -27108,62 +27344,69 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 
 </script>
 <dom-module id="paper-card" assetpath="../bower_components/paper-card/">
-  <style>
-  :host {
-    display: inline-block;
-    position: relative;
-    box-sizing: border-box;
-
-    background: #fff;
-    border-radius: 2px;
-    @apply(--paper-card);
-  }
-
-  /* IE 10 support for HTML5 hidden attr */
-  [hidden] {
-    display: none !important;
-  }
-
-  .header {
-    position: relative;
-    @apply(--paper-card-header);
-  }
-
-  .header img {
-    width: 100%;
-    pointer-events: none;
-  }
-
-  .header .title-text {
-    padding: 16px;
-    font-size: 24px;
-    font-weight: bold;
-    color: var(--paper-card-header-color, #000);
-  }
-
-  .header .title-text.over-image {
-    position: absolute;
-    bottom: 0px;
-  }
-
-  :host ::content .card-content {
-    padding: 16px;
-    position:relative;
-    @apply(--paper-card-content);
-  }
-
-  :host ::content .card-actions {
-    border-top: 1px solid #e8e8e8;
-    padding: 5px 16px;
-    position:relative;
-    @apply(--paper-card-actions);
-  }
-
-  </style>
-
   <template>
+    <style>
+      :host {
+        display: inline-block;
+        position: relative;
+        box-sizing: border-box;
 
-    <paper-material id="shadow" animated$="[[animatedShadow]]" elevation="[[elevation]]">
+        background: #fff;
+        border-radius: 2px;
+        @apply(--paper-card);
+      }
+
+      paper-material {
+        border-radius: inherit;
+        width: 100%;
+        height: 100%;
+      }
+
+      /* IE 10 support for HTML5 hidden attr */
+      [hidden] {
+        display: none !important;
+      }
+
+      .header {
+        position: relative;
+        @apply(--paper-card-header);
+      }
+
+      .header img {
+        width: 100%;
+        pointer-events: none;
+        @apply(--paper-card-header-image);
+      }
+
+      .header .title-text {
+        padding: 16px;
+        font-size: 24px;
+        font-weight: bold;
+        color: var(--paper-card-header-color, #000);
+        @apply(--paper-card-header-text);
+      }
+
+      .header .title-text.over-image {
+        position: absolute;
+        bottom: 0px;
+        @apply(--paper-card-header-image-text);
+      }
+
+      :host ::content .card-content {
+        padding: 16px;
+        position:relative;
+        @apply(--paper-card-content);
+      }
+
+      :host ::content .card-actions {
+        border-top: 1px solid #e8e8e8;
+        padding: 5px 16px;
+        position:relative;
+        @apply(--paper-card-actions);
+      }
+    </style>
+
+    <paper-material animated$="[[animatedShadow]]" elevation="[[elevation]]">
       <div class="header">
         <img hidden$="[[!image]]" src="[[image]]">
         <div hidden$="[[!heading]]" class$="[[_computeHeadingClass(image)]]">[[heading]]</div>
@@ -27243,6 +27486,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
       -moz-user-select: none;
       -ms-user-select: none;
       -webkit-user-select: none;
+      -webkit-tap-highlight-color: rgba(0,0,0,0);
       user-select: none;
       cursor: pointer;
 
@@ -27337,7 +27581,8 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
        */
       mini: {
         type: Boolean,
-        value: false
+        value: false,
+        reflectToAttribute: true
       }
     },
 
@@ -29423,14 +29668,21 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
                 --angularjs: #E0343D;
                 --polymer: #D81B60;
                 --dart: #00B4AA;
+                --firebase: #FF9800;
+                --appengine: #0D47A1;
+                --serviceworkers: #311B92;
+                --web-rtc: #7B1FA2;
                 --kubernetes: #326DE6;
-                --v8-engine: #009688;
+                --v8-engine: #006064;
                 --gae: #FFC107;
                 --ndk: #4CAF50;
+                --ble: #1565C0;
                 --ci: #CDDC39;
-                --grpc: #617D8A;
+                --tv: #D32F2F;
+                --grpc: #607D8B;
                 --ux: #9C27B0;
                 --material-design: #009688;
+                --entrepreneurship: #673AB7;
             }
 
             paper-checkbox.android {
@@ -29475,6 +29727,30 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
                 --paper-checkbox-unchecked-ink-color: var(--dart);
             }
 
+            paper-checkbox.firebase {
+                --paper-checkbox-checked-color: var(--firebase);
+                --paper-checkbox-checked-ink-color: var(--firebase);
+                --paper-checkbox-unchecked-ink-color: var(--firebase);
+            }
+
+            paper-checkbox.appengine {
+                --paper-checkbox-checked-color: var(--appengine);
+                --paper-checkbox-checked-ink-color: var(--appengine);
+                --paper-checkbox-unchecked-ink-color: var(--appengine);
+            }
+
+            paper-checkbox.serviceworkers {
+                --paper-checkbox-checked-color: var(--serviceworkers);
+                --paper-checkbox-checked-ink-color: var(--serviceworkers);
+                --paper-checkbox-unchecked-ink-color: var(--serviceworkers);
+            }
+
+            paper-checkbox.web-rtc {
+                --paper-checkbox-checked-color: var(--web-rtc);
+                --paper-checkbox-checked-ink-color: var(--web-rtc);
+                --paper-checkbox-unchecked-ink-color: var(--web-rtc);
+            }
+
             paper-checkbox.kubernetes {
                 --paper-checkbox-checked-color: var(--kubernetes);
                 --paper-checkbox-checked-ink-color: var(--kubernetes);
@@ -29499,10 +29775,22 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
                 --paper-checkbox-unchecked-ink-color: var(--ndk);
             }
 
+            paper-checkbox.ble {
+                --paper-checkbox-checked-color: var(--ble);
+                --paper-checkbox-checked-ink-color: var(--ble);
+                --paper-checkbox-unchecked-ink-color: var(--ble);
+            }
+
             paper-checkbox.ci {
                 --paper-checkbox-checked-color: var(--ci);
                 --paper-checkbox-checked-ink-color: var(--ci);
                 --paper-checkbox-unchecked-ink-color: var(--ci);
+            }
+
+            paper-checkbox.tv {
+                --paper-checkbox-checked-color: var(--tv);
+                --paper-checkbox-checked-ink-color: var(--tv);
+                --paper-checkbox-unchecked-ink-color: var(--tv);
             }
 
             paper-checkbox.grpc {
@@ -29521,6 +29809,12 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
                 --paper-checkbox-checked-color: var(--material-design);
                 --paper-checkbox-checked-ink-color: var(--material-design);
                 --paper-checkbox-unchecked-ink-color: var(--material-design);
+            }
+
+            paper-checkbox.entrepreneurship {
+                --paper-checkbox-checked-color: var(--entrepreneurship);
+                --paper-checkbox-checked-ink-color: var(--entrepreneurship);
+                --paper-checkbox-unchecked-ink-color: var(--entrepreneurship);
             }
 
             .tag-label {
@@ -32553,6 +32847,14 @@ Polymer({
                 margin-bottom: 15px;
             }
 
+            .sold-out > *:not(.sold-out-text) {
+                opacity: .3;
+            }
+            .sold-out-text {
+                font-size: 28px;
+                text-transform: uppercase;
+            }
+
             .currency {
                 margin-top: 21px;
                 display: inline-block;
@@ -32601,11 +32903,12 @@ Polymer({
                     <span class="additional-info block">*Before October 23 or 100 tickets.
                         <br>Requires valid student ID</span>
                 </div>
-                <div class="price-block flex text-center">
+                <div class="price-block flex text-center relative sold-out">
                     <span class="ticket-name block">Early Bird</span>
                     <span class="price">600</span>
                     <span class="currency">UAH</span>
                     <span class="additional-info block">*Before September 27 or 150 tickets</span>
+                    <div class="fit layout vertical center-center sold-out-text"><span>Sold Out</span></div>
                 </div>
                 <div class="price-block flex text-center">
                     <span class="ticket-name block">Lazy Bird</span>
@@ -32620,7 +32923,7 @@ Polymer({
             </div>
         </div>
         <paper-dialog id="ticketsDialog" entry-animation="scale-up-animation" exit-animation="fade-out-animation" modal="">
-                <div id="2event_tickets_widget" style="width: 640px; height: 300px; background:#fff;"></div>
+            <div id="2event_tickets_widget" style="width: 640px; height: 300px; background:#fff;"></div>
             <div class="buttons">
                 <a href="http://2event.com/events/312113" target="_blank">
                     <paper-button>Buy on the website</paper-button>
