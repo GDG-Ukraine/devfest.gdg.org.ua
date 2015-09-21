@@ -6,14 +6,7 @@
         "logoUrl": "../images/partners/google.svg"
     }]
 }, {
-    "title": "Diamond sponsor",
-    "logos": [{
-        "name": "Malkos",
-        "url": "http://www.malkosua.com/",
-        "logoUrl": "../images/partners/malkos.png"
-    }]
-}, {
-    "title": "Platinum sponsors",
+    "title": "Platinum sponsor",
     "logos": [{
         "name": "N-IX",
         "url": "http://n-ix.com/",
@@ -22,13 +15,6 @@
         "name": "DataArt",
         "url": "http://www.dataart.com/",
         "logoUrl": "../images/partners/dataart.svg"
-    }]
-}, {
-    "title": "Gifts sponsor",
-    "logos": [{
-        "name": "Nic.ua",
-        "url": "http://nic.ua/",
-        "logoUrl": "../images/partners/nic.png"
     }]
 }, {
     "title": "General partner",
@@ -91,9 +77,5 @@
         "name": "Codeguida",
         "url": "http://codeguida.com/",
         "logoUrl": "../images/partners/codeguida.png"
-    }, {
-        "name": "LvivOnline",
-        "url": "http://lviv-online.com/",
-        "logoUrl": "../images/partners/lvivonline.png"
     }]
 }]

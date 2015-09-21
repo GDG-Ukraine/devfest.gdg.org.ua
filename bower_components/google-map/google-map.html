@@ -38,7 +38,7 @@ The `google-map` element renders a Google Map.
 
 <b>Example</b> - with Google directions, using data-binding inside another Polymer element
 
-    <google-map map="{{map}}" libraries="places"></google-map>
+    <google-map map="{{map}}"></google-map>
     <google-map-directions map="{{map}}"
         start-address="San Francisco" end-address="Mountain View">
     </google-map-directions>
@@ -171,12 +171,12 @@ The `google-map` element renders a Google Map.
 
       /**
        * A comma separated list (e.g. "places,geometry") of libraries to load
-       * with this map. Defaults to "". For more information see
+       * with this map. Defaults to "places". For more information see
        * https://developers.google.com/maps/documentation/javascript/libraries.
        */
       libraries: {
         type: String,
-        value: ''
+        value: 'places'
       },
 
       /**
@@ -187,15 +187,6 @@ The `google-map` element renders a Google Map.
         value: -122.41942,
         notify: true,
         reflectToAttribute: true
-      },
-
-      /**
-       * A kml file to load.
-       */
-      kml: {
-        type: String,
-        value: null,
-        observer: '_loadKml'
       },
 
       /**
@@ -390,7 +381,6 @@ The `google-map` element renders a Google Map.
       this.map = new google.maps.Map(this.$.map, this._getMapOptions());
       this._listeners = {};
       this._updateCenter();
-      this._loadKml();
       this._updateMarkers();
       this._addMapListeners();
       this.fire('google-map-ready');
@@ -499,15 +489,6 @@ The `google-map` element renders a Google Map.
         if (this.fitToMarkers) { // we might not have a center if we are doing fit-to-markers
           this._fitToMarkersChanged();
         }
-      }
-    },
-
-    _loadKml: function() {
-      if (this.kml) {
-        var kmlfile = new google.maps.KmlLayer({
-          url: this.kml,
-          map: this.map
-        });
       }
     },
 
