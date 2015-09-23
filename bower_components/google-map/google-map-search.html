@@ -2,8 +2,10 @@
 
 <link rel="import" href="../polymer/polymer.html">
 
-<!--
-`google-map-search` provides Google Maps Places API functionality.
+
+<script>
+/**
+Provides Google Maps Places API functionality.
 
 See https://developers.google.com/maps/documentation/javascript/places for more
 information on the API.
@@ -11,27 +13,37 @@ information on the API.
 #### Example:
 
     <template is="dom-bind">
-      <google-map-search map="[[map]]" query="Pizza"
+      <google-map-search map="{{map}}" query="Pizza" currentMapArea
                          results="{{results}}"></google-map-search>
       <google-map map="{{map}}" latitude="37.779"
                   longitude="-122.3892">
-        <template is="dom-repeat" items="{{results}}" as="marker">
-          <google-map-marker latitude="{{marker.latitude}}"
-                             longitude="{{marker.longitude}}">
-            <h2>{{marker.name}}</h2>
-            <span>{{marker.formatted_address}}</span>
+        <template repeat="{{results}}">
+          <google-map-marker latitude="{{latitude}}"
+                             longitude="{{longitude}}">
+            <h2>{{name}}</h2>
+            {{formatted_address}}
           </google-map-marker>
         </template>
       </google-map>
     </template>
- -->
+    <script>
+      document.querySelector('google-map-search').search();
+    < /script>
 
-<script>
-
+*/
   Polymer({
 
     is: 'google-map-search',
 
+/**
+Fired when the search element returns a result.
+
+@event google-map-search-results
+@param {Array} detail An array of search results
+  @param {number} detail.latitude Latitude of the result.
+  @param {number} detail.longitude Longitude of the result.
+  @param {bool} detail.show Whether to show the result on the map.
+*/
     properties: {
 
       /**
@@ -52,7 +64,7 @@ information on the API.
 
       /**
        * Latitude of the center of the search area.
-       * Ignored if `globalSearch` is true.
+       * Ignored if `currentMapArea` is true.
        */
       latitude: {
         type: Number,
@@ -61,7 +73,7 @@ information on the API.
 
       /**
        * Longitude of the center of the search area.
-       * Ignored if `globalSearch` is true.
+       * Ignored if `currentMapArea` is true.
        */
       longitude: {
         type: Number,
@@ -111,32 +123,13 @@ information on the API.
         type: Array,
         value: function() { return []; },
         notify: true
-      },
-
-      /**
-       * The lat/lng location.
-       */
-      location: {
-        type: Object,
-        value: null,
-        readyOnly: true
       }
     },
 
     observers: [
-      'search(query,map,location,radius,types,globalSearch)',
+      'search(query,map,location,radius,types,currentMapArea)',
       '_updateLocation(latitude,longitude)'
     ],
-
-    /**
-     * Fired when the search element returns a result.
-     *
-     * @event google-map-search-results
-     *   @param {Array} detail An array of search results
-     *   @param {number} detail.latitude Latitude of the result.
-     *   @param {number} detail.longitude Longitude of the result.
-     *   @param {bool} detail.show Whether to show the result on the map.
-     */
 
     /**
      * Perform a search using for `query` for the search term.
@@ -171,6 +164,7 @@ information on the API.
         // obtain lat/long from geometry
         result.latitude  = result.geometry.location.lat();
         result.longitude = result.geometry.location.lng();
+
         return result;
       });
       this.fire('google-map-search-results', this.results);
@@ -186,7 +180,7 @@ information on the API.
       }
 
       // Update location. This will trigger a new search.
-      this._setLocation({lat: this.latitude, lng: this.longitude});
+      this.location = new google.maps.LatLng(this.latitude, this.longitude);
     }
   });
 </script>
