@@ -104,7 +104,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 #params marked-element {
   display: inline-block;
 }
-#params .markdown-html p {
+#params marked-element::shadow #content p {
   margin: 0;
 }
 
@@ -114,15 +114,15 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
   display: block;
 }
 
-#desc .markdown-html > :first-child {
+#desc::shadow #content > :first-child {
   margin-top: 0;
 }
 
-#desc .markdown-html > :last-child {
+#desc::shadow #content > :last-child {
   margin-bottom: 0;
 }
 
-#desc .markdown-html code {
+#desc::shadow #content #content code {
   @apply(--paper-font-code1);
 }
 
