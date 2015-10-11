@@ -7201,7 +7201,7 @@ Example:
      * the selected item or undefined if there is no selection.
      */
     get: function() {
-      return this.multi ? this.selection.slice() : this.selection[0];
+      return this.multi ? this.selection : this.selection[0];
     },
 
     /**
@@ -7288,38 +7288,34 @@ Example:
   Polymer.IronSelectableBehavior = {
 
       /**
-       * Fired when iron-selector is activated (selected or deselected).
-       * It is fired before the selected items are changed.
-       * Cancel the event to abort selection.
+       *  Fired when iron-selector is activated (selected or deselected).
+       *  It is fired before the selected items are changed.
+       *  Cancel the event to abort selection.
        *
        * @event iron-activate
-       */
-
+       *
+       **/
       /**
-       * Fired when an item is selected
+       *  Fired when an item is selected
        *
        * @event iron-select
-       */
-
+       *
+       **/
       /**
-       * Fired when an item is deselected
+       *  Fired when an item is deselected
        *
        * @event iron-deselect
-       */
-
-      /**
-       * Fired when the list of selectable items changes (e.g., items are
-       * added or removed). The detail of the event is a list of mutation
-       * records that describe what changed.
        *
-       * @event iron-items-changed
-       */
+       **/
 
     properties: {
 
       /**
        * If you want to use the attribute value of an element for `selected` instead of the index,
        * set this to the name of the attribute.
+       *
+       * @attribute attrForSelected
+       * @type {string}
        */
       attrForSelected: {
         type: String,
@@ -7328,6 +7324,9 @@ Example:
 
       /**
        * Gets or sets the selected element. The default is to use the index of the item.
+       *
+       * @attribute selected
+       * @type {string}
        */
       selected: {
         type: String,
@@ -7336,6 +7335,9 @@ Example:
 
       /**
        * Returns the currently selected item.
+       *
+       * @attribute selectedItem
+       * @type {Object}
        */
       selectedItem: {
         type: Object,
@@ -7347,6 +7349,10 @@ Example:
        * The event that fires from items when they are selected. Selectable
        * will listen for this event from items and update the selection state.
        * Set to empty string to listen to no events.
+       *
+       * @attribute activateEvent
+       * @type {string}
+       * @default 'tap'
        */
       activateEvent: {
         type: String,
@@ -7357,11 +7363,17 @@ Example:
       /**
        * This is a CSS selector string.  If this is set, only items that match the CSS selector
        * are selectable.
+       *
+       * @attribute selectable
+       * @type {string}
        */
       selectable: String,
 
       /**
        * The class to set on elements when selected.
+       *
+       * @attribute selectedClass
+       * @type {string}
        */
       selectedClass: {
         type: String,
@@ -7370,6 +7382,9 @@ Example:
 
       /**
        * The attribute to set on elements when selected.
+       *
+       * @attribute selectedAttribute
+       * @type {string}
        */
       selectedAttribute: {
         type: String,
@@ -7377,13 +7392,14 @@ Example:
       },
 
       /**
-       * The set of excluded elements where the key is the `localName`
+       * The set of excluded elements where the key is the `localName` 
        * of the element that will be ignored from the item list.
        *
        * @type {object}
        * @default {template: 1}
        */
-      _excludedLocalNames: {
+
+      excludedLocalNames: {
         type: Object,
         value: function() {
           return {
@@ -7405,9 +7421,6 @@ Example:
     attached: function() {
       this._observer = this._observeItems(this);
       this._contentObserver = this._observeContent(this);
-      if (!this.selectedItem && this.selected) {
-        this._updateSelected(this.attrForSelected,this.selected)
-      }
     },
 
     detached: function() {
@@ -7495,7 +7508,7 @@ Example:
     },
 
     _filterItem: function(node) {
-      return !this._excludedLocalNames[node.localName];
+      return !this.excludedLocalNames[node.localName];
     },
 
     _valueToItem: function(value) {
@@ -7554,15 +7567,7 @@ Example:
 
     // observe items change under the given node.
     _observeItems: function(node) {
-      // TODO(cdata): Update this when we get distributed children changed.
-      var observer = new MutationObserver(function(mutations) {
-        // Let other interested parties know about the change so that
-        // we don't have to recreate mutation observers everywher.
-        this.fire('iron-items-changed', mutations, {
-          bubbles: false,
-          cancelable: false
-        });
-
+      var observer = new MutationObserver(function() {
         if (this.selected != null) {
           this._updateSelected();
         }
@@ -7690,9 +7695,9 @@ Example:
       var i = this.selectedValues.indexOf(value);
       var unselected = i < 0;
       if (unselected) {
-        this.push('selectedValues',value);
+        this.selectedValues.push(value);
       } else {
-        this.splice('selectedValues',i,1);
+        this.selectedValues.splice(i, 1);
       }
       this._selection.setItemSelected(this._valueToItem(value), unselected);
     }
@@ -8068,20 +8073,6 @@ Or, in a Polymer element, you can include a meta in your template:
 
   })();
 </script>
-<!--
-The `<iron-flex-layout>` component provides simple ways to use [CSS flexible box layout](https://developer.mozilla.org/en-US/docs/Web/Guide/CSS/Flexible_boxes), also known as flexbox. This component provides two different ways to use flexbox:
-
-1. [Layout classes](https://github.com/PolymerElements/iron-flex-layout/tree/master/classes). The layout class stylesheet provides a simple set of class-based flexbox rules. Layout classes let you specify layout properties directly in markup.
-
-2. [Custom CSS mixins](https://github.com/PolymerElements/iron-flex-layout/blob/master/iron-flex-layout.html). The mixin stylesheet includes custom CSS mixins that can be applied inside a CSS rule using the `@apply` function.
-
-A complete [guide](https://elements.polymer-project.org/guides/flex-layout) to `<iron-flex-layout>` is available.
-
-@group Iron Elements
-@pseudoElement iron-flex-layout
-@demo demo/index.html
--->
-
 <style>
   /* IE 10 support for HTML5 hidden attr */
   [hidden] {
@@ -8573,9 +8564,6 @@ Custom property | Description | Default
      */
     _nameChanged: function() {
       new Polymer.IronMeta({type: 'iconset', key: this.name, value: this});
-      this.async(function() {
-        this.fire('iron-iconset-added', this, {node: window});
-      });
     },
 
     /**
@@ -8616,15 +8604,13 @@ Custom property | Description | Default
      */
     _prepareSvgClone: function(sourceSvg, size) {
       if (sourceSvg) {
-        var content = sourceSvg.cloneNode(true),
-            svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg'),
-            viewBox = content.getAttribute('viewBox') || '0 0 ' + size + ' ' + size;
-        svg.setAttribute('viewBox', viewBox);
+        var svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        svg.setAttribute('viewBox', ['0', '0', size, size].join(' '));
         svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
         // TODO(dfreedm): `pointer-events: none` works around https://crbug.com/370136
         // TODO(sjmiles): inline style may not be ideal, but avoids requiring a shadow-root
         svg.style.cssText = 'pointer-events: none; display: block; width: 100%; height: 100%;';
-        svg.appendChild(content).removeAttribute('id');
+        svg.appendChild(sourceSvg.cloneNode(true)).removeAttribute('id');
         return svg;
       }
       return null;
@@ -8846,21 +8832,20 @@ if (!window.Promise) {
 }
 </script>
 <!--
+@group Iron Elements
+
 iron-request can be used to perform XMLHttpRequests.
 
     <iron-request id="xhr"></iron-request>
     ...
     this.$.xhr.send({url: url, params: params});
--->
-<script>
-  'use strict'
 
+@element iron-request
+-->
+
+<script>
   Polymer({
     is: 'iron-request',
-
-    hostAttributes: {
-      hidden: true
-    },
 
     properties: {
 
@@ -8886,7 +8871,7 @@ iron-request can be used to perform XMLHttpRequests.
        * resolved.
        *
        * @attribute response
-       * @type {*}
+       * @type Object
        * @default null
        */
       response: {
@@ -8896,32 +8881,6 @@ iron-request can be used to perform XMLHttpRequests.
         value: function() {
          return null;
         }
-      },
-
-      /**
-       * A reference to the status code, if the `xhr` has completely resolved.
-       *
-       * @attribute status
-       * @default 0
-       */
-      status: {
-        type: Number,
-        notify: true,
-        readOnly: true,
-        value: 0
-      },
-
-      /**
-       * A reference to the status text, if the `xhr` has completely resolved.
-       *
-       * @attribute statusText
-       * @default ""
-       */
-      statusText: {
-        type: String,
-        notify: true,
-        readOnly: true,
-        value: ''
       },
 
       /**
@@ -8982,7 +8941,7 @@ iron-request can be used to perform XMLHttpRequests.
      * the status code 0 is accepted as a success even though the outcome may
      * be ambiguous.
      *
-     * @return {boolean}
+     * @return boolean
      */
     get succeeded() {
       var status = this.xhr.status || 0;
@@ -8996,11 +8955,12 @@ iron-request can be used to perform XMLHttpRequests.
     /**
      * Sends an HTTP request to the server and returns the XHR object.
      *
+     * @method request
      * @param {{
      *   url: string,
      *   method: (string|undefined),
      *   async: (boolean|undefined),
-     *   body: (ArrayBuffer|ArrayBufferView|Blob|Document|FormData|null|string|undefined|Object),
+     *   body: (ArrayBuffer|ArrayBufferView|Blob|Document|FormData|null|string|undefined),
      *   headers: (Object|undefined),
      *   handleAs: (string|undefined),
      *   withCredentials: (boolean|undefined)}} options -
@@ -9012,18 +8972,17 @@ iron-request can be used to perform XMLHttpRequests.
      *     headers HTTP request headers.
      *     handleAs The response type. Default is 'text'.
      *     withCredentials Whether or not to send credentials on the request. Default is false.
-     * @return {Promise}
+     * @return Promise
      */
     send: function (options) {
       var xhr = this.xhr;
 
       if (xhr.readyState > 0) {
-        return null;
+        return;
       }
 
       xhr.addEventListener('readystatechange', function () {
         if (xhr.readyState === 4 && !this.aborted) {
-          this._updateStatus();
 
           if (!this.succeeded) {
             this.rejectCompletes(new Error('The request failed with status code: ' + this.xhr.status));
@@ -9044,12 +9003,10 @@ iron-request can be used to perform XMLHttpRequests.
       }.bind(this))
 
       xhr.addEventListener('error', function (error) {
-        this._updateStatus();
         this.rejectCompletes(error);
       }.bind(this));
 
       xhr.addEventListener('abort', function () {
-        this._updateStatus();
         this.rejectCompletes(new Error('Request aborted.'));
       }.bind(this));
 
@@ -9068,35 +9025,16 @@ iron-request can be used to perform XMLHttpRequests.
         }, this);
       }
 
-      var contentType;
-      if (options.headers) {
-        contentType = options.headers['Content-Type'];
-      }
-      var body = this._encodeBodyObject(options.body, contentType);
-
       // In IE, `xhr.responseType` is an empty string when the response
       // returns. Hence, caching it as `xhr._responseType`.
       xhr.responseType = xhr._responseType = (options.handleAs || 'text');
       xhr.withCredentials = !!options.withCredentials;
 
-
-
-      xhr.send(
-        /** @type {ArrayBuffer|ArrayBufferView|Blob|Document|FormData|
-                   null|string|undefined} */
-        (body));
+      xhr.send(options.body);
 
       return this.completes;
     },
 
-    /**
-     * Attempts to parse the response body of the XHR. If parsing succeeds,
-     * the value returned will be deserialized based on the `responseType`
-     * set on the XHR.
-     *
-     * @return {*} The parsed response,
-     * or undefined if there was an empty response or parsing failed.
-     */
     parseResponse: function () {
       var xhr = this.xhr;
       var responseType = this.xhr.responseType ||
@@ -9114,7 +9052,7 @@ iron-request can be used to perform XMLHttpRequests.
               // If accessing `xhr.responseText` throws, responseType `json`
               // is supported and the result is rightly `undefined`.
               try {
-                /** @suppress {suspiciousCode} */ xhr.responseText;
+                xhr.responseText;
               } catch (e) {
                 return xhr.response;
               }
@@ -9141,71 +9079,9 @@ iron-request can be used to perform XMLHttpRequests.
       }
     },
 
-    /**
-     * Aborts the request.
-     */
     abort: function () {
       this._setAborted(true);
       this.xhr.abort();
-    },
-
-    /**
-     * @param {*} body The given body of the request to try and encode.
-     * @param {?string} contentType The given content type, to infer an encoding
-     *     from.
-     * @return {*} Either the encoded body as a string, if successful,
-     *     or the unaltered body object if no encoding could be inferred.
-     */
-    _encodeBodyObject: function(body, contentType) {
-      if (typeof body == 'string') {
-        return body;  // Already encoded.
-      }
-      var bodyObj = /** @type {Object} */ (body);
-      switch(contentType) {
-        case('application/json'):
-          return JSON.stringify(bodyObj);
-        case('application/x-www-form-urlencoded'):
-          return this._wwwFormUrlEncode(bodyObj);
-      }
-      return body;
-    },
-
-    /**
-     * @param {Object} object The object to encode as x-www-form-urlencoded.
-     * @return {string} .
-     */
-    _wwwFormUrlEncode: function(object) {
-      if (!object) {
-        return '';
-      }
-      var pieces = [];
-      Object.keys(object).forEach(function(key) {
-        // TODO(rictic): handle array values here, in a consistent way with
-        //   iron-ajax params.
-        pieces.push(
-            this._wwwFormUrlEncodePiece(key) + '=' +
-            this._wwwFormUrlEncodePiece(object[key]));
-      }, this);
-      return pieces.join('&');
-    },
-
-    /**
-     * @param {*} str A key or value to encode as x-www-form-urlencoded.
-     * @return {string} .
-     */
-    _wwwFormUrlEncodePiece: function(str) {
-      // Spec says to normalize newlines to \r\n and replace %20 spaces with +.
-      // jQuery does this as well, so this is likely to be widely compatible.
-      return encodeURIComponent(str.toString().replace(/\r?\n/g, '\r\n'))
-          .replace(/%20/g, '+');
-    },
-
-    /**
-     * Updates the status code and status text.
-     */
-    _updateStatus: function() {
-      this._setStatus(this.xhr.status);
-      this._setStatusText((this.xhr.statusText === undefined) ? '' : this.xhr.statusText);
     }
   });
 </script>
@@ -9230,13 +9106,9 @@ Note: The `params` attribute must be double quoted JSON.
 
 You can trigger a request explicitly by calling `generateRequest` on the
 element.
-
-@demo demo/index.html
-@hero hero.svg
 -->
 
 <script>
-  'use strict';
 
   Polymer({
 
@@ -9260,10 +9132,6 @@ element.
      * @event error
      */
 
-    hostAttributes: {
-      hidden: true
-    },
-
     properties: {
       /**
        * The URL target of the request.
@@ -9275,9 +9143,7 @@ element.
 
       /**
        * An object that contains query parameters to be appended to the
-       * specified `url` when generating a request. If you wish to set the body
-       * content when making a POST request, you should use the `body` property
-       * instead.
+       * specified `url` when generating a request.
        */
       params: {
         type: Object,
@@ -9304,10 +9170,8 @@ element.
        *         auto
        *         url="http://somesite.com"
        *         headers='{"X-Requested-With": "XMLHttpRequest"}'
-       *         handle-as="json"></iron-ajax>
-       *
-       * Note: setting a `Content-Type` header here will override the value
-       * specified by the `contentType` property of this element.
+       *         handle-as="json"
+       *         last-response-changed="{{handleResponse}}"></iron-ajax>
        */
       headers: {
         type: Object,
@@ -9317,37 +9181,27 @@ element.
       },
 
       /**
-       * Content type to use when sending data. If the `contentType` property
-       * is set and a `Content-Type` header is specified in the `headers`
-       * property, the `headers` property value will take precedence.
+       * Content type to use when sending data. If the contenttype is set
+       * and a `Content-Type` header is specified in the `headers` attribute,
+       * the `headers` attribute value will take precedence.
        */
       contentType: {
         type: String,
-        value: null
+        value: 'application/x-www-form-urlencoded'
       },
 
       /**
-       * Body content to send with the request, typically used with "POST"
-       * requests.
+       * Optional raw body content to send when method === "POST".
        *
-       * If body is a string it will be sent unmodified.
+       * Example:
        *
-       * If Content-Type is set to a value listed below, then
-       * the body will be encoded accordingly.
-       *
-       *    * `content-type="application/json"`
-       *      * body is encoded like `{"foo":"bar baz","x":1}`
-       *    * `content-type="application/x-www-form-urlencoded"`
-       *      * body is encoded like `foo=bar+baz&x=1`
-       *
-       * Otherwise the body will be passed to the browser unmodified, and it
-       * will handle any encoding (e.g. for FormData, Blob, ArrayBuffer).
-       *
-       * @type (ArrayBuffer|ArrayBufferView|Blob|Document|FormData|null|string|undefined|Object)
+       *     <iron-ajax method="POST" auto url="http://somesite.com"
+       *         body='{"foo":1, "bar":2}'>
+       *     </iron-ajax>
        */
       body: {
-        type: Object,
-        value: null
+        type: String,
+        value: ''
       },
 
       /**
@@ -9361,7 +9215,7 @@ element.
 
       /**
        * Specifies what data to store in the `response` property, and
-       * to deliver as `event.detail.response` in `response` events.
+       * to deliver as `event.response` in `response` events.
        *
        * One of:
        *
@@ -9408,16 +9262,8 @@ element.
       },
 
       /**
-       * The most recent request made by this iron-ajax element.
-       */
-      lastRequest: {
-        type: Object,
-        notify: true,
-        readOnly: true
-      },
-
-      /**
-       * True while lastRequest is in flight.
+       * Will be set to true if there is at least one in-flight request
+       * associated with this iron-ajax element.
        */
       loading: {
         type: Boolean,
@@ -9426,14 +9272,19 @@ element.
       },
 
       /**
-       * lastRequest's response.
-       *
-       * Note that lastResponse and lastError are set when lastRequest finishes,
-       * so if loading is true, then lastResponse and lastError will correspond
-       * to the result of the previous request.
-       *
-       * The type of the response is determined by the value of `handleAs` at
-       * the time that the request was generated.
+       * Will be set to the most recent request made by this iron-ajax element.
+       */
+      lastRequest: {
+        type: Object,
+        notify: true,
+        readOnly: true
+      },
+
+      /**
+       * Will be set to the most recent response received by a request
+       * that originated from this iron-ajax element. The type of the response
+       * is determined by the value of `handleas` at the time that the request
+       * was generated.
        */
       lastResponse: {
         type: Object,
@@ -9442,7 +9293,8 @@ element.
       },
 
       /**
-       * lastRequest's error, if any.
+       * Will be set to the most recent error that resulted from a request
+       * that originated from this iron-ajax element.
        */
       lastError: {
         type: Object,
@@ -9459,7 +9311,7 @@ element.
         notify: true,
         readOnly: true,
         value: function() {
-          return [];
+          this._setActiveRequests([]);
         }
       },
 
@@ -9475,22 +9327,23 @@ element.
       _boundHandleResponse: {
         type: Function,
         value: function() {
-          return this._handleResponse.bind(this);
+          return this.handleResponse.bind(this);
+        }
+      },
+
+      _boundDiscardRequest: {
+        type: Function,
+        value: function() {
+          return this.discardRequest.bind(this);
         }
       }
     },
 
     observers: [
-      '_requestOptionsChanged(url, method, params.*, headers,' +
+      'requestOptionsChanged(url, method, params, headers,' +
         'contentType, body, sync, handleAs, withCredentials, auto)'
     ],
 
-    /**
-     * The query string that should be appended to the `url`, serialized from
-     * the current value of `params`.
-     *
-     * @return {string}
-     */
     get queryString () {
       var queryParts = [];
       var param;
@@ -9510,12 +9363,6 @@ element.
       return queryParts.join('&');
     },
 
-    /**
-     * The `url` with query string (if `params` are specified), suitable for
-     * providing to an `iron-request` instance.
-     *
-     * @return {string}
-     */
     get requestUrl() {
       var queryString = this.queryString;
 
@@ -9526,22 +9373,10 @@ element.
       return this.url;
     },
 
-    /**
-     * An object that maps header names to header values, first applying the
-     * the value of `Content-Type` and then overlaying the headers specified
-     * in the `headers` property.
-     *
-     * @return {Object}
-     */
     get requestHeaders() {
-      var headers = {};
-      var contentType = this.contentType;
-      if (contentType == null && (typeof this.body === 'string')) {
-        contentType = 'application/x-www-form-urlencoded';
-      }
-      if (contentType) {
-        headers['Content-Type'] = contentType;
-      }
+      var headers = {
+        'content-type': this.contentType
+      };
       var header;
 
       if (this.headers instanceof Object) {
@@ -9553,19 +9388,6 @@ element.
       return headers;
     },
 
-    /**
-     * Request options suitable for generating an `iron-request` instance based
-     * on the current state of the `iron-ajax` instance's properties.
-     *
-     * @return {{
-     *   url: string,
-     *   method: (string|undefined),
-     *   async: (boolean|undefined),
-     *   body: (ArrayBuffer|ArrayBufferView|Blob|Document|FormData|null|string|undefined|Object),
-     *   headers: (Object|undefined),
-     *   handleAs: (string|undefined),
-     *   withCredentials: (boolean|undefined)}}
-     */
     toRequestOptions: function() {
       return {
         url: this.requestUrl,
@@ -9578,75 +9400,7 @@ element.
       };
     },
 
-    /**
-     * Performs an AJAX request to the specified URL.
-     *
-     * @return {!IronRequestElement}
-     */
-    generateRequest: function() {
-      var request = /** @type {!IronRequestElement} */ (document.createElement('iron-request'));
-      var requestOptions = this.toRequestOptions();
-
-      this.activeRequests.push(request);
-
-      request.completes.then(
-        this._boundHandleResponse
-      ).catch(
-        this._handleError.bind(this, request)
-      ).then(
-        this._discardRequest.bind(this, request)
-      );
-
-      request.send(requestOptions);
-
-      this._setLastRequest(request);
-      this._setLoading(true);
-
-      this.fire('request', {
-        request: request,
-        options: requestOptions
-      }, {bubbles: false});
-
-      return request;
-    },
-
-    _handleResponse: function(request) {
-      if (request === this.lastRequest) {
-        this._setLastResponse(request.response);
-        this._setLastError(null);
-        this._setLoading(false);
-      }
-      this.fire('response', request, {bubbles: false});
-    },
-
-    _handleError: function(request, error) {
-      if (this.verbose) {
-        console.error(error);
-      }
-
-      if (request === this.lastRequest) {
-        this._setLastError({
-          request: request,
-          error: error
-        });
-        this._setLastResponse(null);
-        this._setLoading(false);
-      }
-      this.fire('error', {
-        request: request,
-        error: error
-      }, {bubbles: false});
-    },
-
-    _discardRequest: function(request) {
-      var requestIndex = this.activeRequests.indexOf(request);
-
-      if (requestIndex > -1) {
-        this.activeRequests.splice(requestIndex, 1);
-      }
-    },
-
-    _requestOptionsChanged: function() {
+    requestOptionsChanged: function() {
       this.debounce('generate-request', function() {
         if (!this.url && this.url !== '') {
           return;
@@ -9658,6 +9412,64 @@ element.
       }, this.debounceDuration);
     },
 
+    /**
+     * Performs an AJAX request to the specified URL.
+     *
+     * @method generateRequest
+     */
+    generateRequest: function() {
+      var request = document.createElement('iron-request');
+      var requestOptions = this.toRequestOptions();
+
+      this.activeRequests.push(request);
+
+      request.completes.then(
+        this._boundHandleResponse
+      ).catch(
+        this.handleError.bind(this, request)
+      ).then(
+        this._boundDiscardRequest
+      );
+
+      request.send(requestOptions);
+
+      this._setLastRequest(request);
+
+      this.fire('request', {
+        request: request,
+        options: requestOptions
+      });
+
+      return request;
+    },
+
+    handleResponse: function(request) {
+      this._setLastResponse(request.response);
+      this.fire('response', request);
+    },
+
+    handleError: function(request, error) {
+      if (this.verbose) {
+        console.error(error);
+      }
+
+      this._setLastError({
+        request: request,
+        error: error
+      });
+      this.fire('error', {
+        request: request,
+        error: error
+      });
+    },
+
+    discardRequest: function(request) {
+      var requestIndex = this.activeRequests.indexOf(request);
+
+      if (requestIndex > 0) {
+        this.activeRequests.splice(requestIndex, 1);
+      }
+    }
   });
 </script>
 <!--
@@ -10261,7 +10073,7 @@ To change the panel container in different modes:
      * `keys` property is pressed.
      *
      * @demo demo/index.html
-     * @polymerBehavior
+     * @polymerBehavior IronA11yKeysBehavior
      */
     Polymer.IronA11yKeysBehavior = {
       properties: {
@@ -11309,8 +11121,7 @@ intent. Closing generally implies that the user acknowledged the content on the 
 it will cancel whenever the user taps outside it or presses the escape key. This behavior is
 configurable with the `no-cancel-on-esc-key` and the `no-cancel-on-outside-click` properties.
 `close()` should be called explicitly by the implementer when the user interacts with a control
-in the overlay element. When the dialog is canceled, the overlay fires an 'iron-overlay-canceled'
-event. Call `preventDefault` on this event to prevent the overlay from closing.
+in the overlay element.
 
 ### Positioning
 
@@ -11421,7 +11232,7 @@ context. You should place this element as a child of `<body>` whenever possible.
     },
 
     listeners: {
-      'tap': '_onClick',
+      'click': '_onClick',
       'iron-resize': '_onIronResize'
     },
 
@@ -11481,12 +11292,7 @@ context. You should place this element as a child of `<body>` whenever possible.
      * Cancels the overlay.
      */
     cancel: function() {
-      var cancelEvent = this.fire('iron-overlay-canceled', undefined, {cancelable: true});
-      if (cancelEvent.defaultPrevented) {
-        return;
-      }
-
-      this.opened = false;
+      this.opened = false,
       this._setCanceled(true);
     },
 
@@ -11544,16 +11350,8 @@ context. You should place this element as a child of `<body>` whenever possible.
 
     _toggleListener: function(enable, node, event, boundListener, capture) {
       if (enable) {
-        // enable document-wide tap recognizer
-        if (event === 'tap') {
-          Polymer.Gestures.add(document, 'tap', null);
-        }
         node.addEventListener(event, boundListener, capture);
       } else {
-        // disable document-wide tap recognizer
-        if (event === 'tap') {
-          Polymer.Gestures.remove(document, 'tap', null);
-        }
         node.removeEventListener(event, boundListener, capture);
       }
     },
@@ -11564,10 +11362,10 @@ context. You should place this element as a child of `<body>` whenever possible.
       }
       // async so we don't auto-close immediately via a click.
       this._toggleListenersAsync = this.async(function() {
-        this._toggleListener(this.opened, document, 'tap', this._boundOnCaptureClick, true);
+        this._toggleListener(this.opened, document, 'click', this._boundOnCaptureClick, true);
         this._toggleListener(this.opened, document, 'keydown', this._boundOnCaptureKeydown, true);
         this._toggleListenersAsync = null;
-      }, 1);
+      });
     },
 
     // tasks which must occur before opening; e.g. making the element visible
@@ -13406,7 +13204,6 @@ styles. All other styles should exist as single lines."
 
 </script>
 <!--
-Material design: [Checkbox](https://www.google.com/design/spec/components/selection-controls.html#selection-controls-checkbox)
 
 `paper-checkbox` is a button that can be either checked or unchecked.  User
 can tap the checkbox to check or uncheck it.  Usually you use checkboxes
@@ -13822,7 +13619,7 @@ The `aria-labelledby` attribute will be set to the header element, if one exists
     },
 
     listeners: {
-      'tap': '_onDialogClick',
+      'click': '_onDialogClick',
       'iron-overlay-opened': '_onIronOverlayOpened',
       'iron-overlay-closed': '_onIronOverlayClosed'
     },
@@ -14018,10 +13815,10 @@ shadow.
 
 Example:
 
-    <paper-button>Flat button</paper-button>
-    <paper-button raised>Raised button</paper-button>
+    <paper-button>flat button</paper-button>
+    <paper-button raised>raised button</paper-button>
     <paper-button noink>No ripple effect</paper-button>
-    <paper-button toggles>Toggle-able button</paper-button>
+    <paper-button toggles>toggle-able button</paper-button>
 
 A button that has `toggles` true will remain `active` after being clicked (and
 will have an `active` attribute set). For more information, see the `Polymer.IronButtonState`
@@ -14039,32 +13836,29 @@ create a button with an icon and some text:
 
 Style the button with CSS as you would a normal DOM element.
 
-    paper-button.fancy {
-      background: green;
-      color: yellow;
-    }
-
-    paper-button.fancy:hover {
-      background: lime;
-    }
-
-    paper-button[disabled],
-    paper-button[toggles][active] {
-      background: red;
+    /* make #my-button green with yellow text */
+    #my-button {
+        background: green;
+        color: yellow;
     }
 
 By default, the ripple is the same color as the foreground at 25% opacity. You may
-customize the color using the `--paper-button-ink-color` custom property.
+customize the color using this selector:
+
+    /* make #my-button use a blue ripple instead of foreground color */
+    #my-button::shadow paper-ripple {
+      color: blue;
+    }
+
+The opacity of the ripple is not customizable via CSS.
 
 The following custom properties and mixins are also available for styling:
 
 Custom property | Description | Default
 ----------------|-------------|----------
-`--paper-button-ink-color` | Background color of the ripple | `Based on the button's color`
+`--paper-button-flat-focus-color` | Background color of a focused flat button | `--paper-grey-200`
 `--paper-button` | Mixin applied to the button | `{}`
-`--paper-button-disabled` | Mixin applied to the disabled button. Note that you can also use the `paper-button[disabled]` selector | `{}`
-`--paper-button-flat-keyboard-focus` | Mixin applied to a flat button after it's been focused using the keyboard | `{}`
-`--paper-button-raised-keyboard-focus` | Mixin applied to a raised button after it's been focused using the keyboard | `{}`
+`--paper-button-disabled` | Mixin applied to the disabled button | `{}`
 
 @demo demo/index.html
 -->
@@ -14613,20 +14407,6 @@ is separate from validation, and `allowed-pattern` does not affect how the input
         value: 'off'
       },
 
-      /**
-       * Bind this to the `<input is="iron-input">`'s `autosave` property, used with type=search.
-       */
-      autosave: {
-        type: String
-      },
-
-      /**
-       * Bind this to the `<input is="iron-input">`'s `results` property, , used with type=search.
-       */
-      results: {
-        type: Number
-      },
-
       _ariaDescribedBy: {
         type: String,
         value: ''
@@ -14936,14 +14716,6 @@ for `suffix`).
       <paper-icon-button suffix icon="clear"></paper-icon-button>
     </paper-input>
 
-A `paper-input` can use the native `type=search` features. However, since
-we can't control the native styling of the input, it's recommended to use
-a placeholder text, or `always-float-label`, as to not overlap the native search icon.
-
-    <paper-input label="search!" type="search"
-        placeholder="search for cats" autosave="test" results="5">
-    </paper-input>
-
 See `Polymer.PaperInputBehavior` for more API docs.
 
 ### Styling
@@ -15042,58 +14814,17 @@ This element has `role="listitem"` by default. Depending on usage, it may be mor
 
     listeners: {
       'focus': '_onFocus',
-      'keydown': '_onKeydown',
-      'iron-items-changed': '_onIronItemsChanged'
+      'keydown': '_onKeydown'
     },
 
     keyBindings: {
       'up': '_onUpKey',
       'down': '_onDownKey',
       'esc': '_onEscKey',
+      'enter': '_onEnterKey',
       'shift+tab:keydown': '_onShiftTabDown'
     },
 
-    attached: function() {
-      this._resetTabindices();
-    },
-
-    /**
-     * Selects the given value. If the `multi` property is true, then the selected state of the
-     * `value` will be toggled; otherwise the `value` will be selected.
-     *
-     * @param {string} value the value to select.
-     */
-    select: function(value) {
-      if (this._defaultFocusAsync) {
-        this.cancelAsync(this._defaultFocusAsync);
-        this._defaultFocusAsync = null;
-      }
-      var item = this._valueToItem(value);
-      if (item && item.hasAttribute('disabled')) return;
-      this._setFocusedItem(item);
-      Polymer.IronMultiSelectableBehaviorImpl.select.apply(this, arguments);
-    },
-
-    /**
-     * Resets all tabindex attributes to the appropriate value based on the
-     * current selection state. The appropriate value is `0` (focusable) for
-     * the default selected item, and `-1` (not keyboard focusable) for all
-     * other items.
-     */
-    _resetTabindices: function() {
-      var selectedItem = this.multi ? (this.selectedItems && this.selectedItems[0]) : this.selectedItem;
-
-      this.items.forEach(function(item) {
-        item.setAttribute('tabindex', item === selectedItem ? '0' : '-1');
-      }, this);
-    },
-
-    /**
-     * Sets appropriate ARIA based on whether or not the menu is meant to be
-     * multi-selectable.
-     *
-     * @param {boolean} multi True if the menu should be multi-selectable.
-     */
     _updateMultiselectable: function(multi) {
       if (multi) {
         this.setAttribute('aria-multiselectable', 'true');
@@ -15102,104 +14833,7 @@ This element has `role="listitem"` by default. Depending on usage, it may be mor
       }
     },
 
-    /**
-     * Given a KeyboardEvent, this method will focus the appropriate item in the
-     * menu (if there is a relevant item, and it is possible to focus it).
-     *
-     * @param {KeyboardEvent} event A KeyboardEvent.
-     */
-    _focusWithKeyboardEvent: function(event) {
-      for (var i = 0, item; item = this.items[i]; i++) {
-        var attr = this.attrForItemTitle || 'textContent';
-        var title = item[attr] || item.getAttribute(attr);
-        if (title && title.trim().charAt(0).toLowerCase() === String.fromCharCode(event.keyCode).toLowerCase()) {
-          this._setFocusedItem(item);
-          break;
-        }
-      }
-    },
-
-    /**
-     * Focuses the previous item (relative to the currently focused item) in the
-     * menu.
-     */
-    _focusPrevious: function() {
-      var length = this.items.length;
-      var index = (Number(this.indexOf(this.focusedItem)) - 1 + length) % length;
-      this._setFocusedItem(this.items[index]);
-    },
-
-    /**
-     * Focuses the next item (relative to the currently focused item) in the
-     * menu.
-     */
-    _focusNext: function() {
-      var index = (Number(this.indexOf(this.focusedItem)) + 1) % this.items.length;
-      this._setFocusedItem(this.items[index]);
-    },
-
-    /**
-     * Mutates items in the menu based on provided selection details, so that
-     * all items correctly reflect selection state.
-     *
-     * @param {Element} item An item in the menu.
-     * @param {boolean} isSelected True if the item should be shown in a
-     * selected state, otherwise false.
-     */
-    _applySelection: function(item, isSelected) {
-      if (isSelected) {
-        item.setAttribute('aria-selected', 'true');
-      } else {
-        item.removeAttribute('aria-selected');
-      }
-
-      Polymer.IronSelectableBehavior._applySelection.apply(this, arguments);
-    },
-
-    /**
-     * Discretely updates tabindex values among menu items as the focused item
-     * changes.
-     *
-     * @param {Element} focusedItem The element that is currently focused.
-     * @param {?Element} old The last element that was considered focused, if
-     * applicable.
-     */
-    _focusedItemChanged: function(focusedItem, old) {
-      old && old.setAttribute('tabindex', '-1');
-      if (focusedItem) {
-        focusedItem.setAttribute('tabindex', '0');
-        focusedItem.focus();
-      }
-    },
-
-    /**
-     * A handler that responds to mutation changes related to the list of items
-     * in the menu.
-     *
-     * @param {CustomEvent} event An event containing mutation records as its
-     * detail.
-     */
-    _onIronItemsChanged: function(event) {
-      var mutations = event.detail;
-      var mutation;
-      var index;
-
-      for (index = 0; index < mutations.length; ++index) {
-        mutation = mutations[index];
-
-        if (mutation.addedNodes.length) {
-          this._resetTabindices();
-          break;
-        }
-      }
-    },
-
-    /**
-     * Handler that is called when a shift+tab keypress is detected by the menu.
-     *
-     * @param {CustomEvent} event A key combination event.
-     */
-    _onShiftTabDown: function(event) {
+    _onShiftTabDown: function() {
       var oldTabIndex;
 
       Polymer.IronMenuBehaviorImpl._shiftTabPressed = true;
@@ -15211,15 +14845,39 @@ This element has `role="listitem"` by default. Depending on usage, it may be mor
       this.async(function() {
         this.setAttribute('tabindex', oldTabIndex);
         Polymer.IronMenuBehaviorImpl._shiftTabPressed = false;
-      // NOTE(cdata): polymer/polymer#1305
+      // Note: polymer/polymer#1305
       }, 1);
     },
 
-    /**
-     * Handler that is called when the menu receives focus.
-     *
-     * @param {FocusEvent} event A focus event.
-     */
+    _applySelection: function(item, isSelected) {
+      if (isSelected) {
+        item.setAttribute('aria-selected', 'true');
+      } else {
+        item.removeAttribute('aria-selected');
+      }
+
+      Polymer.IronSelectableBehavior._applySelection.apply(this, arguments);
+    },
+
+    _focusedItemChanged: function(focusedItem, old) {
+      old && old.setAttribute('tabindex', '-1');
+      if (focusedItem) {
+        focusedItem.setAttribute('tabindex', '0');
+        focusedItem.focus();
+      }
+    },
+
+    select: function(value) {
+      if (this._defaultFocusAsync) {
+        this.cancelAsync(this._defaultFocusAsync);
+        this._defaultFocusAsync = null;
+      }
+      var item = this._valueToItem(value);
+      if (item && item.hasAttribute('disabled')) return;
+      this._setFocusedItem(item);
+      Polymer.IronMultiSelectableBehaviorImpl.select.apply(this, arguments);
+    },
+
     _onFocus: function(event) {
       if (Polymer.IronMenuBehaviorImpl._shiftTabPressed) {
         return;
@@ -15241,48 +14899,62 @@ This element has `role="listitem"` by default. Depending on usage, it may be mor
       }, 100);
     },
 
-    /**
-     * Handler that is called when the up key is pressed.
-     *
-     * @param {CustomEvent} event A key combination event.
-     */
-    _onUpKey: function(event) {
+    _onUpKey: function() {
       // up and down arrows moves the focus
       this._focusPrevious();
     },
 
-    /**
-     * Handler that is called when the down key is pressed.
-     *
-     * @param {CustomEvent} event A key combination event.
-     */
-    _onDownKey: function(event) {
+    _onDownKey: function() {
       this._focusNext();
     },
 
-    /**
-     * Handler that is called when the esc key is pressed.
-     *
-     * @param {CustomEvent} event A key combination event.
-     */
-    _onEscKey: function(event) {
+    _onEscKey: function() {
       // esc blurs the control
       this.focusedItem.blur();
     },
 
-    /**
-     * Handler that is called when a keydown event is detected.
-     *
-     * @param {KeyboardEvent} event A keyboard event.
-     */
+    _onEnterKey: function(event) {
+      // enter activates the item unless it is disabled
+      this._activateFocused(event.detail.keyboardEvent);
+    },
+
     _onKeydown: function(event) {
-      if (this.keyboardEventMatchesKeys(event, 'up down esc')) {
+      if (this.keyboardEventMatchesKeys(event, 'up down esc enter')) {
         return;
       }
 
       // all other keys focus the menu item starting with that character
       this._focusWithKeyboardEvent(event);
+    },
+
+    _focusWithKeyboardEvent: function(event) {
+      for (var i = 0, item; item = this.items[i]; i++) {
+        var attr = this.attrForItemTitle || 'textContent';
+        var title = item[attr] || item.getAttribute(attr);
+        if (title && title.trim().charAt(0).toLowerCase() === String.fromCharCode(event.keyCode).toLowerCase()) {
+          this._setFocusedItem(item);
+          break;
+        }
+      }
+    },
+
+    _activateFocused: function(event) {
+      if (!this.focusedItem.hasAttribute('disabled')) {
+        this._activateHandler(event);
+      }
+    },
+
+    _focusPrevious: function() {
+      var length = this.items.length;
+      var index = (Number(this.indexOf(this.focusedItem)) - 1 + length) % length;
+      this._setFocusedItem(this.items[index]);
+    },
+
+    _focusNext: function() {
+      var index = (Number(this.indexOf(this.focusedItem)) + 1) % this.items.length;
+      this._setFocusedItem(this.items[index]);
     }
+
   };
 
   Polymer.IronMenuBehaviorImpl._shiftTabPressed = false;
@@ -15365,13 +15037,11 @@ of a menu item will also focus it.
     },
 
     _onUpKey: function(event) {
-      this.focusedItem.click();
-      event.detail.keyboardEvent.preventDefault();
+      this._activateFocused(event.detail.keyboardEvent);
     },
 
     _onDownKey: function(event) {
-      this.focusedItem.click();
-      event.detail.keyboardEvent.preventDefault();
+      this._activateFocused(event.detail.keyboardEvent);
     },
 
     _onLeftKey: function() {
@@ -15383,7 +15053,7 @@ of a menu item will also focus it.
     },
 
     _onKeydown: function(event) {
-      if (this.keyboardEventMatchesKeys(event, 'up down left right esc')) {
+      if (this.keyboardEventMatchesKeys(event, 'up down left right esc enter')) {
         return;
       }
 
@@ -15425,8 +15095,6 @@ Custom property | Description | Default
 -->
 
 <!--
-Material design: [Tabs](https://www.google.com/design/spec/components/tabs.html)
-
 `paper-tabs` makes it easy to explore and switch between different views or functional aspects of
 an app, or to browse categorized data sets.
 
@@ -15503,12 +15171,6 @@ Example:
       </div>
     </paper-card>
 
-Example - top card image:
-
-    <paper-card heading="Card Title" image="/path/to/image.png">
-      ...
-    </paper-card>
-    
 ### Accessibility
 
 By default, the `aria-label` will be set to the value of the `heading` attribute.
@@ -15885,6 +15547,15 @@ Any number of components can use `<google-maps-api>` elements, and the library w
       },
 
       /**
+       * The libraries to load with this map. For more information
+       * see https://developers.google.com/maps/documentation/javascript/libraries.
+       */
+      libraries: {
+        type: String,
+        value: ''
+      },
+
+      /**
        * Version of the Maps API to use.
        */
       version: {
@@ -15927,15 +15598,16 @@ Any number of components can use `<google-maps-api>` elements, and the library w
       /** @private */
       libraryUrl: {
         type: String,
-        computed: '_computeUrl(mapsUrl, version, apiKey, clientId, language, signedIn)'
+        computed: '_computeUrl(mapsUrl, version, libraries, apiKey, clientId, language, signedIn)'
       }
     },
 
-    _computeUrl: function(mapsUrl, version, apiKey, clientId, language, signedIn) {
+    _computeUrl: function(mapsUrl, version, libraries, apiKey, clientId, language, signedIn) {
       var url = mapsUrl + '&v=' + version;
 
-      // Always load all Maps API libraries.
-      url += '&libraries=drawing,geometry,places,visualization';
+      if (libraries) {
+        url += "&libraries=" + libraries;
+      }
 
       if (apiKey && !clientId) {
         url += '&key=' + apiKey;
@@ -16026,7 +15698,7 @@ The `google-map` element renders a Google Map.
 
 <b>Example</b> - with Google directions, using data-binding inside another Polymer element
 
-    <google-map map="{{map}}"></google-map>
+    <google-map map="{{map}}" libraries="places"></google-map>
     <google-map-directions map="{{map}}"
         start-address="San Francisco" end-address="Mountain View">
     </google-map-directions>
@@ -18942,250 +18614,225 @@ Configuration:
     });
 </script>
 <style is="custom-style" include="tags-color">
-/* Application theme */
-
-:root {
-    --dark-primary-color: #303F9F;
-    --default-primary-color: #00BCD4;
-    --light-primary-color: #C5CAE9;
-    --text-primary-color: #ffffff;
-    /*text/icons*/
-    --accent-color: #FF4081;
-    --primary-background-color: #c5cae9;
-    --primary-text-color: #212121;
-    --secondary-text-color: #727272;
-    --disabled-text-color: #bdbdbd;
-    --divider-color: #B6B6B6;
-    /* Components */
-    /* paper-drawer-panel */
-    --drawer-menu-color: #ffffff;
-    --drawer-border-color: 1px solid #ccc;
-    --paper-toolbar-background: #00BCD4;
-    --paper-toolbar-color: #07434D;
-    /* paper-menu */
-    --paper-menu-background-color: #fff;
-    --menu-link-color: #111111;
-    --paper-radio-button-checked-color: var(--default-primary-color);
-    --paper-radio-button-checked-ink-color: var(--default-primary-color);
-    --paper-radio-button-unchecked-ink-color: var(--default-primary-color);
-}
-
-
-/* General styles */
-
-iron-pages {
-    padding: 0 !important;
-}
-
-paper-button,
-a paper-button {
-    color: inherit;
-}
-
-paper-button.colorful {
-    color: #00BCD4;
-}
-
-paper-button[raised].colorful {
-    background: #00BCD4;
-    color: #fff;
-}
-
-a,
-.anchor-like {
-    color: var(--default-primary-color);
-    cursor: pointer;
-}
-
-.post-link {
-    color: #ffffff;
-    font-weight: 100;
-    padding-bottom: 1px;
-    font-style: italic;
-}
-
-#drawerToolbar {
-    color: var(--secondary-text-color);
-    background-color: var(--drawer-menu-color);
-    border-bottom: var(--drawer-toolbar-border-color);
-    height: 64px;
-}
-
-paper-drawer-panel {
-    --paper-drawer-panel-left-drawer-container: {
-        z-index: 10;
+    :root {
+        --dark-primary-color: #0097A7;
+        --default-primary-color: #00BCD4;
+        --light-primary-color: #B2EBF2;
+        --text-primary-color: #FFFFFF;
+        --accent-color: #FF4081;
+        --primary-background-color: #B2EBF2;
+        --primary-text-color: #212121;
+        --secondary-text-color: #727272;
+        --disabled-text-color: #BDBDBD;
+        --divider-color: #B6B6B6;
+        /* Components */
+        /* paper-drawer-panel */
+        --drawer-menu-color: #ffffff;
+        --drawer-border-color: 1px solid #ccc;
+        --drawer-toolbar-border-color: 1px solid rgba(0, 0, 0, 0.22);
+        /* paper-menu */
+        --paper-menu-background-color: #fff;
+        --menu-link-color: #111111;
+        /* paper-input */
+        --paper-input-container-color: rgba(255, 255, 255, 0.64);
+        --paper-input-container-focus-color: rgba(255, 255, 255, 1);
+        --paper-input-container-input-color: #fff;
+        /*paper-toolbar*/
+        --paper-toolbar-background: var(--default-primary-color);
+        --paper-toolbar-color: var(--dark-primary-color);
+        /*paper-radio-button*/
+        --paper-radio-button-checked-color: var(--default-primary-color);
+        --paper-radio-button-checked-ink-color: var(--default-primary-color);
+        --paper-radio-button-unchecked-ink-color: var(--default-primary-color);
     }
-    ;
-}
+    /* General styles */
 
-paper-material {
-    border-radius: 2px;
-    height: 100%;
-    padding: 16px 0 16px 0;
-    width: calc(98.66% - 16px);
-    margin: 16px auto;
-    background: white;
-}
-
-paper-menu a {
-    text-decoration: none;
-    color: var(--menu-link-color);
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    -webkit-font-smoothing: antialiased;
-    text-rendering: optimizeLegibility;
-    font-size: 14px;
-    font-weight: 500;
-    line-height: 24px;
-    min-height: 48px;
-    padding: 0 16px;
-}
-
-.paper-menu > .iron-selected {
-    background: #eaeaea;
-}
-
-.video-dialog,
-.video-dialog > *{
-    margin: 0;
-    padding: 0;
-}
-
-.fullvideo-container {
-    z-index: 6;
-    overflow: hidden;
-}
-
-.navbar-overlay {
-    position: fixed !important;
-    background: rgba(0, 0, 0, 0.5) !important;
-    text-transform: uppercase;
-    z-index: 9;
-    color: #fff;
-}
-
-
-/* Breakpoints */
-
-
-/* Small */
-
-@media (max-width: 600px) {
-    paper-material {
-        --menu-container-display: none;
-        width: calc(97.33% - 32px);
-        padding-left: 16px;
-        padding-right: 16px;
+    body,
+    html {
+        background: #fafafa;
+        font-family: 'Roboto', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+        color: var(--primary-text-color);
+        font-size: 16px;
+        font-weight: 300;
+        line-height: 1.4;
+        overflow: hidden;
     }
-}
 
-
-/* Tablet+ */
-
-@media (min-width: 601px) {
-    paper-material {
-        width: calc(98% - 46px);
-        margin-bottom: 32px;
-        padding-left: 30px;
-        padding-right: 30px;
-    }
     iron-pages {
-        padding: 48px 62px;
+        padding: 0 !important;
     }
-}
 
+    paper-button,
+    a paper-button {
+        color: initial;
+    }
 
-/* Material Design Adaptive Breakpoints */
+    paper-button.white {
+        color: #fff;
+    }
 
+    paper-button.colorful {
+        color: var(--default-primary-color);
+    }
 
-/*
+    paper-button[raised].colorful {
+        background: var(--default-primary-color);
+        color: var(--text-primary-color);
+    }
+
+    a,
+    .anchor-like {
+        color: var(--default-primary-color);
+        cursor: pointer;
+    }
+
+    .post-link {
+        color: #ffffff;
+        font-weight: 300;
+        padding-bottom: 1px;
+        font-style: italic;
+    }
+
+    .video-dialog,
+    .video-dialog > * {
+        margin: 0;
+        padding: 0;
+    }
+
+    .fullvideo-container {
+        z-index: 6;
+        overflow: hidden;
+    }
+
+    .navbar-overlay {
+        position: fixed !important;
+        background: rgba(0, 0, 0, 0.5) !important;
+        text-transform: uppercase;
+        z-index: 9;
+        color: #fff;
+    }
+
+    #drawerToolbar {
+        color: var(--secondary-text-color);
+        background-color: var(--drawer-menu-color);
+        border-bottom: var(--drawer-toolbar-border-color);
+        height: 64px;
+    }
+
+    paper-drawer-panel {
+        --paper-drawer-panel-left-drawer-container: {
+            z-index: 10;
+        }
+        ;
+    }
+
+    paper-material {
+        border-radius: 2px;
+        height: 100%;
+        padding: 16px 0 16px 0;
+        width: calc(98.66% - 16px);
+        margin: 16px auto;
+        background: white;
+    }
+
+    paper-menu a {
+        text-decoration: none;
+        color: var(--menu-link-color);
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        -webkit-font-smoothing: antialiased;
+        text-rendering: optimizeLegibility;
+        font-size: 14px;
+        font-weight: 500;
+        line-height: 24px;
+        min-height: 48px;
+        padding: 0 16px;
+    }
+
+    .paper-menu > .iron-selected {
+        background: #eaeaea;
+    }
+    /* Breakpoints */
+    /* Small */
+
+    @media (max-width: 600px) {
+        paper-material {
+            --menu-container-display: none;
+            width: calc(97.33% - 32px);
+            padding-left: 16px;
+            padding-right: 16px;
+        }
+    }
+    /* Tablet+ */
+
+    @media (min-width: 601px) {
+        paper-material {
+            width: calc(98% - 46px);
+            margin-bottom: 32px;
+            padding-left: 30px;
+            padding-right: 30px;
+        }
+        iron-pages {
+            padding: 48px 62px;
+        }
+    }
+    /* Material Design Adaptive Breakpoints */
+    /*
     Below you'll find CSS media queries based on the breakpoint guidance
     published by the Material Design team. You can choose to use, customise
     or remove these breakpoints based on your needs.
 
     http://www.google.com/design/spec/layout/adaptive-ui.html#adaptive-ui-breakpoints
    */
+    /* mobile-small */
 
+    @media all and (min-width: 0) and (max-width: 360px) and (orientation: portrait) {}
+    /* mobile-large */
 
-/* mobile-small */
+    @media all and (min-width: 361px) and (orientation: portrait) {}
+    /* mobile-small-landscape */
 
-@media all and (min-width: 0) and (max-width: 360px) and (orientation: portrait) {}
+    @media all and (min-width: 0) and (max-width: 480px) and (orientation: landscape) {}
+    /* mobile-large-landscape */
 
+    @media all and (min-width: 481px) and (orientation: landscape) {}
+    /* tablet-small-landscape */
 
-/* mobile-large */
+    @media all and (min-width: 601px) and (max-width: 960px) and (orientation: landscape) {}
+    /* tablet-large-landscape */
 
-@media all and (min-width: 361px) and (orientation: portrait) {}
+    @media all and (min-width: 961px) and (orientation: landscape) {}
+    /* tablet-small */
 
+    @media all and (min-width: 601px) and (orientation: portrait) {}
+    /* tablet-large */
 
-/* mobile-small-landscape */
+    @media all and (min-width: 601px) and (max-width: 960px) and (orientation: portrait) {}
+    /* desktop-x-small-landscape */
 
-@media all and (min-width: 0) and (max-width: 480px) and (orientation: landscape) {}
+    @media all and (min-width: 0) and (max-width: 480px) and (orientation: landscape) {}
+    /* desktop-x-small */
 
+    @media all and (min-width: 0) and (max-width: 480px) and (max-aspect-ratio: 4/3) {}
+    /* desktop-small-landscape */
 
-/* mobile-large-landscape */
+    @media all and (min-width: 481px) and (max-width: 960px) and (orientation: landscape) {}
+    /* desktop-small */
 
-@media all and (min-width: 481px) and (orientation: landscape) {}
+    @media all and (min-width: 481px) and (max-width: 960px) and (max-aspect-ratio: 4/3) {}
+    /* desktop-medium-landscape */
 
+    @media all and (min-width: 961px) and (max-width: 1280px) and (orientation: landscape) {}
+    /* desktop-medium */
 
-/* tablet-small-landscape */
+    @media all and (min-width: 961px) and (max-width: 1280px) and (max-aspect-ratio: 4/3) {}
+    /* desktop-large */
 
-@media all and (min-width: 600px) and (max-width: 960px) and (orientation: landscape) {}
+    @media all and (min-width: 1281px) and (max-width: 1600px) {}
+    /* desktop-xlarge */
 
-
-/* tablet-large-landscape */
-
-@media all and (min-width: 961px) and (orientation: landscape) {}
-
-
-/* tablet-small */
-
-@media all and (min-width: 600px) and (orientation: portrait) {}
-
-
-/* tablet-large */
-
-@media all and (min-width: 601px) and (max-width: 840px) and (orientation: portrait) {}
-
-
-/* desktop-x-small-landscape */
-
-@media all and (min-width: 0) and (max-width: 480px) and (orientation: landscape) {}
-
-
-/* desktop-x-small */
-
-@media all and (min-width: 0) and (max-width: 480px) and (max-aspect-ratio: 4/3) {}
-
-
-/* desktop-small-landscape */
-
-@media all and (min-width: 481px) and (max-width: 840px) and (orientation: landscape) {}
-
-
-/* desktop-small */
-
-@media all and (min-width: 481px) and (max-width: 840px) and (max-aspect-ratio: 4/3) {}
-
-
-/* desktop-medium-landscape */
-
-@media all and (min-width: 841px) and (max-width: 1280px) and (orientation: landscape) {}
-
-
-/* desktop-medium */
-
-@media all and (min-width: 841px) and (max-width: 1280px) and (max-aspect-ratio: 4/3) {}
-
-
-/* desktop-large */
-
-@media all and (min-width: 1281px) and (max-width: 1600px) {}
-
-
-/* desktop-xlarge */
-
-@media all and (min-width: 1601px) and (max-width: 1920px) {}
+    @media all and (min-width: 1601px) and (max-width: 1920px) {}
 </style><!-- Configure your routes here -->
 <script>!function(e){if("object"==typeof exports&&"undefined"!=typeof module)module.exports=e();else if("function"==typeof define&&define.amd)define([],e);else{var f;"undefined"!=typeof window?f=window:"undefined"!=typeof global?f=global:"undefined"!=typeof self&&(f=self),f.page=e()}}(function(){var define,module,exports;return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
 (function (process){
@@ -20163,6 +19810,17 @@ module.exports = Array.isArray || function (arr) {
             document.querySelector('#people-block').closePerson();
         });
 
+        page('/schedule', function() {
+            trackPageview('/schedule');
+            app.route = 'schedule';
+            app.scrollToTop();
+        });
+        page('/schedule/:id', function(data) {
+            trackPageview('/schedule/' + data.params.id);
+            app.route = 'schedule';
+            app.params = data.params;
+        });
+
         page('/contact', function() {
             trackPageview('/contact');
             app.route = 'contact';
@@ -20251,14 +19909,11 @@ module.exports = Array.isArray || function (arr) {
           type: String,
           observer: '_srcChanged'
         },
-
-        /**
-         * @type {!Polymer.IronMeta}
-         */
+        
         _meta: {
           value: Polymer.Base.create('iron-meta', {type: 'iconset'})
         }
-
+        
       },
 
       _DEFAULT_ICONSET: 'icons',
@@ -20282,13 +19937,12 @@ module.exports = Array.isArray || function (arr) {
       _updateIcon: function() {
         if (this._usesIconset()) {
           if (this._iconsetName) {
-            this._iconset = /** @type {?Polymer.Iconset} */ (
-              this._meta.byKey(this._iconsetName));
+            this._iconset = this._meta.byKey(this._iconsetName);
             if (this._iconset) {
               this._iconset.applyIcon(this, this._iconName, this.theme);
-              this.unlisten(window, 'iron-iconset-added', '_updateIcon');
             } else {
-              this.listen(window, 'iron-iconset-added', '_updateIcon');
+              this._warn(this._logf('_updateIcon', 'could not find iconset `'
+                + this._iconsetName + '`, did you import the iconset?'));
             }
           }
         } else {
@@ -21165,7 +20819,6 @@ module.exports = Array.isArray || function (arr) {
 
     /**
      * The element that controls the scroll
-     * @type {?Element}
      */
     _scroller: null,
 
@@ -21247,26 +20900,22 @@ module.exports = Array.isArray || function (arr) {
 
     /**
      * An array of DOM nodes that are currently in the tree
-     * @type {?Array<!TemplatizerNode>}
      */
     _physicalItems: null,
 
     /**
      * An array of heights for each item in `_physicalItems`
-     * @type {?Array<number>}
      */
     _physicalSizes: null,
 
     /**
      * A cached value for the visible index.
      * See `firstVisibleIndex`
-     * @type {?number}
      */
     _firstVisibleIndexVal: null,
 
     /**
      * A Polymer collection for the items.
-     * @type {?Polymer.Collection}
      */
     _collection: null,
 
@@ -21394,9 +21043,8 @@ module.exports = Array.isArray || function (arr) {
       // e.g. paper-scroll-header-panel
       var el = Polymer.dom(this);
 
-      var parentNode = /** @type {?{scroller: ?Element}} */ (el.parentNode);
-      if (parentNode && parentNode.scroller) {
-        this._scroller = parentNode.scroller;
+      if (el.parentNode && el.parentNode.scroller) {
+        this._scroller = el.parentNode.scroller;
       } else {
         this._scroller = this;
         this.classList.add('has-scroller');
@@ -21430,7 +21078,7 @@ module.exports = Array.isArray || function (arr) {
      */
     updateViewportBoundaries: function() {
       var scrollerStyle = window.getComputedStyle(this._scroller);
-      this._scrollerPaddingTop = parseInt(scrollerStyle['padding-top'], 10);
+      this._scrollerPaddingTop = parseInt(scrollerStyle['padding-top']);
       this._viewportSize = this._scroller.offsetHeight;
     },
 
@@ -21542,8 +21190,6 @@ module.exports = Array.isArray || function (arr) {
 
     /**
      * Update the list of items, starting from the `_virtualStartVal` item.
-     * @param {!Array<number>=} itemSet
-     * @param {!Array<number>=} movingUp
      */
     _update: function(itemSet, movingUp) {
       // update models
@@ -21567,9 +21213,9 @@ module.exports = Array.isArray || function (arr) {
       this._updateScrollerSize();
 
       // increase the pool of physical items if needed
-      if (this._increasePoolIfNeeded()) {
+      if (itemSet = this._increasePoolIfNeeded()) {
         // set models to the new items
-        this.async(this._update);
+        this.async(this._update.bind(this, itemSet));
       }
     },
 
@@ -21599,11 +21245,11 @@ module.exports = Array.isArray || function (arr) {
      * (limited by `MAX_PHYSICAL_COUNT`) if the content size is shorter than
      * `_optPhysicalSize`
      *
-     * @return boolean
+     * @return Array
      */
     _increasePoolIfNeeded: function() {
       if (this._physicalSize >= this._optPhysicalSize || this._physicalAverage === 0) {
-        return false;
+        return null;
       }
 
       // the estimated number of physical items that we will need to reach
@@ -21623,7 +21269,7 @@ module.exports = Array.isArray || function (arr) {
       var delta = nextPhysicalCount - prevPhysicalCount;
 
       if (delta <= 0) {
-        return false;
+        return null;
       }
 
       var newPhysicalItems = this._createPool(delta);
@@ -21633,8 +21279,13 @@ module.exports = Array.isArray || function (arr) {
       [].push.apply(this._physicalSizes, emptyArray);
 
       this._physicalCount = prevPhysicalCount + delta;
- 
-      return true;
+
+      // fill the array with the new item pos
+      while (delta > 0) {
+        emptyArray[--delta] = prevPhysicalCount + delta;
+      }
+
+      return emptyArray;
     },
 
     /**
@@ -21784,9 +21435,6 @@ module.exports = Array.isArray || function (arr) {
       }
     },
 
-    /**
-     * @param {!Array<!PolymerSplice>} splices
-     */
     _adjustVirtualIndex: function(splices) {
       var i, splice, idx;
 
@@ -21814,9 +21462,6 @@ module.exports = Array.isArray || function (arr) {
     /**
      * Executes a provided function per every physical index in `itemSet`
      * `itemSet` default value is equivalent to the entire set of physical indexes.
-     * 
-     * @param {!function(number, number)} fn
-     * @param {!Array<number>=} itemSet
      */
     _iterateItems: function(fn, itemSet) {
       var pidx, vidx, rtn, i;
@@ -21855,7 +21500,6 @@ module.exports = Array.isArray || function (arr) {
 
     /**
      * Assigns the data models to a given set of items.
-     * @param {!Array<number>=} itemSet
      */
     _assignModels: function(itemSet) {
       this._iterateItems(function(pidx, vidx) {
@@ -21866,8 +21510,7 @@ module.exports = Array.isArray || function (arr) {
         if (item) {
           inst[this.as] = item;
           inst.__key__ = this._collection.getKey(item);
-          inst[this.selectedAs] =
-            /** @type {!ArraySelectorElement} */ (this.$.selector).isSelected(item);
+          inst[this.selectedAs] = this.$.selector.isSelected(item);
           inst[this.indexAs] = vidx;
           el.removeAttribute('hidden');
           this._physicalIndexForKey[inst.__key__] = pidx;
@@ -21910,7 +21553,7 @@ module.exports = Array.isArray || function (arr) {
     /**
      * Updates the position of the physical items.
      */
-    _positionItems: function() {
+    _positionItems: function(itemSet) {
       this._adjustScrollPosition();
 
       var y = this._physicalTop;
@@ -21920,7 +21563,7 @@ module.exports = Array.isArray || function (arr) {
         this.transform('translate3d(0, ' + y + 'px, 0)', this._physicalItems[pidx]);
         y += this._physicalSizes[pidx];
 
-      });
+      }, itemSet);
     },
 
     /**
@@ -21979,6 +21622,7 @@ module.exports = Array.isArray || function (arr) {
         return;
       }
 
+      var itemSet;
       var firstVisible = this.firstVisibleIndex;
 
       idx = Math.min(Math.max(idx, 0), this._virtualCount-1);
@@ -22018,9 +21662,9 @@ module.exports = Array.isArray || function (arr) {
       this._resetScrollPosition(this._physicalTop + targetOffsetTop + 1);
 
       // increase the pool of physical items if needed
-      if (this._increasePoolIfNeeded()) {
+      if (itemSet = this._increasePoolIfNeeded()) {
         // set models to the new items
-        this.async(this._update);
+        this.async(this._update.bind(this, itemSet));
       }
 
       // clear cached visible index
@@ -22123,8 +21767,8 @@ module.exports = Array.isArray || function (arr) {
      * @param {(Object|number)} item the item object or its index
      */
     toggleSelectionForItem: function(item) {
-      item = typeof item === 'number' ? this.items[item] : item;
-      if (/** @type {!ArraySelectorElement} */ (this.$.selector).isSelected(item)) {
+      var item = typeof item === 'number' ? this.items[item] : item;
+      if (this.$.selector.isSelected(item)) {
         this.deselectItem(item);
       } else {
         this.selectItem(item);
@@ -22150,7 +21794,7 @@ module.exports = Array.isArray || function (arr) {
         unselect.call(this, this.selectedItem);
       }
 
-      /** @type {!ArraySelectorElement} */ (this.$.selector).clearSelection();
+      this.$.selector.clearSelection();
     },
 
     /**
@@ -22160,10 +21804,8 @@ module.exports = Array.isArray || function (arr) {
     _selectionEnabledChanged: function(selectionEnabled) {
       if (selectionEnabled) {
         this.listen(this, 'tap', '_selectionHandler');
-        this.listen(this, 'keypress', '_selectionHandler');
       } else {
         this.unlisten(this, 'tap', '_selectionHandler');
-        this.unlisten(this, 'keypress', '_selectionHandler');
       }
     },
 
@@ -22171,12 +21813,9 @@ module.exports = Array.isArray || function (arr) {
      * Select an item from an event object.
      */
     _selectionHandler: function(e) {
-      var ENTER_KEY = 13, model;
-      if (e.type !== 'keypress' || e.keyCode === ENTER_KEY) {
-        model = this.modelForElement(e.target);
-        if (model) {
-          this.toggleSelectionForItem(model[this.as]);
-        }
+      var model = this.modelForElement(e.target);
+      if (model) {
+        this.toggleSelectionForItem(model[this.as]);
       }
     },
 
@@ -24671,17 +24310,6 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
           },
 
           /**
-           * By default, the dropdown will constrain scrolling on the page
-           * to itself when opened.
-           * Set to true in order to prevent scroll from being constrained
-           * to the dropdown when it opens.
-           */
-          allowOutsideScroll: {
-            type: Boolean,
-            value: false
-          },
-
-          /**
            * We memoize the positionTarget bounding rectangle so that we can
            * limit the number of times it is queried per resize / relayout.
            * @type {?Object}
@@ -24801,10 +24429,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
          * Overridden from `IronOverlayBehavior`.
          */
         _renderOpened: function() {
-          if (!this.allowOutsideScroll) {
-            Polymer.IronDropdownScrollManager.pushScrollLock(this);
-          }
-
+          Polymer.IronDropdownScrollManager.pushScrollLock(this);
           if (!this.noAnimations && this.animationConfig && this.animationConfig.open) {
             this.$.contentWrapper.classList.add('animating');
             this.playAnimation('open');
@@ -25532,6 +25157,23 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 
       attached: function() {
         this._isReady = true;
+
+        // Don't stomp over a user-set aria-label.
+        if (!this.getAttribute('aria-label')) {
+          this.updateAriaLabel();
+        }
+      },
+
+      /**
+       * Update the checkbox aria-label. This is a temporary workaround not
+       * being able to observe changes in <content>
+       * (see: https://github.com/Polymer/polymer/issues/1773)
+       *
+       * Call this if you manually change the contents of the checkbox
+       * and want the aria-label to match the new contents.
+       */
+      updateAriaLabel: function() {
+        this.setAttribute('aria-label', Polymer.dom(this).textContent.trim());
       },
 
       // button-behavior hook
@@ -25884,11 +25526,11 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 :host {
   display: block;
   margin: 24px 40px;
-  -webkit-overflow-scrolling: touch;
 
   background: var(--paper-dialog-background-color, --primary-background-color);
   color: var(--paper-dialog-color, --primary-text-color);
 
+  @apply(--layout-scroll);
   @apply(--paper-font-body1);
   @apply(--shadow-elevation-16dp);
   @apply(--paper-dialog);
@@ -26004,19 +25646,12 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
         user-select: none;
         cursor: pointer;
         z-index: 0;
-        padding: 0.7em 0.57em;
 
         @apply(--paper-button);
       }
 
-      :host([raised]) .keyboard-focus {
+      .keyboard-focus {
         font-weight: bold;
-        @apply(--paper-button-raised-keyboard-focus);
-      }
-
-      :host(:not([raised])) .keyboard-focus {
-        font-weight: bold;
-        @apply(--paper-button-flat-keyboard-focus);
       }
 
       :host([disabled]) {
@@ -26032,27 +25667,24 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
         display: none;
       }
 
-      paper-ripple {
-        color: var(--paper-button-ink-color);
-      }
-
       paper-material {
         border-radius: inherit;
-        @apply(--layout-fit);
       }
 
       .content > ::content * {
         text-transform: inherit;
       }
+
+      .content {
+        padding: 0.7em 0.57em
+      }
     </style>
 
     <paper-ripple></paper-ripple>
 
-    <paper-material elevation="[[_elevation]]" animated=""></paper-material>
-
-    <div class$="[[_computeContentClass(receivedFocusFromKeyboard)]]">
+    <paper-material class$="[[_computeContentClass(receivedFocusFromKeyboard)]]" elevation="[[_elevation]]" animated="">
       <content></content>
-    </div>
+    </paper-material>
 
   </template>
 </dom-module>
@@ -26104,7 +25736,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
   </style>
 
   <template>
-    <div aria-live$="[[mode]]">[[_text]]</div>
+    <span aria-live$="[[mode]]">[[_text]]</span>
   </template>
 
   <script>
@@ -26419,8 +26051,8 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 
       .input-content.label-is-floating ::content label,
       .input-content.label-is-floating ::content .paper-input-label {
-        -webkit-transform: translateY(-75%) scale(0.75);
-        transform: translateY(-75%) scale(0.75);
+        -webkit-transform: translate3d(0, -75%, 0) scale(0.75);
+        transform: translate3d(0, -75%, 0) scale(0.75);
         -webkit-transform-origin: left top;
         transform-origin: left top;
         -webkit-transition: -webkit-transform 0.25s;
@@ -26458,7 +26090,6 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
         background: transparent;
         border: none;
         color: var(--paper-input-container-input-color, --primary-text-color);
-        -webkit-appearance: none;
 
         @apply(--paper-font-subhead);
         @apply(--paper-input-container-input);
@@ -26556,7 +26187,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 
       /**
        * True if the input is invalid. This property is set automatically when the input value
-       * changes if auto-validating, or when the `iron-input-validate` event is heard from a child.
+       * changes if auto-validating, or when the `iron-input-valid` event is heard from a child.
        */
       invalid: {
         observer: '_invalidChanged',
@@ -26759,9 +26390,9 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
           }
           // The label might have a horizontal offset if a prefix element exists
           // which needs to be undone when displayed as a floating label.
-          if (Polymer.dom(this.$.prefix).getDistributedNodes().length > 0 &&
-              label && label.offsetParent) {
-            label.style.left = -label.offsetParent.offsetLeft + 'px';
+          if (this.$.prefix && label && label.offsetParent &&
+              Polymer.dom(this.$.prefix).getDistributedNodes().length > 0) {
+           label.style.left = -label.offsetParent.offsetLeft + 'px';
           }
         } else {
           // When the label is not floating, it should overlap the input element.
@@ -26805,12 +26436,12 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
       :host {
         display: inline-block;
         visibility: hidden;
+        float: left;
 
         color: var(--paper-input-container-invalid-color, --google-red-500);
 
         @apply(--paper-font-caption);
         @apply(--paper-input-error);
-        position: absolute;
       }
 
       :host([invalid]) {
@@ -26819,7 +26450,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
     </style>
 
     <content></content>
-    
+
   </template>
 </dom-module>
 
@@ -26928,7 +26559,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 
       <label hidden$="[[!label]]">[[label]]</label>
 
-      <input is="iron-input" id="input" aria-labelledby$="[[_ariaLabelledBy]]" aria-describedby$="[[_ariaDescribedBy]]" disabled$="[[disabled]]" bind-value="{{value}}" invalid="{{invalid}}" prevent-invalid-input="[[preventInvalidInput]]" allowed-pattern="[[allowedPattern]]" validator="[[validator]]" type$="[[type]]" pattern$="[[pattern]]" required$="[[required]]" autocomplete$="[[autocomplete]]" autofocus$="[[autofocus]]" inputmode$="[[inputmode]]" minlength$="[[minlength]]" maxlength$="[[maxlength]]" min$="[[min]]" max$="[[max]]" step$="[[step]]" name$="[[name]]" placeholder$="[[placeholder]]" readonly$="[[readonly]]" list$="[[list]]" size$="[[size]]" autocapitalize$="[[autocapitalize]]" autocorrect$="[[autocorrect]]" on-change="_onChange" autosave$="[[autosave]]" ,="" results$="[[results]]">
+      <input is="iron-input" id="input" aria-labelledby$="[[_ariaLabelledBy]]" aria-describedby$="[[_ariaDescribedBy]]" disabled$="[[disabled]]" bind-value="{{value}}" invalid="{{invalid}}" prevent-invalid-input="[[preventInvalidInput]]" allowed-pattern="[[allowedPattern]]" validator="[[validator]]" type$="[[type]]" pattern$="[[pattern]]" required$="[[required]]" autocomplete$="[[autocomplete]]" autofocus$="[[autofocus]]" inputmode$="[[inputmode]]" minlength$="[[minlength]]" maxlength$="[[maxlength]]" min$="[[min]]" max$="[[max]]" step$="[[step]]" name$="[[name]]" placeholder$="[[placeholder]]" readonly$="[[readonly]]" list$="[[list]]" size$="[[size]]" autocapitalize$="[[autocapitalize]]" autocorrect$="[[autocorrect]]" on-change="_onChange">
 
       <content select="[suffix]"></content>
 
@@ -26956,53 +26587,66 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
     ]
   });
 </script>
-<dom-module id="paper-item-shared-styles" assetpath="../bower_components/paper-item/">
-  <template>
-    <style>
-      :host {
-        display: block;
-        min-height: var(--paper-item-min-height, 48px);
-        padding: 0px 16px;
-      }
-
-      :host > ::content > *:not(:first-child):not(:last-child) {
-        margin-right: 16px;
-      }
-    </style>
-  </template>
-</dom-module>
 <dom-module id="paper-item" assetpath="../bower_components/paper-item/">
+
+  <style>
+/*
+    @license
+    Copyright (c) 2015 The Polymer Project Authors. All rights reserved.
+    This code may only be used under the BSD style license found at http://polymer.github.io/LICENSE.txt
+    The complete set of authors may be found at http://polymer.github.io/AUTHORS.txt
+    The complete set of contributors may be found at http://polymer.github.io/CONTRIBUTORS.txt
+    Code distributed by Google as part of the polymer project is also
+    subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
+*/
+
+:host {
+  display: block;
+  min-height: var(--paper-item-min-height, 48px);
+  padding: 0px 16px;
+}
+
+:host > ::content > *:not(:first-child):not(:last-child) {
+  margin-right: 16px;
+}
+
+</style>
+
+  <style>
+
+    :host {
+      @apply(--layout-horizontal);
+      @apply(--layout-center);
+      @apply(--paper-font-subhead);
+
+      @apply(--paper-item);
+    }
+
+  </style>
+
   <template>
-    <style include="paper-item-shared-styles"></style>
-    <style>
-      :host {
-        @apply(--layout-horizontal);
-        @apply(--layout-center);
-        @apply(--paper-font-subhead);
-
-        @apply(--paper-item);
-      }
-    </style>
-
     <content></content>
   </template>
 
-  <script>
-    Polymer({
-      is: 'paper-item',
-
-      hostAttributes: {
-        role: 'listitem',
-        tabindex: '0'
-      },
-
-      behaviors: [
-        Polymer.IronControlState,
-        Polymer.IronButtonState
-      ]
-    });
-  </script>
 </dom-module>
+
+<script>
+
+(function() {
+
+  Polymer({
+
+    is: 'paper-item',
+
+    hostAttributes: {
+      role: 'listitem'
+    }
+
+  });
+
+})();
+
+</script>
 <dom-module id="paper-menu" assetpath="../bower_components/paper-menu/">
   <style>
 /**
@@ -27258,7 +26902,6 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 
     .not-visible {
       opacity: 0;
-      cursor: default;
     }
 
     paper-icon-button {
@@ -27306,9 +26949,9 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 
   <template>
 
-    <paper-icon-button icon="paper-tabs:chevron-left" class$="[[_computeScrollButtonClass(_leftHidden, scrollable, hideScrollButtons)]]" on-up="_onScrollButtonUp" on-down="_onLeftScrollButtonDown" tabindex="-1"></paper-icon-button>
+    <paper-icon-button icon="paper-tabs:chevron-left" class$="[[_computeScrollButtonClass(_leftHidden, scrollable, hideScrollButtons)]]" on-up="_onScrollButtonUp" on-down="_onLeftScrollButtonDown"></paper-icon-button>
 
-    <div id="tabsContainer" class="flex" on-track="_scroll" on-down="_down">
+    <div id="tabsContainer" class="flex" on-scroll="_scroll">
 
       <div id="tabsContent" class$="[[_computeTabsContentClass(scrollable)]]">
 
@@ -27320,7 +26963,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 
     </div>
 
-    <paper-icon-button icon="paper-tabs:chevron-right" class$="[[_computeScrollButtonClass(_rightHidden, scrollable, hideScrollButtons)]]" on-up="_onScrollButtonUp" on-down="_onRightScrollButtonDown" tabindex="-1"></paper-icon-button>
+    <paper-icon-button icon="paper-tabs:chevron-right" class$="[[_computeScrollButtonClass(_rightHidden, scrollable, hideScrollButtons)]]" on-up="_onScrollButtonUp" on-down="_onRightScrollButtonDown"></paper-icon-button>
 
   </template>
 
@@ -27443,10 +27086,6 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
       'iron-deselect': '_onIronDeselect'
     },
 
-    ready: function() {
-      this.setScrollDirection('y', this.$.tabsContainer);
-    },
-
     _computeScrollButtonClass: function(hideThisButton, scrollable, hideScrollButtons) {
       if (!scrollable || hideScrollButtons) {
         return 'hidden';
@@ -27501,43 +27140,24 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
       );
     },
 
+    _scroll: function() {
+      var scrollLeft;
 
-    _scroll: function(e, detail) {
       if (!this.scrollable) {
         return;
       }
 
-      var ddx = (detail && -detail.ddx) || 0;
-      this._affectScroll(ddx);
-    },
-
-    _down: function(e) {
-      // go one beat async to defeat IronMenuBehavior
-      // autorefocus-on-no-selection timeout
-      this.async(function() {
-        if (this._defaultFocusAsync) {
-          this.cancelAsync(this._defaultFocusAsync);
-          this._defaultFocusAsync = null;
-        }
-      }, 1);
-    },
-
-    _affectScroll: function(dx) {
-      this.$.tabsContainer.scrollLeft += dx;
-
-      var scrollLeft = this.$.tabsContainer.scrollLeft;
+      scrollLeft = this.$.tabsContainer.scrollLeft;
 
       this._leftHidden = scrollLeft === 0;
       this._rightHidden = scrollLeft === this._tabContainerScrollSize;
     },
 
     _onLeftScrollButtonDown: function() {
-      this._scrollToLeft();
       this._holdJob = setInterval(this._scrollToLeft.bind(this), this._holdDelay);
     },
 
     _onRightScrollButtonDown: function() {
-      this._scrollToRight();
       this._holdJob = setInterval(this._scrollToRight.bind(this), this._holdDelay);
     },
 
@@ -27547,11 +27167,11 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
     },
 
     _scrollToLeft: function() {
-      this._affectScroll(-this._step);
+      this.$.tabsContainer.scrollLeft -= this._step;
     },
 
     _scrollToRight: function() {
-      this._affectScroll(this._step);
+      this.$.tabsContainer.scrollLeft += this._step;
     },
 
     _tabChanged: function(tab, old) {
@@ -27655,7 +27275,8 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 
       paper-material {
         border-radius: inherit;
-        @apply(--layout-fit);
+        width: 100%;
+        height: 100%;
       }
 
       /* IE 10 support for HTML5 hidden attr */
@@ -27702,14 +27323,16 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
       }
     </style>
 
-    <paper-material animated$="[[animatedShadow]]" elevation="[[elevation]]"></paper-material>
+    <paper-material animated$="[[animatedShadow]]" elevation="[[elevation]]">
+      <div class="header">
+        <img hidden$="[[!image]]" src="[[image]]">
+        <div hidden$="[[!heading]]" class$="[[_computeHeadingClass(image)]]">[[heading]]</div>
+      </div>
 
-    <div class="header">
-      <img hidden$="[[!image]]" src="[[image]]">
-      <div hidden$="[[!heading]]" class$="[[_computeHeadingClass(image)]]">[[heading]]</div>
-    </div>
+      <content></content>
 
-    <content></content>
+    </paper-material>
+
   </template>
 
 </dom-module>
@@ -27900,23 +27523,8 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 </dom-module>
 
 <script>
+
 (function() {
-
-  function setupDragHandler_() {
-    if (this.draggable) {
-      this.dragHandler_ = google.maps.event.addListener(
-          this.marker, 'dragend', onDragEnd_.bind(this));
-    } else {
-      google.maps.event.removeListener(this.dragHandler_);
-      this.dragHandler_ = null;
-    }
-  }
-
-  function onDragEnd_(e, details, sender) {
-    this.latitude = e.latLng.lat();
-    this.longitude = e.latLng.lng();
-  }
-
   Polymer({
 
     is: 'google-map-marker',
@@ -27926,53 +27534,45 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
      * @param {google.maps.MouseEvent} event The mouse event.
      * @event google-map-marker-click
      */
-
     /**
      * Fired when the marker icon was double clicked. Requires the clickEvents attribute to be true.
      * @param {google.maps.MouseEvent} event The mouse event.
      * @event google-map-marker-dblclick
      */
-
     /**
      * Fired for a mousedown on the marker. Requires the mouseEvents attribute to be true.
      * @event google-map-marker-mousedown
      * @param {google.maps.MouseEvent} event The mouse event.
      */
-
     /**
      * Fired when the DOM `mousemove` event is fired on the marker. Requires the mouseEvents
      * attribute to be true.
      * @event google-map-marker-mousemove
      * @param {google.maps.MouseEvent} event The mouse event.
      */
-
     /**
      * Fired when the mouse leaves the area of the marker icon. Requires the mouseEvents attribute to be
      * true.
      * @event google-map-marker-mouseout
      * @param {google.maps.MouseEvent} event The mouse event.
      */
-
     /**
      * Fired when the mouse enters the area of the marker icon. Requires the mouseEvents attribute to be
      * true.
      * @event google-map-marker-mouseover
      * @param {google.maps.MouseEvent} event The mouse event.
      */
-
     /**
      * Fired for a mouseup on the marker. Requires the mouseEvents attribute to be true.
      *
      * @event google-map-marker-mouseup
      * @param {google.maps.MouseEvent} event The mouse event.
      */
-
     /**
      * Fired for a rightclick on the marker. Requires the clickEvents attribute to be true.
      * @event google-map-marker-rightclick
      * @param {google.maps.MouseEvent} event The mouse event.
      */
-
     properties: {
       /**
        * A Google Maps marker object.
@@ -28042,7 +27642,6 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
         value: null,
         reflectToAttribute: true
       },
-
       /**
        * The marker's latitude coordinate.
        */
@@ -28050,16 +27649,6 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
         type: Number,
         value: null,
         reflectToAttribute: true
-      },
-
-      /**
-       * A animation for the marker. "DROP" or "BOUNCE". See
-       * https://developers.google.com/maps/documentation/javascript/examples/marker-animations.
-       */
-      animation: {
-        type: String,
-        value: null,
-        observer: '_animationChanged'
       }
     },
 
@@ -28123,12 +27712,6 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
       }
     },
 
-    _animationChanged: function() {
-      if (this.marker) {
-        this.marker.setAnimation(google.maps.Animation[this.animation]);
-      }
-    },
-
     _iconChanged: function() {
       if (this.marker) {
         this.marker.setIcon(this.icon);
@@ -28186,12 +27769,8 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
       this._listeners = {};
       this.marker = new google.maps.Marker({
         map: this.map,
-        position: {
-          lat: parseFloat(this.latitude),
-          lng: parseFloat(this.longitude)
-        },
+        position: {lat: this.latitude, lng: this.longitude},
         title: this.title,
-        animation: google.maps.Animation[this.animation],
         draggable: this.draggable,
         visible: !this.hidden,
         icon: this.icon,
@@ -28238,6 +27817,20 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
     }
   });
 
+  function setupDragHandler_() {
+    if (this.draggable) {
+      this.dragHandler_ = google.maps.event.addListener(
+          this.marker, 'dragend', onDragEnd_.bind(this));
+    } else {
+      google.maps.event.removeListener(this.dragHandler_);
+      this.dragHandler_ = null;
+    }
+  }
+
+  function onDragEnd_(e, details, sender) {
+    this.latitude = e.latLng.lat();
+    this.longitude = e.latLng.lng();
+  }
 })();
 </script>
 <dom-module id="google-map" assetpath="../bower_components/google-map/">
@@ -28259,7 +27852,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 
   </style>
   <template>
-    <google-maps-api id="api" api-key="[[apiKey]]" client-id="[[clientId]]" version="[[version]]" signed-in="[[signedIn]]" language="[[language]]" on-api-load="_mapApiLoaded"></google-maps-api>
+    <google-maps-api id="api" api-key="[[apiKey]]" client-id="[[clientId]]" version="[[version]]" libraries="[[libraries]]" signed-in="[[signedIn]]" language="[[language]]" on-api-load="_mapApiLoaded"></google-maps-api>
 
     <div id="map"></div>
 
@@ -28357,6 +27950,16 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
       },
 
       /**
+       * A comma separated list (e.g. "places,geometry") of libraries to load
+       * with this map. Defaults to "". For more information see
+       * https://developers.google.com/maps/documentation/javascript/libraries.
+       */
+      libraries: {
+        type: String,
+        value: ''
+      },
+
+      /**
        * A longitude to center the map on.
        */
       longitude: {
@@ -28381,8 +27984,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
       zoom: {
         type: Number,
         value: 10,
-        observer: '_zoomChanged',
-        notify: true
+        observer: '_zoomChanged'
       },
 
       /**
@@ -28399,8 +28001,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
       mapType: {
         type: String,
         value: 'roadmap', // roadmap, satellite, hybrid, terrain,
-        observer: '_mapTypeChanged',
-        notify: true
+        observer: '_mapTypeChanged'
       },
 
       /**
@@ -28849,10 +28450,6 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 
       google.maps.event.addListener(this.map, 'zoom_changed', function() {
         this.zoom = this.map.getZoom();
-      }.bind(this));
-      
-      google.maps.event.addListener(this.map, 'maptypeid_changed', function() {
-        this.mapType = this.map.getMapTypeId();
       }.bind(this));
 
       this._clickEventsChanged();
@@ -30041,6 +29638,42 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
                 --entrepreneurship: #673AB7;
             }
 
+            .default {
+                background: var(--disabled-text-color);
+                color: var(--disabled-text-color);
+                border-color: var(--disabled-text-color);
+            }
+
+            .android {
+                background: var(--android);
+                color: var(--android);
+                border-color: var(--android);
+            }
+
+            .web {
+                background: var(--web);
+                color: var(--web);
+                border-color: var(--web);
+            }
+
+            .cloud {
+                background: var(--cloud);
+                color: var(--cloud);
+                border-color: var(--cloud);
+            }
+
+            .community {
+                background: var(--community);
+                color: var(--community);
+                border-color: var(--community);
+            }
+
+            .entrepreneurship {
+                background: var(--entrepreneurship);
+                color: var(--entrepreneurship);
+                border-color: var(--entrepreneurship);
+            }
+
             paper-checkbox.android {
                 --paper-checkbox-checked-color: var(--android);
                 --paper-checkbox-checked-ink-color: var(--android);
@@ -30311,7 +29944,118 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
                 }
                 ;
             }
-        </style></template></dom-module><dom-module id="hero-block" assetpath="hero-block/">
+        </style></template></dom-module><dom-module id="app-data" assetpath="app-data/">
+    <template>
+        <iron-ajax auto="" url="[[speakersSource]]" handle-as="json" last-response="{{speakers}}"></iron-ajax>
+        <iron-ajax auto="" url="[[sessionsSource]]" handle-as="json" last-response="{{sessions}}"></iron-ajax>
+        <iron-ajax auto="" url="[[postsSource]]" handle-as="json" last-response="{{posts}}"></iron-ajax>
+        <iron-ajax auto="" url="[[partnersSource]]" handle-as="json" last-response="{{partners}}"></iron-ajax>
+        <iron-ajax auto="" url="[[scheduleSource]]" handle-as="json" last-response="{{_scheduleRaw}}"></iron-ajax>
+    </template>
+</dom-module>
+
+<script>
+    Polymer({
+        is: 'app-data',
+        properties: {
+            speakersSource: {
+                type: String,
+                value: '../../data/speakers.json'
+            },
+            sessionsSource: {
+                type: String,
+                value: '../../data/sessions.json'
+            },
+            postsSource: {
+                type: String,
+                value: '../../data/blog.json'
+            },
+            partnersSource: {
+                type: String,
+                value: '../../data/partners.json'
+            },
+            scheduleSource: {
+                type: String,
+                value: '../../data/schedule.json'
+            },
+            speakers: {
+                type: Array,
+                notify: true
+            },
+            sessions: {
+                type: Array,
+                notify: true
+            },
+            posts: {
+                type: Array,
+                notify: true
+            },
+            partners: {
+                type: Array,
+                notify: true
+            },
+            _scheduleRaw: {
+                type: Array
+            },
+            schedule: {
+                type: Array,
+                notify: true
+            }
+        },
+        observers: [
+            '_generateSchedule(speakers, sessions, _scheduleRaw)'
+        ],
+        _generateSchedule: function() {
+            for (var i = 0, scheduleLen = this._scheduleRaw.length; i < scheduleLen; i++) {
+                var day = this._scheduleRaw[i];
+                for (var j = 0, timeslotsLen = day.timeslots.length; j < timeslotsLen; j++) {
+                    var timeslot = day.timeslots[j];
+                    for (var k = 0, sessionsLen = timeslot.sessions.length; k < sessionsLen; k++) {
+                        for (var l = 0, subSessionsLen = timeslot.sessions[k].length; l < subSessionsLen; l++) {
+                            var session = this._getSession(timeslot.sessions[k][l]);
+                            session.track = day.tracks[k];
+                            session.startTime = timeslot.startTime;
+                            session.endTime = subSessionsLen > 1 ? this._getEndTime(day.date, timeslot.startTime, timeslot.endTime, subSessionsLen, l + 1) : timeslot.endTime;
+                            this._scheduleRaw[i].timeslots[j].sessions[k][l] = session;
+                        }
+                    }
+                }
+            }
+            this.schedule = this._scheduleRaw;
+        },
+        _getSession: function(sessionId) {
+            for (var i = 0, sessionsLen = this.sessions.length; i < sessionsLen; i++) {
+                if (sessionId === this.sessions[i].id) {
+                    this.sessions[i].mainTag = this.sessions[i].tags ? app.generateClass(this.sessions[i].tags[0]) : 'default';
+                    if (this.sessions[i].speakers) {
+                        for (var j = 0, speakersLen = this.sessions[i].speakers.length; j < speakersLen; j++) {
+                            if (!this.sessions[i].speakers[j].id) {
+                                this.sessions[i].speakers[j] = this._getSpeaker(this.sessions[i].speakers[j]);
+                            }
+                        }
+                    }
+                    return this.sessions[i];
+                }
+            }
+        },
+        _getSpeaker: function(speakerId) {
+            for (var i = 0, speakersLen = this.speakers.length; i < speakersLen; i++) {
+                if (speakerId === this.speakers[i].id) {
+                    return this.speakers[i];
+                }
+            }
+        },
+        _getEndTime: function(date, startTime, endTime, totalNumber, number) {
+            var timezone = new Date().toString().match(/([A-Z]+[\+-][0-9]+.*)/)[1],
+                timeStart = new Date(date + ' ' + startTime + ' ' + timezone).getTime(),
+                timeEnd = new Date(date + ' ' + endTime + ' ' + timezone).getTime(),
+                difference = Math.floor((timeEnd - timeStart) / totalNumber),
+                result = new Date(timeStart + difference * number);
+            return result.getHours() + ':' + result.getMinutes();
+        }
+    });
+</script>
+<dom-module id="hero-block" assetpath="hero-block/">
     <template>
         <style>
             :host {
@@ -30324,6 +30068,11 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
                 }
                 ;
                 color: #4E4E4E;
+            }
+
+            paper-tab {
+                flex: none;
+                padding: 0 10px;
             }
 
             .nav-link {
@@ -30414,16 +30163,25 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
                 <paper-toolbar>
                     <paper-icon-button class="menu-toggle" icon="menu" on-tap="togglePanel"></paper-icon-button>
                     <div class="flex hidden-xs">
-                        <a data-route="home" href="/" hidden="{{hideLogo}}">
+                        <a data-route="home" href="/" hidden$="{{hideLogo}}">
                             <img class="logo" src="../images/logo-white.svg" alt="GDG DevFest 2015">
                         </a>
                     </div>
                     <paper-tabs class="hidden-xs" attr-for-selected="data-route" selected="{{route}}">
-                        <paper-tab class="text-u-c">
-                            <a data-route="blog" href="#!/blog" class="nav-link horizontal center-center layout">Blog</a>
+                        <paper-tab class="text-u-c" link="">
+                            <a data-route="blog" href="#!/blog" class="nav-link horizontal center-center layout">
+                                Blog
+                            </a>
                         </paper-tab>
-                        <paper-tab class="text-u-c">
-                            <a data-route="speakers" href="#!/speakers" class="nav-link horizontal center-center layout">Speakers</a>
+                        <paper-tab class="text-u-c" link="">
+                            <a data-route="schedule" href="#!/schedule" class="nav-link horizontal center-center layout">
+                                Schedule
+                            </a>
+                        </paper-tab>
+                        <paper-tab class="text-u-c" link="">
+                            <a data-route="speakers" href="#!/speakers" class="nav-link horizontal center-center layout">
+                                Speakers
+                            </a>
                         </paper-tab>
                         <!-- <paper-tab class="text-u-c">
                             <a data-route="contact" href="#!/contact" class="nav-link horizontal center-center layout">Contact</a>
@@ -30503,7 +30261,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
             .photo {
                 margin: 20px 0;
             }
-            @media (min-width: 768px) {
+            @media (min-width: 601px) {
                 iron-list {
                     width: 80%;
                 }
@@ -30578,7 +30336,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
         opacity: 1;
     }
 
-    @media (min-width: 768px) {
+    @media (min-width: 601px) {
         .photo-wrapper {
             height: 500px;
         }
@@ -30652,14 +30410,14 @@ Polymer({
 
             .counter {
                 font-size: 3em;
-                font-weight: 100;
+                font-weight: 200;
             }
 
             .caption {
               font-size: .85em;
             }
 
-            @media (max-width: 767px) {
+            @media (max-width: 600px) {
                 .statistics-element:nth-child(1),
                 .statistics-element:nth-child(2) {
                     margin-bottom: 40px;
@@ -30723,17 +30481,17 @@ Polymer({
             }
 
             .fe-people {
-                font-weight: 100;
+                font-weight: 200;
             }
 
-            @media (max-width: 767px) {
+            @media (max-width: 600px) {
                 .fe-people:nth-child(1),
                 .fe-people:nth-child(2) {
                     margin-bottom: 40px;
                 }
             }
 
-            @media (min-width: 768px) {
+            @media (min-width: 601px) {
                 .fe-people-img {
                     height: 120px;
                     width: 120px;
@@ -30760,11 +30518,10 @@ Polymer({
                 font-size: .9em;
             }
         </style>
-        <iron-ajax auto="" url="[[source]]" handle-as="json" on-response="peopleLoaded"></iron-ajax>
         <div class="container text-center">
             <content></content>
             <div class="flex wrap layout horizontal people-wraper">
-                <template is="dom-repeat" items="[[people)]" as="person">
+                <template is="dom-repeat" items="[[featuredPeople]]" as="person">
                     <div class="fe-people two-column-xs">
                         <iron-image src="[[person.photoUrl]]" class="fe-people-img placeholder-color img-circle" preload="" fade="" sizing="cover"></iron-image>
                         <h4 class="fe-people-name">
@@ -30787,10 +30544,19 @@ Polymer({
     Polymer({
         is: 'featured-people',
         properties: {
-            source: String
+            people: {
+                type: Array,
+                observer: '_peopleChanged'
+            }
         },
-        peopleLoaded: function(event, response) {
-            this.people = this.randomOrder(response.response).slice(0, 4);
+        _peopleChanged: function() {
+            var filteredPeople = [];
+            for (var i = 0; i < this.people.length; i++) {
+                if (this.people[i].featured) {
+                    filteredPeople.push(this.people[i]);
+                }
+            }
+            this.featuredPeople = this.randomOrder(filteredPeople).slice(0, 4);
         },
         randomOrder: function(array) {
             return array.sort(function() {
@@ -30808,11 +30574,11 @@ Polymer({
             }
 
             :host > .logos-block-wrapper {
-              margin-bottom: 30px;
+                margin-bottom: 30px;
             }
 
             .container .heading {
-              margin-bottom: 20px;
+                margin-bottom: 20px;
             }
 
             .container .block-link {
@@ -30820,10 +30586,10 @@ Polymer({
             }
 
             .logos-block-title {
-              margin: 20px 0;
-              font-weight: 100;
-              font-size: 22px;
-              letter-spacing: .05em;
+                margin: 20px 0;
+                font-weight: 200;
+                font-size: 22px;
+                letter-spacing: .05em;
             }
 
             .logo-item {
@@ -30835,10 +30601,9 @@ Polymer({
                 width: 140px;
             }
         </style>
-        <iron-ajax auto="" url="[[source]]" handle-as="json" on-response="logosLoaded" debounce-duration="300"></iron-ajax>
         <div class="container relative layout vertical center">
             <content></content>
-            <template is="dom-repeat" items="[[logoBlocks]]" as="block">
+            <template is="dom-repeat" items="[[logosBlocks]]" as="block">
                 <div class="logos-block-wrapper">
                     <h5 class="logos-block-title text-center">[[block.title]]</h5>
                     <div class="wrap layout horizontal center-center">
@@ -30861,10 +30626,8 @@ Polymer({
     Polymer({
         is: 'logos-block',
         properties: {
-            source: String
-        },
-        logosLoaded: function(event, response) {
-            this.logoBlocks = response.response;
+            source: String,
+            logosBlocks: Array
         }
     });
 </script>
@@ -30997,10 +30760,6 @@ Polymer({
                 margin-bottom: 10px;
                 font-size: 1.3em;
                 font-weight: 300;
-            }
-
-            .link-block a {
-                font-weight: 100;
             }
 
             .link-block a:hover {
@@ -31152,17 +30911,20 @@ Polymer({
 <iron-iconset-svg name="app-icons" size="24">
     <svg>
         <defs>
-            <g id="glus">
+            <g id="gplus">
                 <path d="M11.2 8.87c0-1.02-.63-3.02-2.08-3.02-.64 0-1.32.44-1.32 1.67 0 1.18.63 2.93 1.97 2.93.06.01 1.43-.01 1.43-1.58zm-.63 4.94l-.31-.01h-.02c-.26 0-1.15.05-1.82.27-.65.24-1.42.72-1.42 1.7 0 1.08 1.04 2.23 2.96 2.23 1.52 0 2.44-1 2.44-1.97 0-.77-.46-1.24-1.83-2.22zm9.43-11.81h-16c-1.1 0-1.99.9-1.99 2l-.01 16c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2v-16c0-1.1-.9-2-2-2zm-10.93 17.2c-2.8 0-4.07-1.56-4.07-3.01 0-.45.14-1.59 1.48-2.39.77-.47 1.85-.78 3.14-.91-.19-.25-.34-.55-.34-.99 0-.16.02-.31.05-.46h-.38c-1.97 0-3.15-1.55-3.15-3.04 0-1.73 1.29-3.6 4.11-3.6h4.21l-.34.34-.71.71-.06.06h-.71c.41.42.9 1.12.9 2.16 0 1.4-.74 2.09-1.56 2.73-.16.12-.42.38-.42.72 0 .3.24.5.39.62.13.11.3.22.47.34.81.57 1.92 1.34 1.92 2.88 0 1.77-1.29 3.84-4.93 3.84zm9.93-7.2h-2v2h-1v-2h-2v-1h2v-2h1v2h2v1z"></path>
             </g>
             <g id="twitter">
                 <path d="M20 2h-16c-1.1 0-1.99.9-1.99 2l-.01 16c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2v-16c0-1.1-.9-2-2-2zm-2.29 7.33c-.06 4.62-3.02 7.78-7.42 7.98-1.82.08-3.14-.5-4.28-1.23 1.34.21 3.01-.32 3.9-1.09-1.32-.13-2.1-.8-2.46-1.88.38.07.78.05 1.14-.03-1.19-.4-2.04-1.13-2.08-2.67.33.15.68.29 1.14.32-.9-.5-1.55-2.35-.8-3.57 1.32 1.45 2.91 2.63 5.52 2.79-.65-2.8 3.06-4.32 4.61-2.44.66-.13 1.19-.38 1.7-.65-.21.65-.62 1.1-1.12 1.47.54-.07 1.03-.21 1.44-.41-.25.53-.81 1.01-1.29 1.41z"></path>
             </g>
             <g id="facebook">
-              <path d="M19,4V7H17A1,1 0 0,0 16,8V10H19V13H16V20H13V13H11V10H13V7.5C13,5.56 14.57,4 16.5,4M20,2H4A2,2 0 0,0 2,4V20A2,2 0 0,0 4,22H20A2,2 0 0,0 22,20V4C22,2.89 21.1,2 20,2Z"></path>
+                <path d="M19,4V7H17A1,1 0 0,0 16,8V10H19V13H16V20H13V13H11V10H13V7.5C13,5.56 14.57,4 16.5,4M20,2H4A2,2 0 0,0 2,4V20A2,2 0 0,0 4,22H20A2,2 0 0,0 22,20V4C22,2.89 21.1,2 20,2Z"></path>
             </g>
             <g id="linkedin">
-            <path d="M19,19H16V13.7A1.5,1.5 0 0,0 14.5,12.2A1.5,1.5 0 0,0 13,13.7V19H10V10H13V11.2C13.5,10.36 14.59,9.8 15.5,9.8A3.5,3.5 0 0,1 19,13.3M6.5,8.31C5.5,8.31 4.69,7.5 4.69,6.5A1.81,1.81 0 0,1 6.5,4.69C7.5,4.69 8.31,5.5 8.31,6.5A1.81,1.81 0 0,1 6.5,8.31M8,19H5V10H8M20,2H4C2.89,2 2,2.89 2,4V20A2,2 0 0,0 4,22H20A2,2 0 0,0 22,20V4C22,2.89 21.1,2 20,2Z"></path>
+                <path d="M19,19H16V13.7A1.5,1.5 0 0,0 14.5,12.2A1.5,1.5 0 0,0 13,13.7V19H10V10H13V11.2C13.5,10.36 14.59,9.8 15.5,9.8A3.5,3.5 0 0,1 19,13.3M6.5,8.31C5.5,8.31 4.69,7.5 4.69,6.5A1.81,1.81 0 0,1 6.5,4.69C7.5,4.69 8.31,5.5 8.31,6.5A1.81,1.81 0 0,1 6.5,8.31M8,19H5V10H8M20,2H4C2.89,2 2,2.89 2,4V20A2,2 0 0,0 4,22H20A2,2 0 0,0 22,20V4C22,2.89 21.1,2 20,2Z"></path>
+            </g>
+            <g id="github">
+                <path d="M4,2H20A2,2 0 0,1 22,4V20A2,2 0 0,1 20,22H14.85C14.5,21.92 14.5,21.24 14.5,21V18.26C14.5,17.33 14.17,16.72 13.81,16.41C16.04,16.16 18.38,15.32 18.38,11.5C18.38,10.39 18,9.5 17.35,8.79C17.45,8.54 17.8,7.5 17.25,6.15C17.25,6.15 16.41,5.88 14.5,7.17C13.71,6.95 12.85,6.84 12,6.84C11.15,6.84 10.29,6.95 9.5,7.17C7.59,5.88 6.75,6.15 6.75,6.15C6.2,7.5 6.55,8.54 6.65,8.79C6,9.5 5.62,10.39 5.62,11.5C5.62,15.31 7.95,16.17 10.17,16.42C9.89,16.67 9.63,17.11 9.54,17.76C8.97,18 7.5,18.45 6.63,16.93C6.63,16.93 6.1,15.97 5.1,15.9C5.1,15.9 4.12,15.88 5,16.5C5,16.5 5.68,16.81 6.14,17.97C6.14,17.97 6.73,19.91 9.5,19.31V21C9.5,21.24 9.5,21.92 9.14,22H4A2,2 0 0,1 2,20V4A2,2 0 0,1 4,2Z"></path>
             </g>
         </defs>
     </svg>
@@ -31231,7 +30993,7 @@ Polymer({
                 color: inherit;
             }
 
-            @media (min-width: 768px) {
+            @media (min-width: 601px) {
                 .card-container {
                     padding: 0;
                 }
@@ -31331,7 +31093,7 @@ Polymer({
                 letter-spacing: .1em;
                 color: #fff;
                 font-size: 24px;
-                font-weight: 100;
+                font-weight: 200;
             }
 
             .call-to-action .heading {
@@ -31408,10 +31170,13 @@ Polymer({
 
         a {
             color: var(--social-font-color);
-            font-weight: 100;
         }
 
-        @media (min-width: 768px) {
+        time {
+            font-size: 16px;
+        }
+
+        @media (min-width: 601px) {
             .post-content {
                 margin-top: 10px;
             }
@@ -31419,10 +31184,11 @@ Polymer({
     </style>
     <template>
         <span class="post-meta">
-            <a href="{{canonicalUrl}}/{{author}}" target="_blank">
-                <span>{{sign}}</span><span>{{author}}</span>
+            <a href="social-post/%7B%7B_calculateUrl(author)]]" target="_blank">
+                <span>[[sign]]</span>
+                <span>[[author]]</span>
             </a>
-            <time is="time-ago" datetime="{{when}}"></time>
+            <time is="time-ago" datetime$="[[when]]"></time>
         </span>
         <span id="postContent" class="post-content"></span>
     </template>
@@ -31960,14 +31726,16 @@ Polymer({
         is: 'social-post',
         properties: {
             author: {
-                type: String
+                type: String,
+                value: 'GDGLviv'
             },
             url: {
                 type: String
             },
             text: {
                 type: String,
-                observer: '_textChanged'
+                observer: '_textChanged',
+                value: 'Tweet us about your experience at GDG DevFest Ukraine 2015'
             },
             when: {
                 type: Date
@@ -31981,6 +31749,9 @@ Polymer({
         },
         _textChanged: function() {
             this.$.postContent.innerHTML = this.text;
+        },
+        _calculateUrl: function(author) {
+            return this.canonicalUrl + author;
         }
     });
 </script>
@@ -31999,14 +31770,14 @@ Polymer({
             }
 
             .heading a {
-                font-weight: 100;
+                font-weight: 200;
             }
         </style>
         <div class="container relative layout vertical-horizontal">
             <iron-ajax auto="" url="[[source]]" handle-as="json" on-response="feedLoaded"></iron-ajax>
             <div class="flex-5">
                 <h4 class="heading">What's up <a href="https://www.google.com/#q=%23dfua">#dfua</a></h4>
-                <social-post id="post" author="{{author}}" text="{{text}}" when="{{when}}" canonicalurl="https://twitter.com/" sign="@"></social-post>
+                <social-post id="post" author="[[author]]" text="[[text]]" when="[[when]]" canonical-url="https://twitter.com/" sign="@"></social-post>
             </div>
             <span class="flex"></span>
             <div class="flex-5 second-block">
@@ -32014,7 +31785,7 @@ Polymer({
                 <span class="block">Add to circles, like, follow or connect with us on</span>
                 <div class="align-pb-block">
                     <a href="https://plus.google.com/102444623953913144164" target="_blank">
-                        <paper-icon-button icon="app-icons:glus"></paper-icon-button>
+                        <paper-icon-button icon="app-icons:gplus"></paper-icon-button>
                     </a>
                     <a href="https://www.facebook.com/GDGLviv" target="_blank">
                         <paper-icon-button icon="app-icons:facebook"></paper-icon-button>
@@ -32130,7 +31901,7 @@ Polymer({
             font-size: 26px;
         }
 
-        @media (min-width: 768px) {
+        @media (min-width: 601px) {
             paper-card {
                 width: 70%;
             }
@@ -32170,7 +31941,7 @@ Polymer({
                 </div>
             </paper-card>
         </div>
-        <paper-scroll-header-panel id="scrollHeaderPanel" class="visible-xs hidden-sm hidden-md hidden-lg fit" condenses="" keep-condensed-header="">
+        <paper-scroll-header-panel id="scrollHeaderPanel" class="visible-xs fit" condenses="" keep-condensed-header="">
             <paper-toolbar class="tall">
                 <paper-icon-button class="back-button" on-tap="closePost" icon="arrow-back"></paper-icon-button>
                 <div id="title" class="bottom title">[[meta.title]]</div>
@@ -32265,21 +32036,21 @@ Polymer({
                 padding: 0 16px;
             }
 
-            @media (max-width: 767px) {
+            @media (max-width: 600px) {
                 .post-wrapper,
                 .post {
                     @apply(--layout-fit);
                 }
             }
 
-            @media (min-width: 768px) {
+            @media (min-width: 601px) {
                 .card-wrapper {
                     margin: 0 15px 30px;
                     width: calc(100% / 3);
                 }
             }
         </style>
-        <iron-ajax auto="" url="[[source]]" handle-as="json" on-response="postsLoaded"></iron-ajax>
+        <!-- <iron-ajax auto url="[[source]]" handle-as="json" on-response="postsLoaded"></iron-ajax> -->
         <div id="posts" class="container flex layout horizontal center-justified wrap">
             <template is="dom-repeat" items="[[posts]]" as="post">
                 <div class="card-wrapper layout horizontal">
@@ -32315,6 +32086,10 @@ Polymer({
         ],
         properties: {
             source: String,
+            posts: {
+                type: Array,
+                observer: '_postsChanged'
+            },
             opened: {
                 type: Boolean,
                 observer: '_openedChanged'
@@ -32360,8 +32135,8 @@ Polymer({
         listeners: {
             'neon-animation-finish': '_onNeonAnimationFinish'
         },
-        postsLoaded: function(event, response) {
-            this.posts = response.response.reverse();
+        _postsChanged: function() {
+            this.posts = this.posts.reverse();
 
             this.async(function() {
                 var nodeList = this.$.posts.querySelectorAll('.card-wrapper');
@@ -32394,7 +32169,7 @@ Polymer({
             this.$.postCon.style.display = 'block';
             this.cancelAnimation();
             this.playAnimation('openPost');
-            if (screen.width > 768) {
+            if (screen.width > 601) {
                 this.playAnimation('unloadPosts');
             }
         },
@@ -32405,13 +32180,13 @@ Polymer({
             this.playAnimation('closePost');
         },
         _onNeonAnimationFinish: function() {
-            if (this.opened && screen.width > 768) {
+            if (this.opened && screen.width > 601) {
                 this.$.posts.style.display = 'none';
                 this.$.posts.style.position = 'absolute';
             }
             if (!this.opened) {
                 this.$.postCon.style.display = 'none';
-                if (screen.width > 768) {
+                if (screen.width > 601) {
                     this.$.posts.style.display = 'flex';
                     this.$.posts.style.position = 'relative';
                 }
@@ -32433,6 +32208,9 @@ Polymer({
                 z-index: 9;
                 height: 100%;
                 --paper-card: #fff;
+                --paper-icon-button: {
+                    color: var(--primary-text-color);
+                };
             }
 
             paper-scroll-header-panel {
@@ -32484,9 +32262,9 @@ Polymer({
                 font-size: 16px;
             }
 
-            .tags-label {
-                font-weight: 400;
+            .tag-label {
                 font-size: 14px;
+                color: #ffffff !important;
             }
 
             .tag {
@@ -32508,7 +32286,7 @@ Polymer({
                 font-weight: 400;
             }
 
-            @media (min-width: 768px) {
+            @media (min-width: 601px) {
                 paper-card {
                     width: 70%;
                 }
@@ -32578,7 +32356,7 @@ Polymer({
                         <div class="align-pb-block">
                             <template is="dom-repeat" items="[[person.socials]]" as="social">
                                 <a href="[[social.link]]" target="_blank">
-                                    <paper-button class="colorful">[[social.name]]</paper-button>
+                                    <paper-icon-button icon="[[social.icon]]"></paper-icon-button>
                                 </a>
                             </template>
                         </div>
@@ -32586,7 +32364,7 @@ Polymer({
                 </div>
             </paper-card>
         </div>
-        <paper-scroll-header-panel id="scrollHeaderPanel" class="visible-xs hidden-sm hidden-md hidden-lg fit" condenses="" keep-condensed-header="">
+        <paper-scroll-header-panel id="scrollHeaderPanel" class="visible-xs fit" condenses="" keep-condensed-header="">
             <paper-toolbar class="tall">
                 <paper-icon-button class="back-button" on-tap="closePeople" icon="arrow-back"></paper-icon-button>
                 <div id="title" class="bottom title">[[person.name]]</div>
@@ -32626,7 +32404,7 @@ Polymer({
                     <div class="align-pb-block">
                         <template is="dom-repeat" items="[[person.socials]]" as="social">
                             <a href="[[social.link]]" target="_blank">
-                                <paper-button class="colorful">[[social.name]]</paper-button>
+                                <paper-icon-button icon="[[social.icon]]"></paper-icon-button>
                             </a>
                         </template>
                     </div>
@@ -32808,6 +32586,9 @@ Polymer({
             .filters {
                 margin-bottom: 20px;
             }
+            .filters paper-checkbox {
+                background: none;
+            }
 
             .filters .card-content {
                 border-bottom: 1px solid #eee;
@@ -32826,7 +32607,7 @@ Polymer({
                 padding: 14px 16px;
             }
 
-            @media (max-width: 767px) {
+            @media (max-width: 600px) {
                 .person-wrapper,
                 .person {
                     @apply(--layout-fit);
@@ -32839,7 +32620,7 @@ Polymer({
                 }
             }
 
-            @media (min-width: 768px) {
+            @media (min-width: 601px) {
                 .card-wrapper {
                     width: calc(100% / 3);
                 }
@@ -32851,8 +32632,6 @@ Polymer({
                 }
             }
         </style>
-        <iron-ajax auto="" url="[[source]]" handle-as="json" last-response="{{peopleTemp}}"></iron-ajax>
-        <iron-ajax auto="" url="[[sessionsSource]]" handle-as="json" last-response="{{sessions}}"></iron-ajax>
         <div id="people" class="container flex layout vertical">
             <div class="layout vertical-horizontal">
                 <div class="flex">
@@ -32930,8 +32709,8 @@ Polymer({
             Polymer.NeonAnimationRunnerBehavior
         ],
         properties: {
-            source: String,
-            sessionsSource: String,
+            sessions: Array,
+            speakers: Array,
             tags: Array,
             badges: Array,
             filters: {
@@ -32990,21 +32769,21 @@ Polymer({
             }
         },
         observers: [
-            'generatePeople(peopleTemp, sessions)'
+            'generatePeople(speakers, sessions)'
         ],
         listeners: {
             'neon-animation-finish': '_onNeonAnimationFinish'
         },
-        generatePeople: function(peopleTemp, sessions) {
-            for (var i = 0; i < peopleTemp.length; i++) {
-                peopleTemp[i].sessions = [];
+        generatePeople: function(speakers, sessions) {
+            for (var i = 0; i < speakers.length; i++) {
+                speakers[i].sessions = [];
                 for (var j = 0; j < sessions.length; j++) {
-                    if (sessions[j].speakers.indexOf(peopleTemp[i].id) > -1) {
-                        peopleTemp[i].sessions.push(sessions[j]);
+                    if (sessions[j].speakers && sessions[j].speakers.indexOf(speakers[i].id) > -1) {
+                        speakers[i].sessions.push(sessions[j]);
                     }
                 }
             }
-            this.people = peopleTemp;
+            this.people = speakers;
 
             this._generateFilters();
 
@@ -33070,7 +32849,7 @@ Polymer({
             this.$.personCon.style.display = 'block';
             this.cancelAnimation();
             this.playAnimation('openPerson');
-            if (screen.width > 768) {
+            if (screen.width > 601) {
                 this.playAnimation('unloadPeople');
             }
         },
@@ -33081,13 +32860,13 @@ Polymer({
             this.playAnimation('closePerson');
         },
         _onNeonAnimationFinish: function() {
-            if (this.opened && screen.width > 768) {
+            if (this.opened && screen.width > 601) {
                 this.$.people.style.display = 'none';
                 this.$.people.style.position = 'absolute';
             }
             if (!this.opened) {
                 this.$.personCon.style.display = 'none';
-                if (screen.width > 768) {
+                if (screen.width > 601) {
                     this.$.people.style.display = 'flex';
                     this.$.people.style.position = 'relative';
                 }
@@ -33173,7 +32952,6 @@ Polymer({
                 font-size: 16px;
             }
         </style>
-        <iron-ajax auto="" url="[[source]]" handle-as="json" on-response="newsLoaded"></iron-ajax>
         <div class="container relative">
             <h4 class="heading text-center">Latest news</h4>
             <div class="layout vertical-horizontal">
@@ -33197,10 +32975,14 @@ Polymer({
     Polymer({
         is: 'latest-news',
         properties: {
-            source: String
+            source: String,
+            posts: {
+                type: Array,
+                observer: '_postsChanged'
+            },
         },
-        newsLoaded: function(event, response) {
-            var temp = response.response.reverse().slice(0, 2);
+        _postsChanged: function() {
+            var temp = this.posts.reverse().slice(0, 2);
             for (var i = 0; i < temp.length; i++) {
                 temp[i].url = '#!/blog/' + temp[i].titleUrl;
                 temp[i].dataRoute = 'blog/' + temp[i].titleUrl;
@@ -33229,6 +33011,7 @@ Polymer({
             .ticket-name {
                 margin-bottom: -5px;
                 font-size: 30px;
+                font-weight: 200;
             }
 
             .price-block {
@@ -33238,6 +33021,7 @@ Polymer({
             .sold-out > *:not(.sold-out-text) {
                 opacity: .3;
             }
+
             .sold-out-text {
                 font-size: 28px;
                 text-transform: uppercase;
@@ -33251,6 +33035,7 @@ Polymer({
 
             .price {
                 font-size: 70px;
+                font-weight: 200;
             }
 
             .details {
@@ -33329,13 +33114,13 @@ Polymer({
         lang: 'en'
     };
     /* jshint ignore:end */
-    (function() {
+    setTimeout(function() {
         var script = document.createElement('script');
         script.type = 'text/javascript';
         script.async = true;
         script.src = 'http://2event.com/js/widget-tickets.js';
         document.getElementsByTagName('head')[0].appendChild(script);
-    })();
+    },2000);
 
     Polymer({
         is: 'tickets-block',
@@ -33366,7 +33151,7 @@ Polymer({
                 color: var(--secondary-text-color);
             }
 
-            @media (min-width: 768px) {
+            @media (min-width: 601px) {
                 paper-card {
                     width: 80%;
                 }
@@ -33619,4 +33404,438 @@ Polymer({
     }
 });
 </script>
+<dom-module id="schedule-block" assetpath="schedule-block/">
+    <template>
+        <style include="tags-color"></style>
+        <style>
+            :host {
+                margin-top: 32px;
+                display: block;
+                --paper-tabs-selection-bar-color: #fff;
+                --paper-tab-ink: rgba(255, 255, 255, 0.2);
+                --paper-tab-content: {
+                    font-weight: 400 !important;
+                }
+                ;
+                --paper-tab: {
+                    color: #fff;
+                    font-weight: 400;
+                    text-transform: uppercase;
+                    flex: none;
+                }
+            }
+
+            .schedule-icon {
+                --iron-icon-height: 20px;
+                --iron-icon-width: 20px;
+            }
+
+            .track {
+                width: 40px;
+            }
+
+            .track-dot span {
+                margin: 7px 0 0 8px;
+                width: 10px;
+                height: 10px;
+                display: block;
+                border-radius: 50%;
+            }
+
+            .session {
+                background: #fff;
+            }
+
+            .sub-session {
+                padding: 10px 16px;
+                background: none !important;
+                color: inherit !important;
+                cursor: pointer;
+            }
+
+            .session:last-of-type .sub-sessio:last-of-type {
+                padding-bottom: 0;
+            }
+
+            .session-title {
+                margin-bottom: 10px;
+                font-weight: 300;
+                font-size: 20px;
+                line-height: 1.1;
+                color: var(--primary-text-color);
+            }
+
+            .start-time {
+                margin: 25px 0 10px 10px;
+                font-size: 14px;
+                font-weight: 400;
+                color: var(--secondary-text-color);
+            }
+
+            .session-meta {
+                margin-top: 10px;
+                font-size: 14px;
+                color: var(--disabled-text-color);
+            }
+
+            .meta-block {
+                margin-right: 10px;
+            }
+
+            .session-meta-icon {
+                --iron-icon-height: 18px;
+                --iron-icon-width: 18px;
+            }
+
+            .lang {
+                margin: 5px 0 0 10px;
+                text-transform: uppercase;
+                font-size: 12px;
+                color: var(--secondary-text-color);
+            }
+
+            .speaker {
+                color: var(--secondary-text-color);
+            }
+
+            .speaker-img {
+                margin-right: 10px;
+                height: 30px;
+                width: 30px;
+            }
+
+            @media (max-width: 600px) {
+                .container {
+                    padding: 40px 0;
+                }
+                .sessions-wrapper {
+                    padding: 10px 0;
+                    background: #fff;
+                    box-shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.14), 0 1px 5px 0 rgba(0, 0, 0, 0.12), 0 3px 1px -2px rgba(0, 0, 0, 0.2);
+                }
+                .session-dialog-wrapper {
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    right: 0;
+                    bottom: 0;
+                    padding: 0;
+                    margin: 0;
+                }
+            }
+
+            @media (min-width: 601px) {
+                .schedule {
+                    margin-top: 10px;
+                }
+                .tracks-header {
+                    margin-top: 5px;
+                    color: var(--secondary-text-color);
+                    text-transform: uppercase;
+                }
+                .start-time {
+                    margin: 15px 10px;
+                    font-size: 20px;
+                    font-weight: 300;
+                }
+                .timeslot {
+                    margin-bottom: 10px;
+                }
+                .track {
+                    width: 30px;
+                }
+                .track-dot span {
+                    margin-left: 4px;
+                }
+                .session {
+                    margin: 0 10px;
+                    box-shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.14), 0 1px 5px 0 rgba(0, 0, 0, 0.12), 0 3px 1px -2px rgba(0, 0, 0, 0.2);
+                }
+                .sub-session {
+                    padding: 20px 16px;
+                    border-top: 3px solid;
+                }
+                .session-dialog-wrapper {
+                    width: 50%;
+                    min-height: 90% !important;
+                    max-height: 90% !important;
+                }
+            }
+        </style>
+        <div id="schedule" class="container flex layout vertical">
+            <paper-tabs class="schedule-tabs" selected="{{selected}}">
+                <template is="dom-repeat" items="[[schedule]]" as="day">
+                    <paper-tab>[[day.dateReadable]]</paper-tab>
+                </template>
+            </paper-tabs>
+
+            <iron-pages class="schedule" selected="{{selected}}">
+                <template is="dom-repeat" items="[[schedule]]" as="day">
+                    <div>
+                        <div class="tracks-header layout horizontal" hidden$="[[smallScreen]]">
+                            <template is="dom-repeat" items="[[day.tracks]]" as="track">
+                                <div class="layout horizontal center-center flex">
+                                    <iron-icon class="session-meta-icon" icon="room"></iron-icon>
+                                    <span>[[track.title]]</span>
+                                </div>
+                            </template>
+                        </div>
+                        <template is="dom-repeat" items="[[day.timeslots]]" as="timeslot">
+                            <div class="timeslot layout vertical">
+                                <div class="start-time">
+                                    <iron-icon class="schedule-icon" icon="schedule"></iron-icon>
+                                    <span>[[timeslot.startTime]]</span>
+                                </div>
+                                <div class="sessions-wrapper layout vertical-horizontal flex">
+                                    <template is="dom-repeat" items="[[timeslot.sessions]]" as="session">
+                                        <div class="session layout vertical flex">
+                                            <template is="dom-repeat" items="[[session]]" as="subSession">
+                                                <div class$="[[ _concatClass('sub-session layout horizontal', subSession.mainTag) ]]" on-tap="_sessionTap">
+                                                    <div class="track track-dot">
+                                                        <span class$="[[subSession.mainTag]]"></span>
+                                                    </div>
+                                                    <div class="session-detail layout vertical flex">
+                                                        <div class="layout horizontal">
+                                                            <h4 class="session-title flex">[[subSession.title]]</h4>
+                                                            <span class="lang">[[subSession.language]]</span>
+                                                        </div>
+                                                        <template is="dom-repeat" items="[[subSession.speakers]]" as="speaker">
+                                                            <div class="speaker layout horizontal">
+                                                                <iron-image src="[[speaker.photoUrl]]" class="speaker-img placeholder-color img-circle" preload="" fade="" sizing="cover"></iron-image>
+                                                                <div class="person-detail flex layout vertical center-center">
+                                                                    <span class="name self-start">[[speaker.name]]</span>
+                                                                </div>
+                                                            </div>
+                                                        </template>
+                                                        <div class="session-meta layout horizontal">
+                                                            <div class="meta-block">
+                                                                <iron-icon class="session-meta-icon" icon="restore"></iron-icon>
+                                                                <span>[[subSession.endTime]]</span>
+                                                            </div>
+                                                            <div class="meta-block" hidden$="[[!smallScreen]]">
+                                                                <iron-icon class="session-meta-icon" icon="room"></iron-icon>
+                                                                <span>[[subSession.track.title]]</span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </template>
+                                        </div>
+                                    </template>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                </template>
+            </iron-pages>
+        </div>
+
+        <paper-dialog id="sessionDialog" class="session-dialog-wrapper" with-backdrop="" modal$="{{smallScreen}}" on-iron-overlay-opened="_patchOverlay" entry-animation="scale-up-animation" exit-animation="fade-out-animation">
+            <session-dialog session="{{selectedSession}}" opened="{{opened}}"></session-dialog>
+        </paper-dialog>
+        <iron-media-query query="(max-width: 600px)" query-matches="{{smallScreen}}"></iron-media-query>
+    </template>
+</dom-module>
+
+<script>
+    Polymer({
+        is: 'schedule-block',
+        properties: {
+            schedule: {
+                type: Array
+            },
+            sessions: {
+                type: Array
+            },
+            selected: {
+                type: Number,
+                value: 0
+            },
+            opened: {
+                type: Boolean,
+                observer: '_openedChanged'
+            }
+        },
+        observers: [
+            'checkUrlParams(schedule, sessions)'
+        ],
+        checkUrlParams: function(schedule, sessions) {
+            if (app.params && app.params.id) {
+                var session = app.findByPropertyValue(sessions, 'id', app.params.id);
+                if (session) {
+                    this.async(function() {
+                        this._openSession(session);
+                    });
+                }
+            }
+        },
+        _concatClass: function(basic, target) {
+            return basic + ' ' + target;
+        },
+        _sessionTap: function() {
+            page.redirect('/schedule/' + event.model.subSession.id);
+            this._openSession(event.model.subSession);
+        },
+        _openSession: function(session) {
+            this.selectedSession = session;
+            this.opened = true;
+            this.$.sessionDialog.open();
+        },
+        _openedChanged: function() {
+            // page('/schedule');
+            this.$.sessionDialog.close();
+        },
+        _patchOverlay: function(e) {
+            if (e.target.withBackdrop) {
+                e.target.parentNode.insertBefore(e.target._backdrop, e.target);
+            }
+        }
+    });
+</script>
+<dom-module id="session-dialog" assetpath="session-dialog/">
+    <template>
+        <style include="tags-color"></style>
+        <style>
+            :host {
+                display: block;
+            }
+
+            paper-scroll-header-panel {
+                background: #fff;
+                height: 100%;
+                --paper-scroll-header-panel-full-header: {
+                    background-color: var(--default-primary-color);
+                }
+                ;
+                --paper-scroll-header-panel-condensed-header: {
+                    background-color: var(--default-primary-color);
+                }
+                ;
+            }
+
+            paper-toolbar {
+                background-color: transparent;
+                color: #fff;
+            }
+
+            paper-toolbar .title {
+                margin: 0;
+            }
+
+            .card-content {
+                background: #fff;
+                padding: 16px;
+                color: var(--primary-text-color);
+            }
+
+            .session-description {
+                padding-top: 0;
+                padding-bottom: 0;
+            }
+
+            .meta-info {
+                font-size: 14px;
+                color: var(--disabled-text-color);
+            }
+
+            .meta-block {
+                margin-right: 15px;
+            }
+
+            .session-meta-icon {
+                --iron-icon-height: 18px;
+                --iron-icon-width: 18px;
+            }
+
+            .speaker,
+            .speakers-info {
+                color: var(--secondary-text-color);
+            }
+
+            .speaker-img {
+                margin-right: 10px;
+                height: 30px;
+                width: 30px;
+            }
+
+            .block-header {
+                margin-bottom: 10px;
+                font-weight: 400;
+                font-size: 16px;
+                color: var(--secondary-text-color);
+            }
+        </style>
+        <paper-scroll-header-panel id="scrollHeaderPanel" class$="[[_concatClass('fit', '')]]" condenses="" keep-condensed-header="">
+            <paper-toolbar class="tall">
+                <paper-icon-button class="back-button" on-tap="_close" icon="arrow-back"></paper-icon-button>
+                <div id="title" class="bottom title">[[session.title]]</div>
+            </paper-toolbar>
+            <div class="content flex">
+                <div class="card-content meta-info layout horizontal">
+                    <div class="meta-block">
+                        <iron-icon class="session-meta-icon" icon="schedule"></iron-icon>
+                        <span>[[session.startTime]]</span> -
+                        <span>[[session.endTime]]</span>
+                    </div>
+                    <div class="meta-block" hidden$="[[!smallScreen]]">
+                        <iron-icon class="session-meta-icon" icon="room"></iron-icon>
+                        <span>[[session.track.title]]</span>
+                    </div>
+                    <template is="dom-if" if="[[session.language]]">
+                        <div class="meta-block" hidden$="[[!smallScreen]]">
+                            <iron-icon class="session-meta-icon" icon="font-download"></iron-icon>
+                            <span>[[session.language]]</span>
+                        </div>
+                    </template>
+                </div>
+                <div class="card-content session-description">
+                    <marked-element markdown="[[session.description]]"></marked-element>
+                </div>
+                <template is="dom-if" if="[[session.speakers]]">
+                    <div class="card-content">
+                        <h4 class="block-header">Speakers</h4>
+                        <template is="dom-repeat" items="[[session.speakers]]" as="speaker">
+                            <div class="speaker layout horizontal">
+                                <iron-image src="[[speaker.photoUrl]]" class="speaker-img placeholder-color img-circle" preload="" fade="" sizing="cover"></iron-image>
+                                <div class="person-detail flex layout vertical center-center">
+                                    <span class="name self-start">[[speaker.name]]</span>
+                                </div>
+                            </div>
+                            <marked-element class="speakers-info" markdown="[[speaker.bio]]"></marked-element>
+                        </template>
+                    </div>
+                </template>
+            </div>
+        </paper-scroll-header-panel>
+    </template>
+    <script>
+        Polymer({
+            is: 'session-dialog',
+            properties: {
+                session: {
+                    type: Object
+                },
+                opened: {
+                    type: Boolean,
+                    notify: true
+                }
+            },
+            ready: function() {
+                var title = this.$.title;
+                addEventListener('paper-header-transform', function(e) {
+                    var d = e.detail;
+                    var m = d.height - d.condensedHeight;
+                    var transform = 50 * d.y / m;
+                    Polymer.Base.transform('translate3d(' + transform + 'px,0,0)', title);
+                });
+            },
+            _concatClass: function(basic, target) {
+                return basic + ' ' + target;
+            },
+            _close: function() {
+                this.opened = false;
+            }
+        });
+    </script>
+</dom-module>
 </div></body></html>

@@ -1,5 +1,6 @@
 [{
     "id": 23,
+    "featured": true,
     "name": "Dawid Ostrowski",
     "title": "Developer Relations Program Manager",
     "company": "Google",
@@ -13,6 +14,7 @@
     }]
 }, {
     "id": 9,
+    "featured": true,
     "name": "Mandy Waite",
     "title": "Developer Relations Engineer",
     "company": "Google",
@@ -32,6 +34,7 @@
     }]
 }, {
     "id": 15,
+    "featured": true,
     "name": "Jakub Škvára",
     "title": "Frontend engineer",
     "company": "Shipito",
@@ -84,6 +87,7 @@
     }]
 }, {
     "id": 11,
+    "featured": true,
     "name": "Hallade Xavier",
     "title": "Developer Evangelist",
     "company": "Intel",
@@ -111,6 +115,7 @@
     }]
 }, {
     "id": 1,
+    "featured": true,
     "name": "Said Tahsin Dane",
     "title": "Mobile Coder",
     "company": "Startup Digest",
@@ -139,6 +144,7 @@
     }]
 }, {
     "id": 2,
+    "featured": true,
     "name": "Mateusz Herych",
     "title": "Software Engineer",
     "company": "Base CRM",
@@ -167,6 +173,7 @@
     }]
 }, {
     "id": 19,
+    "featured": true,
     "name": "Juarez Filho",
     "title": "Front End Engineer",
     "company": "madewithlove",
@@ -237,6 +244,7 @@
     }]
 }, {
     "id": 5,
+    "featured": true,
     "name": "Michał Tajchert",
     "title": "CEO",
     "company": "12Hours.io",
@@ -258,25 +266,6 @@
         "link": "http://tajchert.pl/"
     }]
 }, {
-    "id": 6,
-    "name": "Yehor Lvivski",
-    "title": "Software Architect",
-    "company": "Spatialkey",
-    "country": "Ukraine",
-    "photoUrl": "../../images/people/yehor_lvivski.jpg",
-    "bio": "Yehor is a passionate front end engineer and UX designer. He likes to make useful tools, that help people solve their problems. Currently he is creating a web app, that helps insurance companies save money, and allows you to find a better and safer place to live.",
-    "tags": ["Web", "Dart"],
-    "socials": [{
-        "name": "Twitter",
-        "link": "https://twitter.com/lvivski"
-    }, {
-        "name": "GitHub",
-        "link": "https://github.com/lvivski"
-    }, {
-        "name": "Website",
-        "link": "http://lvivski.com"
-    }]
-}, {
     "id": 7,
     "name": "Valentyn Shybanov",
     "title": "Software Engineer/Country Manager",
@@ -284,7 +273,7 @@
     "country": "Ukraine",
     "photoUrl": "../../images/people/valentyn_shybanov.jpg",
     "bio": "Valentyn focuses on Polymer and Web Components. In previous roles heâ€™s helped craft design systems for massive enterprise companies, user interfaces for console titles, and even built the occasional enchanted princess game. These days his mission is to fight for a better web and to help developers build great experiences.",
-    "tags": ["Web", "AngularJS"],
+    "tags": ["Web", "AngularJS", "Cloud", "Go"],
     "badges": [{
         "name": "GDE",
         "description": "Cloud Google Developer Expert",
@@ -407,6 +396,9 @@
     }, {
         "name": "LinkedIn",
         "link": "http://ua.linkedin.com/pub/kseniia-shumelchyk/49/26/935"
+    }, {
+        "name": "Facebook",
+        "link": "https://www.facebook.com/kseniya.shumelchyk"
     }]
 }, {
     "id": 17,
