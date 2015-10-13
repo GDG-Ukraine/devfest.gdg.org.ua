@@ -145,9 +145,5 @@
         "name": "Droidcon Krarow",
         "url": "http://droidcon.pl/",
         "logoUrl": "../images/partners/droidcon.png"
-    }, {
-        "name": "PHP Frameworks Day",
-        "url": "http://frameworksdays.com/",
-        "logoUrl": "../images/partners/phpday_logo.png"
     }]
 }]
