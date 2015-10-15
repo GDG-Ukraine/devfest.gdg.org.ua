@@ -100,10 +100,6 @@ var components = {
 			"title": "BASIC",
 			"owner": "Golmote"
 		},
-		"batch": {
-			"title": "Batch",
-			"owner": "Golmote"
-		},
 		"bison": {
 			"title": "Bison",
 			"require": "c",
@@ -519,11 +515,6 @@ var components = {
 		},
 		"previewer-color": {
 			"title": "Previewer: Color",
-			"require": "previewer-base",
-			"owner": "Golmote"
-		},
-		"previewer-gradient": {
-			"title": "Previewer: Gradient",
 			"require": "previewer-base",
 			"owner": "Golmote"
 		},

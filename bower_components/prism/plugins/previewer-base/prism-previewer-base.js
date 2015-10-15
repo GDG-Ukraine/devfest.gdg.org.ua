@@ -73,7 +73,6 @@
 				Previewer.byLanguages[lang].push(self);
 			}
 		});
-		Previewer.byType[type] = this;
 	};
 
 	/**
@@ -96,15 +95,11 @@
 	 * @param token
 	 */
 	Previewer.prototype.check = function (token) {
-		do {
-			if (tokenRegexp.test(token.className) && this._clsRegexp.test(token.className)) {
-				break;
+		if (tokenRegexp.test(token.className) && this._clsRegexp.test(token.className)) {
+			if (token !== this._token) {
+				this._token = token;
+				this.show();
 			}
-		} while(token = token.parentNode);
-
-		if (token && token !== this._token) {
-			this._token = token;
-			this.show();
 		}
 	};
 
@@ -162,12 +157,6 @@
 	 * @type {{}}
 	 */
 	Previewer.byLanguages = {};
-
-	/**
-	 * Map of all registered previewers by type
-	 * @type {{}}
-	 */
-	Previewer.byType = {};
 
 	/**
 	 * Initializes the mouseover event on the code block.

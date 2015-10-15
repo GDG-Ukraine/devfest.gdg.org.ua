@@ -1,5 +1,3 @@
-[![NPM version](http://img.shields.io/npm/v/hydrolysis.svg)](https://npmjs.org/package/hydrolysis)
-[![Build Status](https://travis-ci.org/Polymer/hydrolysis.svg?branch=master)](https://travis-ci.org/Polymer/hydrolysis)
 # hydrolysis
 
 Static analysis utilities for polymer.

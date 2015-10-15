@@ -1,5 +1,4 @@
 <!--
-@license
 Copyright (c) 2015 The Polymer Project Authors. All rights reserved.
 This code may only be used under the BSD style license found at http://polymer.github.io/LICENSE.txt
 The complete set of authors may be found at http://polymer.github.io/AUTHORS.txt
@@ -11,11 +10,10 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 <link rel="import" href="../polymer/polymer.html">
 <link rel="import" href="../paper-ripple/paper-ripple.html">
 <link rel="import" href="../paper-styles/default-theme.html">
-<link rel="import" href="../paper-behaviors/paper-checked-element-behavior.html">
+<link rel="import" href="../paper-behaviors/paper-inky-focus-behavior.html">
+<link rel="import" href="../iron-checked-element-behavior/iron-checked-element-behavior.html">
 
 <!--
-Material design: [Radio button](https://www.google.com/design/spec/components/selection-controls.html#selection-controls-radio-button)
-
 `paper-radio-button` is a button that can be either checked or unchecked.
 User can tap the radio button to check or uncheck it.
 
@@ -48,7 +46,7 @@ Custom property | Description | Default
 -->
 
 <dom-module id="paper-radio-button">
-  <template strip-whitespace>
+  <template>
     <style>
       :host {
         display: inline-block;
@@ -159,6 +157,7 @@ Custom property | Description | Default
     <div id="radioContainer">
       <div id="offRadio"></div>
       <div id="onRadio"></div>
+      <paper-ripple id="ink" class="circle" center checked$="[[checked]]"></paper-ripple>
     </div>
 
     <div id="radioLabel"><content></content></div>
@@ -170,7 +169,8 @@ Custom property | Description | Default
       is: 'paper-radio-button',
 
       behaviors: [
-        Polymer.PaperCheckedElementBehavior
+        Polymer.PaperInkyFocusBehavior,
+        Polymer.IronCheckedElementBehavior
       ],
 
       hostAttributes: {
@@ -192,16 +192,39 @@ Custom property | Description | Default
          * @event iron-change
          */
 
-        ariaActiveAttribute: {
-          type: String,
-          value: 'aria-checked'
+         ariaActiveAttribute: {
+           value: 'aria-checked'
+         }
+      },
+
+      attached: function() {
+        this._isReady = true;
+
+        // Don't stomp over a user-set aria-label.
+        if (!this.getAttribute('aria-label')) {
+          this.updateAriaLabel();
         }
       },
 
-      // create the element ripple inside the `radioContainer`
-      _createRipple: function() {
-        this._rippleContainer = this.$.radioContainer;
-        return Polymer.PaperInkyFocusBehaviorImpl._createRipple.call(this);
+      /**
+       * Update the checkbox aria-label. This is a temporary workaround not
+       * being able to observe changes in <content>
+       * (see: https://github.com/Polymer/polymer/issues/1773)
+       *
+       * Call this if you manually change the contents of the checkbox
+       * and want the aria-label to match the new contents.
+       */
+      updateAriaLabel: function() {
+        this.setAttribute('aria-label', Polymer.dom(this).textContent.trim());
+      },
+
+      _buttonStateChanged: function() {
+        if (this.disabled) {
+          return;
+        }
+        if (this._isReady) {
+          this.checked = this.active;
+        }
       }
     })
   </script>

@@ -15,7 +15,8 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 <link rel="import" href="../iron-flex-layout/iron-flex-layout.html">
 
 <!--
-Material design: [Buttons](https://www.google.com/design/spec/components/buttons.html)
+
+Material Design: <a href="http://www.google.com/design/spec/components/buttons.html">Buttons</a>
 
 `paper-button` is a button. When the user touches the button, a ripple effect emanates
 from the point of contact. It may be flat or raised. A raised button is styled with a
@@ -75,9 +76,9 @@ Custom property | Description | Default
 -->
 
 <dom-module id="paper-button">
-  <template strip-whitespace>
+  <template>
 
-    <style include="paper-material">
+    <style>
       :host {
         display: inline-block;
         position: relative;
@@ -101,12 +102,12 @@ Custom property | Description | Default
         @apply(--paper-button);
       }
 
-      :host([raised].keyboard-focus) {
+      :host([raised]) .keyboard-focus {
         font-weight: bold;
         @apply(--paper-button-raised-keyboard-focus);
       }
 
-      :host(:not([raised]).keyboard-focus) {
+      :host(:not([raised])) .keyboard-focus {
         font-weight: bold;
         @apply(--paper-button-flat-keyboard-focus);
       }
@@ -120,15 +121,32 @@ Custom property | Description | Default
         @apply(--paper-button-disabled);
       }
 
+      :host([noink]) paper-ripple {
+        display: none;
+      }
+
       paper-ripple {
         color: var(--paper-button-ink-color);
       }
 
-      :host > ::content * {
+      paper-material {
+        border-radius: inherit;
+        @apply(--layout-fit);
+      }
+
+      .content > ::content * {
         text-transform: inherit;
       }
     </style>
-    <content></content>
+
+    <paper-ripple></paper-ripple>
+
+    <paper-material  elevation="[[_elevation]]" animated></paper-material>
+
+    <div class$="[[_computeContentClass(receivedFocusFromKeyboard)]]">
+      <content></content>
+    </div>
+
   </template>
 </dom-module>
 
@@ -154,10 +172,18 @@ Custom property | Description | Default
 
     _calculateElevation: function() {
       if (!this.raised) {
-        this.elevation = 0;
+        this._elevation = 0;
       } else {
         Polymer.PaperButtonBehaviorImpl._calculateElevation.apply(this);
       }
+    },
+
+    _computeContentClass: function(receivedFocusFromKeyboard) {
+      var className = 'content ';
+      if (receivedFocusFromKeyboard) {
+        className += ' keyboard-focus';
+      }
+      return className;
     }
   });
 </script>

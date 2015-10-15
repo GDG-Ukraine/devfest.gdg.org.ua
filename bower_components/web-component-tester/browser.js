@@ -1346,12 +1346,11 @@
    */
   function loadSync() {
     util_js.debug('Loading environment scripts:');
-    var a11ySuite = 'web-component-tester/data/a11ySuite.js';
     var scripts = config_js.get('environmentScripts');
-    var a11ySuiteWillBeLoaded = window.__generatedByWct || scripts.indexOf(a11ySuite) > -1;
+    var a11ySuiteWillBeLoaded = window.__generatedByWct;
     if (!a11ySuiteWillBeLoaded) {
       // wct is running as a bower dependency, load a11ySuite from data/
-      scripts.push(a11ySuite);
+      scripts.push('web-component-tester/data/a11ySuite.js');
     }
     scripts.forEach(function(path) {
       var url = util_js.expandUrl(path, config_js.get('root'));
