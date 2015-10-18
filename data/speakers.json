@@ -10,7 +10,6 @@
     "tags": ["Entrepreneurship"],
     "socials": [{
         "name": "Google+",
-        "icon": "app-icons:gplus",
         "link": "https://plus.google.com/+DawidOstrowski/"
     }]
 }, {
@@ -25,15 +24,12 @@
     "tags": ["Cloud", "Firebase", "gRPC", "Kubernetes", "Docker"],
     "socials": [{
         "name": "Google+",
-        "icon": "app-icons:gplus",
         "link": "https://plus.google.com/+MandyWaite"
     }, {
         "name": "Twitter",
-        "icon": "app-icons:twitter",
         "link": "https://twitter.com/tekgrrl"
     }, {
         "name": "GitHub",
-        "icon": "app-icons:github",
         "link": "https://github.com/tekgrrl"
     }]
 }, {
@@ -53,11 +49,9 @@
     }],
     "socials": [{
         "name": "Google+",
-        "icon": "app-icons:gplus",
         "link": "https://plus.google.com/u/0/+JakubSkvara"
     }, {
         "name": "Twitter",
-        "icon": "app-icons:twitter",
         "link": "https://twitter.com/skvaros"
     }]
 }, {
@@ -73,26 +67,22 @@
         "name": "GDE",
         "description": "Dart Google Developer Expert",
         "link": "https://developers.google.com/experts/people/jana-moudr"
-    }, {
+    },{
         "name": "GDG",
         "description": "Google Developers Group Prague",
         "link": "https://developers.google.com/groups/chapter/111919016509847766513/"
     }],
     "socials": [{
         "name": "Google+",
-        "icon": "app-icons:gplus",
         "link": "https://plus.google.com/+JanaMoudrá"
     }, {
         "name": "LinkedIn",
-        "icon": "app-icons:linkedin",
         "link": "https://cz.linkedin.com/in/janamoudra"
     }, {
         "name": "Twitter",
-        "icon": "app-icons:twitter",
         "link": "https://twitter.com/Janamou"
     }, {
         "name": "Blog",
-        "icon": "link",
         "link": "http://www.moudra.net/"
     }]
 }, {
@@ -112,19 +102,15 @@
     }],
     "socials": [{
         "name": "Google+",
-        "icon": "app-icons:gplus",
         "link": "https://plus.google.com/106834066322753191683/posts"
     }, {
         "name": "LinkedIn",
-        "icon": "app-icons:linkedin",
         "link": "https://www.linkedin.com/in/xavierhallade"
     }, {
         "name": "Twitter",
-        "icon": "app-icons:twitter",
         "link": "https://twitter.com/ph0b"
     }, {
         "name": "Website",
-        "icon": "link",
         "link": "http://ph0b.com/"
     }]
 }, {
@@ -148,15 +134,12 @@
     }],
     "socials": [{
         "name": "Website",
-        "icon": "link",
         "link": "http://www.tasomaniac.com/"
     }, {
         "name": "Twitter",
-        "icon": "app-icons:twitter",
         "link": "https://twitter.com/tasomaniac"
     }, {
         "name": "GitHub",
-        "icon": "app-icons:github",
         "link": "https://github.com/tasomaniac"
     }]
 }, {
@@ -180,15 +163,12 @@
     }],
     "socials": [{
         "name": "Google+",
-        "icon": "app-icons:gplus",
         "link": "https://plus.google.com/+MateuszHerych"
     }, {
         "name": "Twitter",
-        "icon": "app-icons:twitter",
         "link": "https://twitter.com/mherych"
     }, {
         "name": "LinkedIn",
-        "icon": "app-icons:linkedin",
         "link": "https://www.linkedin.com/in/herych"
     }]
 }, {
@@ -208,19 +188,15 @@
     }],
     "socials": [{
         "name": "Google+",
-        "icon": "app-icons:gplus",
         "link": "http://google.com/+JuarezPAFilho"
     }, {
         "name": "LinkedIn",
-        "icon": "app-icons:linkedin",
         "link": "http://linkedin.com/in/juarezpaf"
     }, {
         "name": "Twitter",
-        "icon": "app-icons:twitter",
         "link": "http://twitter.com/juarezpaf"
     }, {
         "name": "GitHub",
-        "icon": "app-icons:github",
         "link": "http://github.com/juarezpaf"
     }]
 }, {
@@ -234,15 +210,12 @@
     "tags": ["Android", "UX"],
     "socials": [{
         "name": "Google+",
-        "icon": "app-icons:gplus",
         "link": "https://plus.google.com/+DmytroDanylyk"
     }, {
         "name": "Twitter",
-        "icon": "app-icons:twitter",
         "link": "https://twitter.com/dmytrodanylyk"
     }, {
         "name": "Website",
-        "icon": "link",
         "link": "http://www.dmytrodanylyk.com/#/about"
     }]
 }, {
@@ -261,15 +234,12 @@
     }],
     "socials": [{
         "name": "Google+",
-        "icon": "app-icons:gplus",
         "link": "https://plus.google.com/+RomanMazur/"
     }, {
         "name": "Twitter",
-        "icon": "app-icons:twitter",
         "link": "http://twitter.com/roman_mazur"
     }, {
         "name": "GitHub",
-        "icon": "app-icons:github",
         "link": "https://github.com/roman-mazur"
     }]
 }, {
@@ -284,19 +254,15 @@
     "tags": ["Android"],
     "socials": [{
         "name": "Google+",
-        "icon": "app-icons:gplus",
         "link": "https://plus.google.com/+MichalTajchert"
     }, {
         "name": "Twitter",
-        "icon": "app-icons:twitter",
         "link": "https://twitter.com/tajchert"
     }, {
         "name": "GitHub",
-        "icon": "app-icons:github",
         "link": "https://github.com/tajchert"
     }, {
         "name": "Website",
-        "icon": "link",
         "link": "http://tajchert.pl/"
     }]
 }, {
@@ -312,18 +278,16 @@
         "name": "GDE",
         "description": "Cloud Google Developer Expert",
         "link": "https://developers.google.com/experts/people"
-    }, {
+    },{
         "name": "GDG",
         "description": "Google Developers Group Kyiv",
         "link": "https://developers.google.com/groups/chapter/110301321530950732281/"
     }],
     "socials": [{
         "name": "Google+",
-        "icon": "app-icons:gplus",
         "link": "https://google.com/+ValentynShybanov"
     }, {
         "name": "Website",
-        "icon": "link",
         "link": "http://olostan.name/"
     }]
 }, {
@@ -337,11 +301,9 @@
     "tags": ["Web", "V8 Engine"],
     "socials": [{
         "name": "Twitter",
-        "icon": "app-icons:twitter",
         "link": "https://twitter.com/dimko1"
     }, {
         "name": "GitHub",
-        "icon": "app-icons:github",
         "link": "https://github.com/dimko1"
     }]
 }, {
@@ -357,18 +319,16 @@
         "name": "GDE",
         "description": "Android Google Developer Expert",
         "link": "https://developers.google.com/experts/people/roman-herasymenko"
-    }, {
+    },{
         "name": "GDG",
         "description": "Google Developers Group Dnipropetrovsk",
         "link": "https://developers.google.com/groups/chapter/116033068768596939209/"
     }],
     "socials": [{
         "name": "Google+",
-        "icon": "app-icons:gplus",
         "link": "https://plus.google.com/+RomanGerasimenko/"
     }, {
         "name": "LinkedIn",
-        "icon": "app-icons:linkedin",
         "link": "http://ua.linkedin.com/pub/roman-gerasimenko/"
     }]
 }, {
@@ -387,15 +347,12 @@
     }],
     "socials": [{
         "name": "Google+",
-        "icon": "app-icons:gplus",
         "link": "https://plus.google.com/+AlexPazhyn/posts"
     }, {
         "name": "LinkedIn",
-        "icon": "app-icons:linkedin",
         "link": "http://www.linkedin.com/in/alexpazhyn"
     }, {
         "name": "Facebook",
-        "icon": "app-icons:facebook",
         "link": "https://www.facebook.com/alex.pazhyn"
     }]
 }, {
@@ -409,19 +366,15 @@
     "tags": ["Android", "CI"],
     "socials": [{
         "name": "Google+",
-        "icon": "app-icons:gplus",
         "link": "https://plus.google.com/+MaciejGórski6"
     }, {
         "name": "LinkedIn",
-        "icon": "app-icons:linkedin",
         "link": "https://www.linkedin.com/in/mg6maciej"
     }, {
         "name": "Twitter",
-        "icon": "app-icons:twitter",
         "link": "https://twitter.com/mg6maciej"
     }, {
         "name": "GitHub",
-        "icon": "app-icons:github",
         "link": "https://github.com/mg6maciej"
     }]
 }, {
@@ -444,15 +397,12 @@
     }],
     "socials": [{
         "name": "Google+",
-        "icon": "app-icons:gplus",
         "link": "https://plus.google.com/u/0/104006672956574838559"
     }, {
         "name": "LinkedIn",
-        "icon": "app-icons:linkedin",
         "link": "http://ua.linkedin.com/pub/kseniia-shumelchyk/49/26/935"
     }, {
         "name": "Facebook",
-        "icon": "app-icons:facebook",
         "link": "https://www.facebook.com/kseniya.shumelchyk"
     }]
 }, {
@@ -475,19 +425,15 @@
     }],
     "socials": [{
         "name": "Google+",
-        "icon": "app-icons:gplus",
         "link": "https://plus.google.com/+AnnaKurilo/"
     }, {
         "name": "LinkedIn",
-        "icon": "app-icons:linkedin",
         "link": "https://ua.linkedin.com/in/bluebirrrrd"
     }, {
         "name": "Twitter",
-        "icon": "app-icons:twitter",
         "link": "https://twitter.com/bluebirrrrd"
     }, {
         "name": "Facebook",
-        "icon": "app-icons:facebook",
         "link": "https://www.facebook.com/annakurylo21"
     }]
 }, {
@@ -501,7 +447,6 @@
     "tags": ["Android", "TV"],
     "socials": [{
         "name": "LinkedIn",
-        "icon": "app-icons:linkedin",
         "link": "https://ua.linkedin.com/in/alexeyrybakov"
     }]
 }, {
@@ -515,11 +460,9 @@
     "tags": ["Web", "ServiceWorkers"],
     "socials": [{
         "name": "LinkedIn",
-        "icon": "app-icons:linkedin",
         "link": "https://ua.linkedin.com/in/zozulyakviktor"
     }, {
         "name": "Facebook",
-        "icon": "app-icons:facebook",
         "link": "https://www.facebook.com/viktor.zu"
     }]
 }, {
@@ -542,19 +485,15 @@
     }],
     "socials": [{
         "name": "Google+",
-        "icon": "app-icons:gplus",
         "link": "https://plus.google.com/u/0/107161766252148547668"
     }, {
         "name": "LinkedIn",
-        "icon": "app-icons:linkedin",
         "link": "https://tr.linkedin.com/in/busradeniz"
     }, {
         "name": "Twitter",
-        "icon": "app-icons:twitter",
         "link": "https://twitter.com/busradeniz"
     }, {
         "name": "Blog",
-        "icon": "link",
         "link": "http://www.busradeniz.com/"
     }]
 }, {
@@ -568,19 +507,15 @@
     "tags": ["Web", "AngularJS"],
     "socials": [{
         "name": "GitHub",
-        "icon": "app-icons:github",
         "link": "github.com/semihyagcioglu"
     }, {
         "name": "LinkedIn",
-        "icon": "app-icons:linkedin",
         "link": "https://linkedin.com/in/semih"
     }, {
         "name": "Twitter",
-        "icon": "app-icons:twitter",
         "link": "https://twitter.com/semihyagcioglu"
     }, {
         "name": "Blog",
-        "icon": "link",
         "link": "http://semihyagcioglu.com"
     }]
 }, {
@@ -599,7 +534,6 @@
     "tags": ["Community"],
     "socials": [{
         "name": "Google+",
-        "icon": "app-icons:gplus",
         "link": "https://plus.google.com/u/0/+VladimirIvanovUA/about"
     }]
 }, {
@@ -613,7 +547,6 @@
     "tags": ["Community"],
     "socials": [{
         "name": "LinkedIn",
-        "icon": "app-icons:linkedin",
         "link": "https://www.linkedin.com/in/sunstream"
     }]
 }, {
@@ -636,11 +569,9 @@
     }],
     "socials": [{
         "name": "Google+",
-        "icon": "app-icons:gplus",
         "link": "https://plus.google.com/u/0/116263571117013518529/posts"
     }, {
         "name": "Facebook",
-        "icon": "app-icons:facebook",
         "link": "https://www.facebook.com/Laurelin619"
     }]
 }, {
@@ -663,11 +594,9 @@
     }],
     "socials": [{
         "name": "Google+",
-        "icon": "app-icons:gplus",
         "link": "https://plus.google.com/u/1/+TatianaProtasova/posts"
     }, {
         "name": "LinkedIn",
-        "icon": "app-icons:linkedin",
         "link": "https://ua.linkedin.com/pub/tetiana-protasova/22/8a/a98"
     }]
 }, {
@@ -686,11 +615,9 @@
     "tags": ["Android", "RxJava"],
     "socials": [{
         "name": "Google+",
-        "icon": "app-icons:gplus",
         "link": "https://plus.google.com/u/0/+ConstantineMars"
     }, {
         "name": "Facebook",
-        "icon": "app-icons:facebook",
         "link": "https://www.facebook.com/constantine.mars"
     }]
 }, {
@@ -709,11 +636,9 @@
     "tags": ["Android", "Android M", "Data Binding"],
     "socials": [{
         "name": "LinkedIn",
-        "icon": "app-icons:linkedin",
         "link": "https://www.linkedin.com/profile/view?id=178701990"
     }, {
         "name": "Facebook",
-        "icon": "app-icons:facebook",
         "link": "https://www.facebook.com/anton.minashkin.1"
     }]
 }, {
@@ -727,15 +652,12 @@
     "tags": ["Cloud", "Kubernetes", "Docker"],
     "socials": [{
         "name": "Google+",
-        "icon": "app-icons:gplus",
         "link": "https://plus.google.com/+IgorDvoretskyi/"
-    }, {
+    },{
         "name": "LinkedIn",
-        "icon": "app-icons:linkedin",
         "link": "https://ua.linkedin.com/in/idvoretskyi"
     }, {
         "name": "Twitter",
-        "icon": "app-icons:twitter",
         "link": "https://twitter.com/idvoretskyi"
     }]
 }]
