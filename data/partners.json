@@ -10,14 +10,14 @@
     "logos": [{
         "name": "Malkos",
         "url": "http://www.malkosua.com/",
-        "logoUrl": "../images/partners/corevalue.svg"
+        "logoUrl": "../images/partners/malkos.png"
     }]
 }, {
     "title": "Platinum sponsors",
     "logos": [{
         "name": "N-IX",
         "url": "http://n-ix.com/",
-        "logoUrl": "../images/partners/n-ix.svg"
+        "logoUrl": "../images/partners/n-ix.png"
     }, {
         "name": "DataArt",
         "url": "http://www.dataart.com/",
@@ -153,13 +153,5 @@
         "name": "PHP Frameworks Day",
         "url": "http://frameworksdays.com/",
         "logoUrl": "../images/partners/phpday_logo.png"
-    }, {
-        "name": "SoftServe",
-        "url": "http://www.softserveinc.com/",
-        "logoUrl": "../images/partners/softserve.svg"
-    }, {
-        "name": "Garage48",
-        "url": "http://garage48.org/events/garage48-lviv",
-        "logoUrl": "../images/partners/garage48.png"
     }]
 }]
