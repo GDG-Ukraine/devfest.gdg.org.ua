@@ -44,12 +44,11 @@ function normalize(error, prettyOptions) {
     prettyStack = prettyStack + '\n' + pretty(parsedStack, prettyOptions);
   }
 
-  var cleanErr = Object.create(Error.prototype);
-  cleanErr.message     = message;
-  cleanErr.stack       = prettyStack;
-  cleanErr.parsedStack = parsedStack;
-
-  return cleanErr;
+  return {
+    message:     message,
+    stack:       prettyStack,
+    parsedStack: parsedStack,
+  };
 }
 
 scope.normalize = normalize;
